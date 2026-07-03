@@ -132,10 +132,25 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         private set => SetProperty(ref _currentChannel, value);
     }
 
+    /// <summary>Display title of whatever is playing: the VOD title, else the live channel name.</summary>
+    public string? NowPlayingTitle => _currentVod?.Title ?? _currentChannel?.Name;
+
+    /// <summary>Artwork for ambient effects: the VOD poster, else the channel logo.</summary>
+    public string? NowPlayingArtUrl => _currentVod?.PosterUrl ?? _currentChannel?.LogoUrl;
+
+    private void NotifyNowPlayingChanged()
+    {
+        OnPropertyChanged(nameof(NowPlayingTitle));
+        OnPropertyChanged(nameof(NowPlayingArtUrl));
+    }
+
     /// <summary>The ordered channel list ↑/↓ zapping walks (also feeds the quick list).</summary>
     public IReadOnlyList<Channel>? ZapList => _zapList;
 
     public MediaPlayer? Player => _player;
+
+    /// <summary>Diagnostics only: the overlay element installed by the shell.</summary>
+    internal System.Windows.UIElement? OverlayForDiagnostics => _overlayContent;
 
     /// <summary>
     /// Installs the WPF overlay rendered above the video (VideoView.Content is the only
@@ -175,8 +190,19 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
         CancelReconnect();
         _userStopped = false;
+
+        // Leaving a VOD for a live channel: persist its resume point and drop VOD state so
+        // position ticks and failure handling run in live mode again.
+        SaveVodProgress();
+        _positionTimer.Stop();
+        _currentVod = null;
+        IsVod = false;
+        PositionSeconds = 0;
+        DurationSeconds = 0;
+
         _currentChannel = channel;
         OnPropertyChanged(nameof(CurrentChannel));
+        NotifyNowPlayingChanged();
         if (zapList is not null && !ReferenceEquals(zapList, _zapList))
         {
             _zapList = zapList;
@@ -243,9 +269,14 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
         CancelReconnect();
         _userStopped = false;
+
+        // A previous VOD may still be playing (kept alive as a browse preview) — bank its position.
+        SaveVodProgress();
+
         _currentChannel = null;
         OnPropertyChanged(nameof(CurrentChannel));
         _currentVod = request;
+        NotifyNowPlayingChanged();
         _isPreviewContext = false;
         _currentUrl = request.Url;
         _pendingResumeSeconds = request.ResumeSeconds;
@@ -342,6 +373,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
         _currentChannel = null;
         OnPropertyChanged(nameof(CurrentChannel));
+        NotifyNowPlayingChanged();
         _currentUrl = null;
         State = PlaybackState.Idle;
         ErrorMessage = null;

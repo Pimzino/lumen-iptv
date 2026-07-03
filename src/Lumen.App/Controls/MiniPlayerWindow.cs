@@ -126,7 +126,7 @@ public sealed partial class MiniPlayerWindow : Window
         }
 
         var playback = vm.Playback;
-        TitleText.Text = playback.CurrentChannel?.Name ?? string.Empty;
+        TitleText.Text = playback.NowPlayingTitle ?? string.Empty;
         PlayPauseGlyph.Text = playback.State == PlaybackState.Paused ? _playGlyph : _pauseGlyph;
 
         var isVod = playback.IsVod;

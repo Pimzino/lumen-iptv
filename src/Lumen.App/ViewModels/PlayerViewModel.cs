@@ -60,6 +60,11 @@ public sealed partial class PlayerViewModel : ObservableObject,
                 ReconnectStatus = Resources.Strings.Format(
                     Resources.Strings.Player_ReconnectingFormat, Playback.ReconnectAttempt);
             }
+            else if (e.PropertyName is nameof(PlaybackService.IsVod) && playback.IsVod)
+            {
+                // Now/next is live-EPG data; a VOD start must clear the last channel's leftovers.
+                SetNowNext(null);
+            }
         };
 
         messenger.RegisterAll(this);

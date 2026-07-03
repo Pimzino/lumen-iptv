@@ -67,6 +67,12 @@ public interface IPlaybackService
 
     Channel? CurrentChannel { get; }
 
+    /// <summary>Display title of whatever is playing: the VOD title, else the live channel name.</summary>
+    string? NowPlayingTitle { get; }
+
+    /// <summary>Artwork for ambient effects: the VOD poster, else the channel logo.</summary>
+    string? NowPlayingArtUrl { get; }
+
     string? ErrorMessage { get; }
 
     /// <summary>Current reconnect attempt (1-based) while <see cref="PlaybackState.Reconnecting"/>.</summary>

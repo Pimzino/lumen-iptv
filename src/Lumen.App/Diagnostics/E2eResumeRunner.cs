@@ -55,6 +55,10 @@ public static class E2eResumeRunner
             var playing = await WaitForAsync(() => playback.State == PlaybackState.Playing, TimeSpan.FromSeconds(20));
             report.AppendLine($"play state={playback.State} isVod={playback.IsVod}");
 
+            // The player overlay/mini player titles bind NowPlayingTitle — it must be the movie name.
+            var titleOk = playback.NowPlayingTitle == movie.Name;
+            report.AppendLine($"nowPlayingTitle=\"{playback.NowPlayingTitle}\" titleOk={titleOk}");
+
             // 2) Seek to ~10 minutes (600s) once duration is known, let it advance.
             await WaitForAsync(() => playback.DurationSeconds > 0, TimeSpan.FromSeconds(10));
             report.AppendLine($"duration={playback.DurationSeconds:F0}s");
@@ -83,7 +87,7 @@ public static class E2eResumeRunner
 
             playback.Stop();
 
-            var pass = playing && savedPosition > 300 && resumedNear;
+            var pass = playing && titleOk && savedPosition > 300 && resumedNear;
             report.AppendLine(pass ? "RESUME-RESULT=PASS" : "RESUME-RESULT=FAIL");
             return pass ? 0 : 1;
         }

@@ -237,8 +237,9 @@ public partial class App : Application
 
             var shellShotDir = ArgValue(args, "--shot-shell");
             var fullscreenProbe = args.Contains("--e2e-fullscreen");
+            var vodUiProbe = args.Contains("--e2e-vod-ui");
             var window = _host.Services.GetRequiredService<MainWindow>();
-            if (shellShotDir is not null || fullscreenProbe)
+            if (shellShotDir is not null || fullscreenProbe || vodUiProbe)
             {
                 // Show the real window (Style + chrome trigger live) but keep it offscreen and
                 // out of the taskbar so the diagnostic doesn't flash a window at the user.
@@ -268,6 +269,13 @@ public partial class App : Application
             {
                 var outFile = ArgValue(args, "--out") ?? Path.Combine(AppPaths.DataRoot, "e2e-fullscreen.txt");
                 Shutdown(await Diagnostics.FullPlayerRunner.RunAsync(_host.Services, window, outFile));
+                return;
+            }
+
+            if (vodUiProbe)
+            {
+                var outFile = ArgValue(args, "--out") ?? Path.Combine(AppPaths.DataRoot, "e2e-vod-ui.txt");
+                Shutdown(await Diagnostics.VodUiProbe.RunAsync(_host.Services, window, outFile));
                 return;
             }
         }

@@ -63,13 +63,16 @@
             <StackPanel Orientation="Horizontal">
               <StackPanel VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
-                  <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                             Text="{Binding Playback.CurrentChannel.Name}"
+                  <TextBlock x:Name="NowPlayingTitleText"
+                             Style="{StaticResource Lumen.Text.Heading}"
+                             Text="{Binding Playback.NowPlayingTitle}"
                              TextTrimming="CharacterEllipsis" />
-                  <ContentControl Style="{StaticResource Lumen.Badge.Live}"
+                  <ContentControl x:Name="LiveBadge"
+                                  Style="{StaticResource Lumen.Badge.Live}"
                                   Content="{x:Static res:Strings.Badge_Live}"
                                   VerticalAlignment="Center"
-                                  Margin="{StaticResource Lumen.Margin.L12}" />
+                                  Margin="{StaticResource Lumen.Margin.L12}"
+                                  Visibility="{Binding Playback.IsVod, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
                 </StackPanel>
                 <TextBlock Style="{StaticResource Lumen.Text.Caption}"
                            Text="{Binding NowTitle}"
@@ -80,9 +83,9 @@
           </DockPanel>
         </Border>
 
-        <!-- Bottom scrim: transport (with the current channel's ambient glow washed in) -->
+        <!-- Bottom scrim: transport (with the current content's ambient glow washed in) -->
         <Grid VerticalAlignment="Bottom" Height="150">
-          <Border ctl:AmbientGlow.SourceUrl="{Binding Playback.CurrentChannel.LogoUrl}"
+          <Border ctl:AmbientGlow.SourceUrl="{Binding Playback.NowPlayingArtUrl}"
                   ctl:AmbientGlow.Intensity="0.18" />
           <Border Background="{StaticResource Lumen.Brush.Scrim.Bottom}">
           <Grid VerticalAlignment="Bottom" Margin="24,0,24,16">

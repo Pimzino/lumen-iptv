@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:Lumen.App.ViewModels"
+                    xmlns:views="clr-namespace:Lumen.App.Views">
+
+  <!-- ViewModel-first navigation: each page VM maps to its view here. -->
+
+  <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+    <views:HomeView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:OnboardingViewModel}">
+    <views:OnboardingView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+    <views:SettingsView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:LiveTvViewModel}">
+    <views:LiveTvView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:GuideViewModel}">
+    <views:GuideView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:MoviesViewModel}">
+    <views:VodLibraryView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:SeriesViewModel}">
+    <views:VodLibraryView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:VodDetailViewModel}">
+    <views:VodDetailView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:SearchViewModel}">
+    <views:SearchView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:FavoritesViewModel}">
+    <views:FavoritesView />
+  </DataTemplate>
+
+</ResourceDictionary>

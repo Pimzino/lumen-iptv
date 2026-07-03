@@ -1,0 +1,121 @@
+<Window x:Class="Lumen.App.Controls.MiniPlayerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:Lumen.App.Controls"
+        xmlns:res="clr-namespace:Lumen.App.Resources"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Width="360"
+        Height="203"
+        MinWidth="240"
+        MinHeight="135"
+        Title="Lumen"
+        UseLayoutRounding="True"
+        Background="{StaticResource Lumen.Brush.VideoBackground}"
+        WindowStartupLocation="Manual">
+  <Grid>
+    <ctl:VideoSurface Kind="MiniPlayer" />
+
+    <!-- Controls render above the native video HWND via a Popup. Both commands *and* dynamic display
+         are driven from code-behind (the window's DataContext is the PlayerViewModel) because data
+         binding into a Popup over airspace proved unreliable for nested content. -->
+    <Popup x:Name="ControlsPopup"
+           Placement="Center"
+           PlacementTarget="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+           AllowsTransparency="True"
+           StaysOpen="True"
+           IsOpen="False">
+      <Grid x:Name="ControlsRoot" Background="{StaticResource Lumen.Brush.Overlay.HitTarget}">
+
+        <!-- Top bar = drag handle + window buttons -->
+        <Border x:Name="DragBar"
+                Background="{StaticResource Lumen.Brush.Scrim.Top}"
+                VerticalAlignment="Top"
+                Height="40"
+                MouseLeftButtonDown="OnMoveStart">
+          <DockPanel Margin="{StaticResource Lumen.Pad.8}">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <ToggleButton x:Name="PinButton"
+                            Style="{StaticResource Lumen.Button.Icon}"
+                            IsChecked="True"
+                            Click="OnPinToggled"
+                            ToolTip="{x:Static res:Strings.Player_Pin}">
+                <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Pin}">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="False">
+                          <Setter Property="Text" Value="{StaticResource Lumen.Icon.Unpin}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </ToggleButton>
+              <Button Style="{StaticResource Lumen.Button.Icon}"
+                      Content="{StaticResource Lumen.Icon.Fullscreen}"
+                      Click="OnExpand"
+                      ToolTip="Expand" />
+              <Button Style="{StaticResource Lumen.Button.Icon}"
+                      Content="{StaticResource Lumen.Icon.Close}"
+                      Click="OnClose"
+                      ToolTip="{x:Static res:Strings.Common_Close}" />
+            </StackPanel>
+            <TextBlock x:Name="TitleText"
+                       Style="{StaticResource Lumen.Text.CaptionStrong}"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </DockPanel>
+        </Border>
+
+        <!-- Bottom transport bar -->
+        <Border Background="{StaticResource Lumen.Brush.Scrim.Bottom}" VerticalAlignment="Bottom" Padding="8,6">
+          <DockPanel LastChildFill="True">
+            <Button DockPanel.Dock="Left"
+                    Style="{StaticResource Lumen.Button.Icon}"
+                    Click="OnPlayPause"
+                    AutomationProperties.Name="Play or pause">
+              <TextBlock x:Name="PlayPauseGlyph" FontFamily="{StaticResource Lumen.Font.Icons}" />
+            </Button>
+            <Button DockPanel.Dock="Left"
+                    Style="{StaticResource Lumen.Button.Icon}"
+                    Content="{StaticResource Lumen.Icon.Stop}"
+                    Click="OnStop"
+                    AutomationProperties.Name="Stop" />
+            <TextBlock x:Name="TimeText"
+                       DockPanel.Dock="Right"
+                       Style="{StaticResource Lumen.Text.TabularCaption}"
+                       VerticalAlignment="Center"
+                       Margin="8,0,20,0" />
+            <Slider x:Name="SeekSlider"
+                    Style="{StaticResource Lumen.Slider}"
+                    Minimum="0"
+                    IsMoveToPointEnabled="True"
+                    VerticalAlignment="Center"
+                    Margin="10,0,0,0" />
+          </DockPanel>
+        </Border>
+
+        <!-- Bottom-right resize grip -->
+        <Border x:Name="ResizeGrip"
+                Width="16"
+                Height="16"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="{StaticResource Lumen.Brush.Overlay.HitTarget}"
+                Cursor="SizeNWSE"
+                MouseLeftButtonDown="OnResizeStart"
+                AutomationProperties.Name="Resize">
+          <Path Data="M 10,2 L 10,10 L 2,10 Z"
+                Fill="{StaticResource Lumen.Brush.Text.Secondary}"
+                Stretch="Fill"
+                Margin="3" />
+        </Border>
+      </Grid>
+    </Popup>
+  </Grid>
+</Window>

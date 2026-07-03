@@ -1,0 +1,23 @@
+#EXTM3U url-tvg="http://example.com/epg.xml"
+# A comment line that should be ignored
+#EXTINF:-1 tvg-id="bbc1.uk" tvg-name="BBC One" tvg-logo="http://logo/bbc1.png" group-title="UK | News",BBC One FHD
+http://server/live/1.ts
+#EXTINF:0 tvg-id= tvg-logo=http://logo/plain.png group-title=Sports,Sky Sports Main Event
+http://server/live/2.ts
+
+#EXTGRP:Documentaries
+#EXTINF:-1,Nat Geo Wild
+http://server/live/3.m3u8
+#EXTVLCOPT:http-user-agent=CustomAgent/1.0
+#EXTVLCOPT:http-referrer=http://portal.example.com
+#EXTINF:-1 tvg-shift="+2",Time Shifted Channel
+http://server/live/4.ts
+#EXTINF:-1 group-title="VOD | Movies" tvg-logo="http://logo/movie.png",The Long Voyage (2024)
+http://server/movies/voyage.mp4
+#EXTINF:-1 group-title="Series",Breaking Code S01 E05
+http://server/series/bc-s01e05.mkv
+#EXTINF:-1 catchup="shift" catchup-days="7",Catchup Channel, The One With Commas
+http://server/live/5.ts
+http://server/live/bare-url.ts
+#EXTINF:-1 tvg-id="dup.ch" ,Duplicate URL Channel
+http://server/live/1.ts

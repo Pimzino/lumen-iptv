@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="App_Title" xml:space="preserve"><value>Lumen</value></data>
+  <data name="Crash_Title" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="Crash_Body" xml:space="preserve"><value>Lumen hit an unexpected error. You can keep using the app, or check the logs for details.</value></data>
+  <data name="Crash_OpenLogs" xml:space="preserve"><value>Open logs</value></data>
+  <data name="Crash_StartupFailed" xml:space="preserve"><value>Lumen couldn’t start. Please check the logs and try again.</value></data>
+
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav_LiveTv" xml:space="preserve"><value>Live TV</value></data>
+  <data name="Nav_Guide" xml:space="preserve"><value>Guide</value></data>
+  <data name="Nav_Movies" xml:space="preserve"><value>Movies</value></data>
+  <data name="Nav_Series" xml:space="preserve"><value>Series</value></data>
+  <data name="Nav_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Nav_Favorites" xml:space="preserve"><value>Favorites</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
+
+  <data name="Shell_Menu" xml:space="preserve"><value>Menu</value></data>
+  <data name="Shell_SearchPlaceholder" xml:space="preserve"><value>Search  ·  Ctrl+K</value></data>
+  <data name="Shell_Profiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="Shell_AddProfile" xml:space="preserve"><value>Add profile</value></data>
+
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Common_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Common_Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Common_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Common_Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Window_Minimize" xml:space="preserve"><value>Minimize</value></data>
+  <data name="Window_Maximize" xml:space="preserve"><value>Maximize</value></data>
+  <data name="Window_Restore" xml:space="preserve"><value>Restore</value></data>
+  <data name="Window_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Player_ExitFullscreen" xml:space="preserve"><value>Exit fullscreen</value></data>
+  <data name="Player_Pin" xml:space="preserve"><value>Pin on top</value></data>
+  <data name="Player_Unpin" xml:space="preserve"><value>Unpin</value></data>
+  <data name="Common_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Common_Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="Common_ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
+
+  <data name="Onboarding_WelcomeTitle" xml:space="preserve"><value>Welcome to Lumen</value></data>
+  <data name="Onboarding_WelcomeBody" xml:space="preserve"><value>Live TV, movies, and series from your provider — in one fast, beautiful app.</value></data>
+  <data name="Onboarding_GetStarted" xml:space="preserve"><value>Get started</value></data>
+  <data name="Onboarding_AddServiceTitle" xml:space="preserve"><value>Add your service</value></data>
+  <data name="Onboarding_AddServiceBody" xml:space="preserve"><value>Connect an Xtream Codes account or an M3U playlist.</value></data>
+  <data name="Onboarding_TabXtream" xml:space="preserve"><value>Xtream account</value></data>
+  <data name="Onboarding_TabM3u" xml:space="preserve"><value>M3U playlist</value></data>
+  <data name="Onboarding_ProfileName" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Onboarding_Server" xml:space="preserve"><value>Server URL</value></data>
+  <data name="Onboarding_Username" xml:space="preserve"><value>Username</value></data>
+  <data name="Onboarding_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Onboarding_PlaylistSource" xml:space="preserve"><value>Playlist URL or file</value></data>
+  <data name="Onboarding_TestConnection" xml:space="preserve"><value>Test connection</value></data>
+  <data name="Onboarding_Testing" xml:space="preserve"><value>Testing…</value></data>
+  <data name="Onboarding_XtreamOkFormat" xml:space="preserve"><value>Connected — {0} · expires {1}</value></data>
+  <data name="Onboarding_XtreamOkNoExpiry" xml:space="preserve"><value>Connected.</value></data>
+  <data name="Onboarding_XtreamExpired" xml:space="preserve"><value>This subscription has expired — playback will not work.</value></data>
+  <data name="Onboarding_M3uOkFormat" xml:space="preserve"><value>Playlist looks good — {0} entries found.</value></data>
+  <data name="Onboarding_EpgTitle" xml:space="preserve"><value>Programme guide</value></data>
+  <data name="Onboarding_EpgBodyXtream" xml:space="preserve"><value>Your provider publishes a guide. Lumen imports it automatically.</value></data>
+  <data name="Onboarding_EpgBodyM3u" xml:space="preserve"><value>Add an XMLTV guide URL or file (optional).</value></data>
+  <data name="Onboarding_EpgSource" xml:space="preserve"><value>XMLTV URL or file</value></data>
+  <data name="Onboarding_ImportEpgNow" xml:space="preserve"><value>Import guide now</value></data>
+  <data name="Onboarding_Finish" xml:space="preserve"><value>Finish setup</value></data>
+  <data name="Onboarding_WorkingTitle" xml:space="preserve"><value>Setting things up</value></data>
+  <data name="Onboarding_StepChannels" xml:space="preserve"><value>Importing channels…</value></data>
+  <data name="Onboarding_StepEpg" xml:space="preserve"><value>Importing programme guide…</value></data>
+  <data name="Onboarding_SyncSummaryFormat" xml:space="preserve"><value>{0:N0} channels · {1:N0} movies · {2:N0} series</value></data>
+
+  <data name="Home_ContinueWatching" xml:space="preserve"><value>Continue watching</value></data>
+  <data name="Home_FavoriteChannels" xml:space="preserve"><value>Favorite channels</value></data>
+  <data name="Home_RecentlyAddedMovies" xml:space="preserve"><value>Recently added movies</value></data>
+  <data name="Home_RecentlyAddedSeries" xml:space="preserve"><value>New series</value></data>
+  <data name="Home_EmptyBody" xml:space="preserve"><value>Your library is warming up — favorites and history will appear here.</value></data>
+  <data name="Home_RecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+
+  <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Profiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="Settings_ProfileActive" xml:space="preserve"><value>ACTIVE</value></data>
+  <data name="Settings_ProfileSwitch" xml:space="preserve"><value>Switch</value></data>
+  <data name="Settings_RemoveProfileTitle" xml:space="preserve"><value>Remove profile?</value></data>
+  <data name="Settings_RemoveProfileBodyFormat" xml:space="preserve"><value>This removes “{0}” and its favorites from this device. Your provider account is not affected.</value></data>
+  <data name="Settings_Epg" xml:space="preserve"><value>Programme guide</value></data>
+  <data name="Settings_EpgRefreshNow" xml:space="preserve"><value>Refresh now</value></data>
+  <data name="Settings_EpgCountsFormat" xml:space="preserve"><value>{0:N0} channels · {1:N0} programmes in guide</value></data>
+  <data name="Settings_EpgProgressFormat" xml:space="preserve"><value>Importing… {0:N0} programmes</value></data>
+  <data name="Settings_EpgInterval" xml:space="preserve"><value>Refresh interval</value></data>
+  <data name="Settings_EpgInterval6h" xml:space="preserve"><value>Every 6 hours</value></data>
+  <data name="Settings_EpgInterval12h" xml:space="preserve"><value>Every 12 hours</value></data>
+  <data name="Settings_EpgInterval24h" xml:space="preserve"><value>Daily</value></data>
+  <data name="Settings_EpgIntervalManual" xml:space="preserve"><value>Manual only</value></data>
+  <data name="Settings_CatalogRefreshNow" xml:space="preserve"><value>Refresh channels &amp; library</value></data>
+  <data name="Settings_Playback" xml:space="preserve"><value>Playback</value></data>
+  <data name="Settings_PreferHls" xml:space="preserve"><value>Prefer HLS (.m3u8) live streams</value></data>
+  <data name="Settings_HardwareAcceleration" xml:space="preserve"><value>Hardware acceleration</value></data>
+  <data name="Settings_StreamUserAgent" xml:space="preserve"><value>Stream user-agent</value></data>
+  <data name="Settings_StreamUserAgentHint" xml:space="preserve"><value>Sent with every stream. Leave blank to use the default (IPTVSmartersPlayer). Change this only if your provider requires a specific player identity.</value></data>
+  <data name="Settings_Storage" xml:space="preserve"><value>Storage</value></data>
+  <data name="Settings_ImageCacheFormat" xml:space="preserve"><value>Image cache · {0}</value></data>
+  <data name="Settings_ClearImageCache" xml:space="preserve"><value>Clear image cache</value></data>
+  <data name="Settings_ParentalControls" xml:space="preserve"><value>Parental controls</value></data>
+  <data name="Settings_Theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="Settings_ThemeDark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_ThemeLight" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_VersionFormat" xml:space="preserve"><value>Lumen {0}</value></data>
+  <data name="Settings_Licenses" xml:space="preserve"><value>Built with LibVLC (LGPL-2.1), CommunityToolkit.Mvvm (MIT), Serilog (Apache-2.0), Dapper (Apache-2.0), Microsoft.Data.Sqlite (MIT).</value></data>
+
+  <data name="Toast_ProfileConnectedFormat" xml:space="preserve"><value>Profile “{0}” connected.</value></data>
+  <data name="Toast_ProfileSwitchedFormat" xml:space="preserve"><value>Switched to “{0}”.</value></data>
+  <data name="Toast_EpgRefreshedFormat" xml:space="preserve"><value>Guide updated — {0:N0} programmes.</value></data>
+  <data name="Toast_EpgFailed" xml:space="preserve"><value>Guide refresh failed.</value></data>
+  <data name="Toast_CatalogRefreshedFormat" xml:space="preserve"><value>Library refreshed — {0:N0} channels.</value></data>
+  <data name="Toast_CacheCleared" xml:space="preserve"><value>Image cache cleared.</value></data>
+  <data name="Toast_SyncFailedFormat" xml:space="preserve"><value>Refresh failed: {0}</value></data>
+
+  <data name="Placeholder_Body" xml:space="preserve"><value>This area lights up in an upcoming build.</value></data>
+
+  <data name="Badge_Live" xml:space="preserve"><value>LIVE</value></data>
+  <data name="LiveTv_Watch" xml:space="preserve"><value>Watch</value></data>
+  <data name="LiveTv_MutedPreview" xml:space="preserve"><value>Muted preview</value></data>
+  <data name="LiveTv_NoChannels" xml:space="preserve"><value>No channels in this category yet. Try refreshing the library in Settings.</value></data>
+  <data name="LiveTv_NowLabel" xml:space="preserve"><value>NOW</value></data>
+  <data name="LiveTv_NextLabel" xml:space="preserve"><value>NEXT</value></data>
+  <data name="LiveTv_NoGuideData" xml:space="preserve"><value>No guide data for this channel.</value></data>
+  <data name="Player_ReconnectingFormat" xml:space="preserve"><value>Connection lost — reconnecting (attempt {0} of 5)…</value></data>
+  <data name="Player_ErrorTitle" xml:space="preserve"><value>Playback stopped</value></data>
+  <data name="Player_Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Player_Subtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="Player_Channels" xml:space="preserve"><value>Channels</value></data>
+
+  <data name="Guide_JumpToNow" xml:space="preserve"><value>Jump to now</value></data>
+  <data name="Guide_NoData" xml:space="preserve"><value>No guide data yet. Import a programme guide from Settings.</value></data>
+  <data name="Guide_WatchChannel" xml:space="preserve"><value>Watch channel</value></data>
+  <data name="Guide_AddReminder" xml:space="preserve"><value>Add reminder</value></data>
+  <data name="Guide_ReminderSetFormat" xml:space="preserve"><value>Reminder set for “{0}”.</value></data>
+  <data name="Settings_ChannelMapping" xml:space="preserve"><value>Channel mapping</value></data>
+  <data name="Settings_ChannelMappingBody" xml:space="preserve"><value>Channels without guide data. Pick a matching guide channel, or leave unmapped.</value></data>
+  <data name="Settings_MappingAllMatched" xml:space="preserve"><value>All channels are matched to guide data.</value></data>
+  <data name="Settings_MappingUnmatchedFormat" xml:space="preserve"><value>{0} channels unmatched</value></data>
+  <data name="Settings_MappingNone" xml:space="preserve"><value>(no guide)</value></data>
+
+  <data name="Vod_Sort" xml:space="preserve"><value>Sort</value></data>
+  <data name="Vod_Play" xml:space="preserve"><value>Play</value></data>
+  <data name="Vod_StartOver" xml:space="preserve"><value>Start over</value></data>
+  <data name="Vod_AddFavorite" xml:space="preserve"><value>Add to favorites</value></data>
+  <data name="Vod_RemoveFavorite" xml:space="preserve"><value>In favorites</value></data>
+  <data name="Vod_NoItems" xml:space="preserve"><value>Nothing here yet. Refresh your library in Settings.</value></data>
+  <data name="Vod_Episodes" xml:space="preserve"><value>Episodes</value></data>
+  <data name="Home_ContinueWatchingResume" xml:space="preserve"><value>Resume</value></data>
+
+  <data name="Search_Placeholder" xml:space="preserve"><value>Search channels, movies, series…</value></data>
+  <data name="Search_GroupProgrammes" xml:space="preserve"><value>On now &amp; next</value></data>
+  <data name="Search_Prompt" xml:space="preserve"><value>Start typing to search across your library and guide.</value></data>
+  <data name="Search_NoResultsFormat" xml:space="preserve"><value>No results for “{0}”.</value></data>
+  <data name="Favorites_Empty" xml:space="preserve"><value>No favorites yet. Tap the heart on any channel, movie, or series to add it here.</value></data>
+  <data name="Favorites_Remove" xml:space="preserve"><value>Remove</value></data>
+</root>

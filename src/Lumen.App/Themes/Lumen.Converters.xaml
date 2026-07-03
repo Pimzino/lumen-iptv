@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:conv="clr-namespace:Lumen.App.Converters">
+
+  <!-- App-wide value converters. Merged by App.xaml and by theme parts whose templates use them. -->
+
+  <BooleanToVisibilityConverter x:Key="Lumen.BoolToVisibility" />
+  <conv:InverseBoolToVisibilityConverter x:Key="Lumen.InverseBoolToVisibility" />
+  <conv:InverseBoolConverter x:Key="Lumen.InverseBool" />
+  <conv:FirstLetterConverter x:Key="Lumen.FirstLetter" />
+  <conv:ActiveWhenEqualConverter x:Key="Lumen.ActiveWhenEqual" />
+  <conv:NullToCollapsedConverter x:Key="Lumen.NullToCollapsed" />
+  <conv:CountToVisibilityConverter x:Key="Lumen.CountToVisibility" />
+  <conv:PlaybackStateToVisibilityConverter x:Key="Lumen.PlaybackStateVisibility" />
+
+</ResourceDictionary>

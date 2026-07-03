@@ -1,0 +1,249 @@
+<UserControl x:Class="Lumen.App.Views.VodDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <Grid>
+    <!-- Backdrop with scrims -->
+    <Image ctl:ImageLoader.Url="{Binding BackdropUrl}"
+           ctl:ImageLoader.DecodeWidth="1280"
+           Stretch="UniformToFill"
+           VerticalAlignment="Top"
+           MaxHeight="520"
+           Opacity="0.5"
+           RenderOptions.BitmapScalingMode="HighQuality" />
+    <Border VerticalAlignment="Top" Height="520" Background="{StaticResource Lumen.Brush.Scrim.Top}" />
+    <Border VerticalAlignment="Top" Height="520" Background="{StaticResource Lumen.Brush.Scrim.Bottom}" />
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{StaticResource Lumen.Pad.Page}">
+
+        <Button Style="{StaticResource Lumen.Button.Icon}"
+                Content="{StaticResource Lumen.Icon.Back}"
+                Command="{Binding BackCommand}"
+                HorizontalAlignment="Left"
+                Margin="{StaticResource Lumen.Margin.B24}"
+                AutomationProperties.Name="{x:Static res:Strings.Common_Back}" />
+
+        <!-- Hero -->
+        <Grid Margin="{StaticResource Lumen.Margin.B32}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <Border Width="220"
+                  Height="330"
+                  CornerRadius="{StaticResource Lumen.Radius.Card}"
+                  ClipToBounds="True"
+                  Background="{StaticResource Lumen.Brush.Accent.Subtle}"
+                  VerticalAlignment="Top">
+            <Grid>
+              <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                         Text="{Binding Title, Converter={StaticResource Lumen.FirstLetter}}"
+                         Foreground="{StaticResource Lumen.Brush.Accent}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
+              <Image ctl:ImageLoader.Url="{Binding PosterUrl}"
+                     ctl:ImageLoader.DecodeWidth="440"
+                     Stretch="UniformToFill"
+                     RenderOptions.BitmapScalingMode="HighQuality" />
+            </Grid>
+          </Border>
+
+          <StackPanel Grid.Column="1" Margin="{StaticResource Lumen.Margin.L24}" VerticalAlignment="Top">
+            <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                       Text="{Binding Title}"
+                       TextWrapping="Wrap"
+                       Margin="{StaticResource Lumen.Margin.B12}" />
+
+            <ItemsControl ItemsSource="{Binding MetadataChips}" Margin="{StaticResource Lumen.Margin.B16}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
+                                  Content="{Binding}"
+                                  Margin="{StaticResource Lumen.Margin.R8}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Style="{StaticResource Lumen.Text.Body}"
+                       Foreground="{StaticResource Lumen.Brush.Text.Secondary}"
+                       Text="{Binding Plot}"
+                       TextWrapping="Wrap"
+                       MaxWidth="640"
+                       HorizontalAlignment="Left"
+                       Margin="{StaticResource Lumen.Margin.B24}"
+                       Visibility="{Binding Plot, Converter={StaticResource Lumen.NullToCollapsed}}" />
+
+            <!-- Movie actions -->
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding IsSeries, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+              <Button Style="{StaticResource Lumen.Button.Primary}"
+                      Command="{Binding ResumeCommand}"
+                      Margin="{StaticResource Lumen.Margin.R12}"
+                      Visibility="{Binding CanResume, Converter={StaticResource Lumen.BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{StaticResource Lumen.Icon.Play}"
+                             FontFamily="{StaticResource Lumen.Font.Icons}"
+                             FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.R8}" />
+                  <TextBlock Text="{Binding ResumeLabel}" />
+                </StackPanel>
+              </Button>
+              <!-- Primary Play when there's nothing to resume -->
+              <Button Style="{StaticResource Lumen.Button.Primary}"
+                      Command="{Binding PlayCommand}"
+                      Margin="{StaticResource Lumen.Margin.R12}"
+                      Visibility="{Binding CanResume, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{StaticResource Lumen.Icon.Play}"
+                             FontFamily="{StaticResource Lumen.Font.Icons}"
+                             FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.R8}" />
+                  <TextBlock Text="{x:Static res:Strings.Vod_Play}" />
+                </StackPanel>
+              </Button>
+              <!-- Secondary Start over when a resume point exists -->
+              <Button Style="{StaticResource Lumen.Button.Secondary}"
+                      Command="{Binding PlayCommand}"
+                      Margin="{StaticResource Lumen.Margin.R12}"
+                      Content="{x:Static res:Strings.Vod_StartOver}"
+                      Visibility="{Binding CanResume, Converter={StaticResource Lumen.BoolToVisibility}}" />
+              <Button Style="{StaticResource Lumen.Button.Ghost}"
+                      Command="{Binding ToggleFavoriteCommand}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.R8}">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                            <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                  <TextBlock>
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{x:Static res:Strings.Vod_AddFavorite}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                            <Setter Property="Text" Value="{x:Static res:Strings.Vod_RemoveFavorite}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Series favorite -->
+            <Button Style="{StaticResource Lumen.Button.Secondary}"
+                    HorizontalAlignment="Left"
+                    Command="{Binding ToggleFavoriteCommand}"
+                    Visibility="{Binding IsSeries, Converter={StaticResource Lumen.BoolToVisibility}}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                           VerticalAlignment="Center"
+                           Margin="{StaticResource Lumen.Margin.R8}">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                          <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                          <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <TextBlock>
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Setter Property="Text" Value="{x:Static res:Strings.Vod_AddFavorite}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                          <Setter Property="Text" Value="{x:Static res:Strings.Vod_RemoveFavorite}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- Seasons / episodes -->
+        <ItemsControl ItemsSource="{Binding Seasons}"
+                      Visibility="{Binding IsSeries, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Margin="{StaticResource Lumen.Margin.B24}">
+                <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                           Text="{Binding Label}"
+                           Margin="{StaticResource Lumen.Margin.B12}" />
+                <ItemsControl ItemsSource="{Binding Episodes}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Style="{StaticResource Lumen.Button.Ghost}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Left"
+                              Padding="{StaticResource Lumen.Pad.12}"
+                              Margin="{StaticResource Lumen.Margin.B4}"
+                              Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}">
+                        <Grid HorizontalAlignment="Stretch" Width="760">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel>
+                            <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                       Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                       Text="{Binding Plot}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="{StaticResource Lumen.Margin.T4}"
+                                       Visibility="{Binding Plot, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                            <ProgressBar Value="{Binding ResumeProgress, Mode=OneWay}"
+                                         Maximum="100"
+                                         Width="200"
+                                         HorizontalAlignment="Left"
+                                         Margin="{StaticResource Lumen.Margin.T8}"
+                                         Visibility="{Binding ResumeProgress, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1"
+                                     Style="{StaticResource Lumen.Text.TabularCaption}"
+                                     Text="{Binding Duration}"
+                                     VerticalAlignment="Center" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

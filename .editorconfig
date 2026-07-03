@@ -1,0 +1,16 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{xaml,xml,csproj,props,targets,json,sql,yml,yaml,manifest}]
+indent_size = 2
+
+[*.cs]
+# Correctness rules promoted to build warnings; the build treats analyzer warnings as errors.
+dotnet_diagnostic.CA2016.severity = warning

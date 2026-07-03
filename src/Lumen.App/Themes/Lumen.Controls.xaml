@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Aggregates every Lumen control style. Merge this (after the token dictionaries)
+    in App.xaml; individual parts are internal organization only.
+  -->
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Core.xaml" />
+    <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Lists.xaml" />
+    <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Surfaces.xaml" />
+    <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Shell.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

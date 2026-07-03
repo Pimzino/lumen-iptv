@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Lumen</AssemblyName>
+    <RootNamespace>Lumen.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\lumen.ico</ApplicationIcon>
+    <AssemblyTitle>Lumen IPTV</AssemblyTitle>
+    <Description>A premium IPTV client for Windows.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumen.Core\Lumen.Core.csproj" />
+    <ProjectReference Include="..\Lumen.Data\Lumen.Data.csproj" />
+    <ProjectReference Include="..\Lumen.Providers\Lumen.Providers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="LibVLCSharp.WPF" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Debug" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" />
+  </ItemGroup>
+
+  <!--
+    VideoLAN.LibVLC.Windows ships x64/x86/arm64 native trees (~240MB combined). A single-RID
+    publish only needs its own; drop the others so the installer payload isn't triple-counted.
+  -->
+  <Target Name="TrimForeignLibVlc" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' != ''">
+    <ItemGroup>
+      <_ForeignLibVlc Include="$(PublishDir)libvlc\**\*"
+                      Exclude="$(PublishDir)libvlc\$(RuntimeIdentifier)\**\*" />
+    </ItemGroup>
+    <Delete Files="@(_ForeignLibVlc)" />
+    <RemoveDir Directories="$(PublishDir)libvlc\win-x86;$(PublishDir)libvlc\win-arm64;$(PublishDir)libvlc\win-x64"
+               Condition="'$(RuntimeIdentifier)' != 'win-x86' And '$(RuntimeIdentifier)' != 'win-arm64' And '$(RuntimeIdentifier)' != 'win-x64'" />
+    <RemoveDir Directories="$(PublishDir)libvlc\win-x86" Condition="'$(RuntimeIdentifier)' != 'win-x86'" />
+    <RemoveDir Directories="$(PublishDir)libvlc\win-arm64" Condition="'$(RuntimeIdentifier)' != 'win-arm64'" />
+  </Target>
+
+</Project>

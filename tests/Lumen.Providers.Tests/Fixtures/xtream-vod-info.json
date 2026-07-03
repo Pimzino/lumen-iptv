@@ -1,0 +1,21 @@
+{
+  "info": {
+    "movie_image": "http://img/m.jpg",
+    "plot": "Space.",
+    "cast": "X",
+    "director": "Y",
+    "genre": "Sci-Fi",
+    "releasedate": "2024-03-01",
+    "duration_secs": "8130",
+    "rating": "7,5",
+    "backdrop_path": "http://img/bd.jpg",
+    "youtube_trailer": "abc123"
+  },
+  "movie_data": {
+    "stream_id": 7,
+    "name": "The Long Voyage",
+    "container_extension": "mkv",
+    "added": "1710000000",
+    "category_id": "12"
+  }
+}

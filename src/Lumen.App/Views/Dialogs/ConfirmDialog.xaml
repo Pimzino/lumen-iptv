@@ -1,0 +1,25 @@
+<ctl:LumenDialogWindow x:Class="Lumen.App.Views.Dialogs.ConfirmDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ctl="clr-namespace:Lumen.App.Controls"
+                       xmlns:res="clr-namespace:Lumen.App.Resources">
+  <StackPanel Width="380" Margin="{StaticResource Lumen.Pad.24}">
+    <TextBlock x:Name="TitleText"
+               Style="{StaticResource Lumen.Text.Heading}"
+               Margin="{StaticResource Lumen.Margin.B8}" />
+    <TextBlock x:Name="MessageText"
+               Style="{StaticResource Lumen.Text.BodySecondary}"
+               TextWrapping="Wrap"
+               Margin="{StaticResource Lumen.Margin.B24}" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              Content="{x:Static res:Strings.Common_Cancel}"
+              IsCancel="True"
+              Margin="{StaticResource Lumen.Margin.R8}" />
+      <Button x:Name="ConfirmButton"
+              Style="{StaticResource Lumen.Button.Primary}"
+              IsDefault="True"
+              Click="OnConfirmClick" />
+    </StackPanel>
+  </StackPanel>
+</ctl:LumenDialogWindow>

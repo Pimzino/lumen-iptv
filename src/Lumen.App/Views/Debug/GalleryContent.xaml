@@ -1,0 +1,234 @@
+<UserControl x:Class="Lumen.App.Views.Debug.GalleryContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls">
+
+  <Border Background="{StaticResource Lumen.Brush.Bg.Base}" Padding="{StaticResource Lumen.Pad.Page}">
+    <StackPanel>
+
+      <TextBlock Style="{StaticResource Lumen.Text.Display}" Text="Lumen design system" Margin="{StaticResource Lumen.Margin.B8}" />
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="Every styled control in its resting, disabled, and stateful forms. Hover, press, and focus are interactive — run with --gallery."
+                 Margin="{StaticResource Lumen.Margin.B48}" />
+
+      <!-- ============ Colors ============ -->
+      <StackPanel x:Name="SectionColors" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Color tokens" Margin="{StaticResource Lumen.Margin.B16}" />
+        <WrapPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Bg.Base}" BorderBrush="{StaticResource Lumen.Brush.Stroke.Strong}" BorderThickness="{StaticResource Lumen.Stroke.Border}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="bg / base" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Bg.Raised}" BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}" BorderThickness="{StaticResource Lumen.Stroke.Border}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="bg / raised" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Bg.Overlay}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="bg / overlay" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Accent}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="accent" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Accent.Pressed}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="accent / pressed" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Live}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="live" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Error}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="error" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+          <StackPanel Margin="{StaticResource Lumen.Margin.R16}">
+            <Border Width="96" Height="56" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Success}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="success" Margin="{StaticResource Lumen.Margin.T4}" />
+          </StackPanel>
+        </WrapPanel>
+      </StackPanel>
+
+      <!-- ============ Typography ============ -->
+      <StackPanel x:Name="SectionTypography" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Typography" Margin="{StaticResource Lumen.Margin.B16}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Display}" Text="Display 34 — Tonight on Lumen" Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Title 24 — Continue watching" Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Heading}" Text="Heading 18 — Favorite channels" Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="Body 15 — The interface disappears, the content glows. Line height 1.5 keeps paragraphs calm." Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Caption}" Text="Caption 13 — Secondary detail, metadata, helper copy" Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="MICRO 11 — BADGES AND LABELS" Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Tabular}" Text="Tabular figures: 20:30 – 21:45 · CH 1047 · 01:23:45" />
+      </StackPanel>
+
+      <!-- ============ Buttons ============ -->
+      <StackPanel x:Name="SectionButtons" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Buttons" Margin="{StaticResource Lumen.Margin.B16}" />
+        <WrapPanel>
+          <Button Style="{StaticResource Lumen.Button.Primary}" Content="Watch now" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Secondary}" Content="Add profile" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Ghost}" Content="Cancel" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Play}" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Favorites}" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Settings}" Margin="{StaticResource Lumen.Margin.R24}" />
+          <Button Style="{StaticResource Lumen.Button.Primary}" Content="Disabled" IsEnabled="False" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Secondary}" Content="Disabled" IsEnabled="False" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Ghost}" Content="Disabled" IsEnabled="False" />
+        </WrapPanel>
+      </StackPanel>
+
+      <!-- ============ Inputs ============ -->
+      <StackPanel x:Name="SectionInputs" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Inputs" Margin="{StaticResource Lumen.Margin.B16}" />
+        <WrapPanel>
+          <TextBox Style="{StaticResource Lumen.TextBox}" ctl:LumenUi.Label="Server URL" Width="260" Margin="{StaticResource Lumen.Margin.R16}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}" ctl:LumenUi.Label="Server URL" Text="http://portal.example.com" Width="260" Margin="{StaticResource Lumen.Margin.R16}" />
+          <PasswordBox Style="{StaticResource Lumen.PasswordBox}" ctl:LumenUi.Label="Password" Password="hunter2" Width="200" Margin="{StaticResource Lumen.Margin.R16}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}" ctl:LumenUi.Label="Disabled" IsEnabled="False" Width="180" />
+        </WrapPanel>
+        <WrapPanel Margin="{StaticResource Lumen.Margin.T16}">
+          <ComboBox Width="240" SelectedIndex="0" Margin="{StaticResource Lumen.Margin.R24}">
+            <ComboBoxItem Content="Every 6 hours" />
+            <ComboBoxItem Content="Every 12 hours" />
+            <ComboBoxItem Content="Daily" />
+          </ComboBox>
+          <CheckBox Style="{StaticResource Lumen.Toggle}" Content="Hardware acceleration" IsChecked="True" Margin="{StaticResource Lumen.Margin.R24}" />
+          <CheckBox Style="{StaticResource Lumen.Toggle}" Content="Prefer HLS" Margin="{StaticResource Lumen.Margin.R24}" />
+          <CheckBox Style="{StaticResource Lumen.Toggle}" Content="Disabled" IsChecked="True" IsEnabled="False" />
+        </WrapPanel>
+      </StackPanel>
+
+      <!-- ============ Lists ============ -->
+      <StackPanel x:Name="SectionLists" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Channel rows" Margin="{StaticResource Lumen.Margin.B16}" />
+        <ListBox Style="{StaticResource Lumen.ListBox.Channels}" Width="380" Height="204" HorizontalAlignment="Left">
+          <ListBoxItem>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Border Width="{StaticResource Lumen.Size.ChannelLogo}" Height="{StaticResource Lumen.Size.ChannelLogo}" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}" Text="O" Foreground="{StaticResource Lumen.Brush.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="{StaticResource Lumen.Margin.L12}" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}" Text="Orbit One HD" />
+                <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="Evening News · 20:00–21:00" Margin="{StaticResource Lumen.Margin.B4}" />
+                <ProgressBar Value="62" Maximum="100" />
+              </StackPanel>
+              <ContentControl Grid.Column="2" Style="{StaticResource Lumen.Badge.Live}" Content="LIVE" Margin="{StaticResource Lumen.Margin.L12}" />
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem IsSelected="True">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Border Width="{StaticResource Lumen.Size.ChannelLogo}" Height="{StaticResource Lumen.Size.ChannelLogo}" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Success.Subtle}">
+                <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}" Text="V" Foreground="{StaticResource Lumen.Brush.Success}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="{StaticResource Lumen.Margin.L12}" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}" Text="Vertex Sports (selected)" />
+                <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="Champions Cup Final · 19:45–22:00" Margin="{StaticResource Lumen.Margin.B4}" />
+                <ProgressBar Value="31" Maximum="100" />
+              </StackPanel>
+              <ContentControl Grid.Column="2" Style="{StaticResource Lumen.Badge.Quality}" Content="4K" Margin="{StaticResource Lumen.Margin.L12}" />
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Border Width="{StaticResource Lumen.Size.ChannelLogo}" Height="{StaticResource Lumen.Size.ChannelLogo}" CornerRadius="{StaticResource Lumen.Radius.Control}" Background="{StaticResource Lumen.Brush.Live.Subtle}">
+                <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}" Text="C" Foreground="{StaticResource Lumen.Brush.Live}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="{StaticResource Lumen.Margin.L12}" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}" Text="Cinema Prime" />
+                <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="The Long Voyage · 20:15–22:30" Margin="{StaticResource Lumen.Margin.B4}" />
+                <ProgressBar Value="8" Maximum="100" />
+              </StackPanel>
+              <ContentControl Grid.Column="2" Style="{StaticResource Lumen.Badge.Quality}" Content="HD" Margin="{StaticResource Lumen.Margin.L12}" />
+            </Grid>
+          </ListBoxItem>
+        </ListBox>
+      </StackPanel>
+
+      <!-- ============ Cards & badges ============ -->
+      <StackPanel x:Name="SectionCards" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Cards &amp; badges" Margin="{StaticResource Lumen.Margin.B16}" />
+        <WrapPanel>
+          <Button Style="{StaticResource Lumen.PosterCard}" Width="150" Margin="{StaticResource Lumen.Margin.R24}" VerticalAlignment="Top">
+            <StackPanel>
+              <Border Height="210" CornerRadius="{StaticResource Lumen.Radius.Card}" Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                <TextBlock Style="{StaticResource Lumen.Text.Display}" Text="◐" Foreground="{StaticResource Lumen.Brush.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Margin="{StaticResource Lumen.Pad.12}">
+                <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}" Text="The Long Voyage" />
+                <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="2024 · 2h 15m" Margin="{StaticResource Lumen.Margin.T4}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+          <Border Style="{StaticResource Lumen.Card}" Width="320" VerticalAlignment="Top" Margin="{StaticResource Lumen.Margin.R24}">
+            <StackPanel>
+              <TextBlock Style="{StaticResource Lumen.Text.Heading}" Text="Raised card" Margin="{StaticResource Lumen.Margin.B8}" />
+              <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}" TextWrapping="Wrap"
+                         Text="Raised surfaces are separated by background and a hairline stroke — never a drop shadow." />
+            </StackPanel>
+          </Border>
+          <StackPanel VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B12}">
+              <ContentControl Style="{StaticResource Lumen.Badge.Live}" Content="LIVE" Margin="{StaticResource Lumen.Margin.R8}" />
+              <ContentControl Style="{StaticResource Lumen.Badge.Quality}" Content="HD" Margin="{StaticResource Lumen.Margin.R8}" />
+              <ContentControl Style="{StaticResource Lumen.Badge.Quality}" Content="4K" Margin="{StaticResource Lumen.Margin.R8}" />
+              <ContentControl Style="{StaticResource Lumen.Badge.New}" Content="NEW" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="LIVE red is reserved for liveness — never errors." />
+          </StackPanel>
+        </WrapPanel>
+      </StackPanel>
+
+      <!-- ============ Progress & skeleton ============ -->
+      <StackPanel x:Name="SectionProgress" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Progress &amp; skeletons" Margin="{StaticResource Lumen.Margin.B16}" />
+        <ProgressBar Value="62" Maximum="100" Width="380" HorizontalAlignment="Left" Margin="{StaticResource Lumen.Margin.B16}" />
+        <StackPanel Orientation="Horizontal">
+          <StackPanel Margin="{StaticResource Lumen.Margin.R24}">
+            <ctl:SkeletonBlock Width="150" Height="210" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B8}" />
+            <ctl:SkeletonBlock Width="110" Height="12" Margin="{StaticResource Lumen.Margin.B4}" />
+            <ctl:SkeletonBlock Width="70" Height="12" />
+          </StackPanel>
+          <StackPanel VerticalAlignment="Bottom">
+            <ctl:SkeletonBlock Width="380" Height="16" Margin="{StaticResource Lumen.Margin.B8}" />
+            <ctl:SkeletonBlock Width="320" Height="16" Margin="{StaticResource Lumen.Margin.B8}" />
+            <ctl:SkeletonBlock Width="350" Height="16" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ============ Toasts ============ -->
+      <StackPanel x:Name="SectionToasts" Margin="{StaticResource Lumen.Margin.B48}">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Toasts" Margin="{StaticResource Lumen.Margin.B16}" />
+        <StackPanel HorizontalAlignment="Left">
+          <ContentControl Style="{StaticResource Lumen.Toast}" Content="EPG refresh started in the background." Margin="{StaticResource Lumen.Margin.B8}" />
+          <ContentControl Style="{StaticResource Lumen.Toast.Success}" Content="Profile “Living room” connected." Margin="{StaticResource Lumen.Margin.B8}" />
+          <ContentControl Style="{StaticResource Lumen.Toast.Error}" Content="Stream dropped — reconnecting (attempt 2 of 5)." />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ============ Dialog ============ -->
+      <StackPanel x:Name="SectionDialog">
+        <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Dialog" Margin="{StaticResource Lumen.Margin.B16}" />
+        <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}" Text="Dialogs are the only surfaces that cast a shadow (y=16, blur=48, 40% black)." Margin="{StaticResource Lumen.Margin.B16}" />
+        <Button Content="Open sample dialog" HorizontalAlignment="Left" Click="OnOpenDialogClick" />
+      </StackPanel>
+
+    </StackPanel>
+  </Border>
+</UserControl>

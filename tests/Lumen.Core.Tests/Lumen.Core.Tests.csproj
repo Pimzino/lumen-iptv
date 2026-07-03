@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Data-layer tests live here as well: the solution layout fixes exactly two test projects. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lumen.Core\Lumen.Core.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Data\Lumen.Data.csproj" />
+  </ItemGroup>
+
+</Project>

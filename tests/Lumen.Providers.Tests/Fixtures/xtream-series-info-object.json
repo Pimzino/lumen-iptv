@@ -1,0 +1,50 @@
+{
+  "seasons": [],
+  "info": {
+    "name": "Breaking Code",
+    "cover": "http://img/cover.jpg",
+    "plot": "A drama.",
+    "cast": "A, B",
+    "director": "C",
+    "genre": "Drama",
+    "releaseDate": "2023-01-10",
+    "rating": "8.3",
+    "backdrop_path": ["http://img/bd1.jpg"]
+  },
+  "episodes": {
+    "1": [
+      {
+        "id": "9001",
+        "episode_num": "1",
+        "title": "Pilot",
+        "container_extension": "mp4",
+        "season": 1,
+        "info": {
+          "plot": "Ep one.",
+          "duration_secs": "2700",
+          "movie_image": "http://img/e1.jpg",
+          "rating": 7.9,
+          "releasedate": "2023-01-10"
+        }
+      },
+      {
+        "id": "9002",
+        "episode_num": 2,
+        "title": "Fork",
+        "container_extension": "mkv",
+        "season": "1",
+        "info": { "duration_secs": 2760 }
+      }
+    ],
+    "2": [
+      {
+        "id": "9101",
+        "episode_num": "1",
+        "title": "Merge",
+        "container_extension": "mp4",
+        "season": 2,
+        "info": null
+      }
+    ]
+  }
+}

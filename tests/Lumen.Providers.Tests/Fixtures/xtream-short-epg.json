@@ -1,0 +1,23 @@
+{
+  "epg_listings": [
+    {
+      "id": "100",
+      "epg_id": "5",
+      "title": "RXZlbmluZyBOZXdz",
+      "lang": "",
+      "start": "2026-07-03 20:00:00",
+      "end": "2026-07-03 21:00:00",
+      "description": "VGhlIGRheSdzIGV2ZW50cy4=",
+      "channel_id": "bbc1.uk",
+      "start_timestamp": "1783195200",
+      "stop_timestamp": "1783198800"
+    },
+    {
+      "id": 101,
+      "title": "UGxhaW4=",
+      "start_timestamp": 1783198800,
+      "stop_timestamp": "1783202400",
+      "description": ""
+    }
+  ]
+}

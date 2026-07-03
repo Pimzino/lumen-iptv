@@ -1,0 +1,77 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <!--
+    Shape, spacing, and size tokens.
+    Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48 — no other margins or paddings exist.
+  -->
+
+  <!-- Corner radii -->
+  <CornerRadius x:Key="Lumen.Radius.Card">12</CornerRadius>
+  <CornerRadius x:Key="Lumen.Radius.Control">8</CornerRadius>
+  <CornerRadius x:Key="Lumen.Radius.Badge">6</CornerRadius>
+
+  <!-- Spacing scale (doubles, for Width/Height/spacing math) -->
+  <sys:Double x:Key="Lumen.Space.1">4</sys:Double>
+  <sys:Double x:Key="Lumen.Space.2">8</sys:Double>
+  <sys:Double x:Key="Lumen.Space.3">12</sys:Double>
+  <sys:Double x:Key="Lumen.Space.4">16</sys:Double>
+  <sys:Double x:Key="Lumen.Space.5">24</sys:Double>
+  <sys:Double x:Key="Lumen.Space.6">32</sys:Double>
+  <sys:Double x:Key="Lumen.Space.7">48</sys:Double>
+
+  <!-- Uniform paddings -->
+  <Thickness x:Key="Lumen.Pad.4">4</Thickness>
+  <Thickness x:Key="Lumen.Pad.8">8</Thickness>
+  <Thickness x:Key="Lumen.Pad.12">12</Thickness>
+  <Thickness x:Key="Lumen.Pad.16">16</Thickness>
+  <Thickness x:Key="Lumen.Pad.24">24</Thickness>
+  <Thickness x:Key="Lumen.Pad.32">32</Thickness>
+
+  <!-- Composite paddings -->
+  <Thickness x:Key="Lumen.Pad.Control">16,8</Thickness>
+  <Thickness x:Key="Lumen.Pad.ControlCompact">12,8</Thickness>
+  <Thickness x:Key="Lumen.Pad.Field">12,8</Thickness>
+  <Thickness x:Key="Lumen.Pad.Badge">8,2</Thickness>
+  <Thickness x:Key="Lumen.Pad.Row">12,8</Thickness>
+  <Thickness x:Key="Lumen.Pad.Toast">16,12</Thickness>
+  <Thickness x:Key="Lumen.Pad.Page">32</Thickness>
+
+  <!-- Directional margins (gaps) -->
+  <Thickness x:Key="Lumen.Margin.B4">0,0,0,4</Thickness>
+  <Thickness x:Key="Lumen.Margin.B8">0,0,0,8</Thickness>
+  <Thickness x:Key="Lumen.Margin.B12">0,0,0,12</Thickness>
+  <Thickness x:Key="Lumen.Margin.B16">0,0,0,16</Thickness>
+  <Thickness x:Key="Lumen.Margin.B24">0,0,0,24</Thickness>
+  <Thickness x:Key="Lumen.Margin.B32">0,0,0,32</Thickness>
+  <Thickness x:Key="Lumen.Margin.B48">0,0,0,48</Thickness>
+  <Thickness x:Key="Lumen.Margin.T4">0,4,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.T8">0,8,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.T16">0,16,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.T24">0,24,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.L8">8,0,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.L12">12,0,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.L16">16,0,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.L24">24,0,0,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.R4">0,0,4,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.R8">0,0,8,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.R12">0,0,12,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.R16">0,0,16,0</Thickness>
+  <Thickness x:Key="Lumen.Margin.R24">0,0,24,0</Thickness>
+
+  <!-- Strokes -->
+  <Thickness x:Key="Lumen.Stroke.Border">1</Thickness>
+
+  <!-- Well-known sizes -->
+  <sys:Double x:Key="Lumen.Size.TitleBar">48</sys:Double>
+  <GridLength x:Key="Lumen.GridLength.TitleBar">48</GridLength>
+  <sys:Double x:Key="Lumen.Size.RailCollapsed">72</sys:Double>
+  <sys:Double x:Key="Lumen.Size.RailExpanded">240</sys:Double>
+  <sys:Double x:Key="Lumen.Size.ChannelRow">64</sys:Double>
+  <sys:Double x:Key="Lumen.Size.ChannelLogo">40</sys:Double>
+  <sys:Double x:Key="Lumen.Size.CaptionButtonWidth">46</sys:Double>
+  <sys:Double x:Key="Lumen.Size.IconButton">36</sys:Double>
+  <sys:Double x:Key="Lumen.Size.ProgressBar">2</sys:Double>
+
+</ResourceDictionary>

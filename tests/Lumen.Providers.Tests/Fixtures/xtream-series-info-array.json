@@ -1,0 +1,12 @@
+{
+  "info": { "name": "Array Show" },
+  "episodes": [
+    [
+      { "id": "1", "episode_num": 1, "title": "E1", "container_extension": "mp4", "season": 1 }
+    ],
+    [
+      { "id": "2", "episode_num": 1, "title": "E1", "container_extension": "mp4", "season": 2 },
+      "broken episode entry"
+    ]
+  ]
+}

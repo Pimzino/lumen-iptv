@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="clr-namespace:Lumen.App.Controls"
+                    xmlns:vm="clr-namespace:Lumen.App.ViewModels">
+
+  <!-- Shared poster tile for Home rows (VodCard). Click opens the detail page. -->
+  <DataTemplate x:Key="Lumen.Template.PosterTile" DataType="{x:Type vm:VodCard}">
+    <Button Style="{StaticResource Lumen.PosterCard}"
+            Width="150"
+            Margin="0,0,16,0"
+            Command="{Binding DataContext.OpenVodCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+            CommandParameter="{Binding}"
+            AutomationProperties.Name="{Binding Name}">
+      <StackPanel>
+        <Grid Height="225">
+          <Border CornerRadius="{StaticResource Lumen.Radius.Card}"
+                  Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+            <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                       Text="{Binding Monogram}"
+                       Foreground="{StaticResource Lumen.Brush.Accent}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Border>
+          <Border CornerRadius="{StaticResource Lumen.Radius.Card}" ClipToBounds="True">
+            <Image ctl:ImageLoader.Url="{Binding PosterUrl}"
+                   ctl:ImageLoader.DecodeWidth="300"
+                   Stretch="UniformToFill"
+                   RenderOptions.BitmapScalingMode="HighQuality" />
+          </Border>
+        </Grid>
+        <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                   Text="{Binding Name}"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="4,8,4,0" />
+        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                   Text="{Binding MetaLine}"
+                   Margin="4,2,4,0"
+                   Visibility="{Binding MetaLine, Converter={StaticResource Lumen.NullToCollapsed}}" />
+      </StackPanel>
+    </Button>
+  </DataTemplate>
+
+</ResourceDictionary>

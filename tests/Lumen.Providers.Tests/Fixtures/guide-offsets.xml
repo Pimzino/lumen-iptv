@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tv SYSTEM "xmltv.dtd">
+<tv source-info-name="Test Source">
+  <channel id="bbc1.uk">
+    <display-name>BBC One</display-name>
+    <icon src="http://logo/bbc1.png" />
+  </channel>
+  <channel id="kolkata.in">
+    <display-name>Kolkata TV</display-name>
+  </channel>
+  <channel id="la.us">
+    <display-name>LA West</display-name>
+  </channel>
+  <channel id="">
+    <display-name>No Id (skipped)</display-name>
+  </channel>
+  <programme start="20260703200000 +0000" stop="20260703210000 +0000" channel="bbc1.uk">
+    <title>Evening News</title>
+    <desc>The day's events.</desc>
+    <category>News</category>
+    <episode-num system="onscreen">S01E05</episode-num>
+    <icon src="http://img/ep.png" />
+  </programme>
+  <programme start="20260704013000 +0530" stop="20260704023000 +0530" channel="kolkata.in">
+    <title>Morning Raga</title>
+  </programme>
+  <programme start="20260703120000 -0800" stop="20260703130000 -0800" channel="la.us">
+    <title>Noon Show</title>
+  </programme>
+  <programme start="20260703220000" stop="20260703230000" channel="bbc1.uk">
+    <title>No Offset Means UTC</title>
+  </programme>
+  <programme start="garbage" stop="20260703230000 +0000" channel="bbc1.uk">
+    <title>Bad Start (skipped)</title>
+  </programme>
+  <programme start="20260703230000 +0000" stop="20260703220000 +0000" channel="bbc1.uk">
+    <title>Stop Before Start (skipped)</title>
+  </programme>
+  <programme start="20260703230000 +0000" stop="20260704000000 +0000" channel="bbc1.uk">
+  </programme>
+  <programme start="20260705060000 +0100" stop="20260705070000 +0100" channel="bbc1.uk">
+    <title>  Padded Title  </title>
+    <credits>
+      <director>Someone</director>
+    </credits>
+    <sub-title>ignored</sub-title>
+  </programme>
+</tv>

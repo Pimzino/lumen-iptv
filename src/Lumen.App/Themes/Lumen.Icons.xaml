@@ -1,0 +1,69 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <!-- Segoe Fluent Icons glyphs (fallback: Segoe MDL2 Assets). Rendered with Lumen.Font.Icons. -->
+
+  <!-- Navigation -->
+  <sys:String x:Key="Lumen.Icon.Home">&#xE80F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.LiveTv">&#xE7F4;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Guide">&#xE787;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Movies">&#xE8B2;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Series">&#xE714;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Search">&#xE721;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Favorites">&#xE734;</sys:String>
+  <sys:String x:Key="Lumen.Icon.FavoritesFilled">&#xE735;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Settings">&#xE713;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Back">&#xE72B;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Menu">&#xE700;</sys:String>
+
+  <!-- Playback -->
+  <sys:String x:Key="Lumen.Icon.Play">&#xE768;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Pause">&#xE769;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Stop">&#xE71A;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Volume">&#xE767;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Mute">&#xE74F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Fullscreen">&#xE740;</sys:String>
+  <sys:String x:Key="Lumen.Icon.ExitFullscreen">&#xE73F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.MiniPlayer">&#xE8B9;</sys:String>
+  <sys:String x:Key="Lumen.Icon.AudioTrack">&#xE7F6;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Subtitles">&#xE7F0;</sys:String>
+  <sys:String x:Key="Lumen.Icon.AspectRatio">&#xE799;</sys:String>
+  <sys:String x:Key="Lumen.Icon.ChannelList">&#xE8FD;</sys:String>
+
+  <!-- Actions & status -->
+  <sys:String x:Key="Lumen.Icon.Add">&#xE710;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Close">&#xE711;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Check">&#xE73E;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Refresh">&#xE72C;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Filter">&#xE71C;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Sort">&#xE8CB;</sys:String>
+  <sys:String x:Key="Lumen.Icon.More">&#xE712;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Info">&#xE946;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Warning">&#xE7BA;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Delete">&#xE74D;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Edit">&#xE70F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.OpenFile">&#xE8E5;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Link">&#xE71B;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Profile">&#xE77B;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Clock">&#xE823;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Reminder">&#xEA8F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.JumpToNow">&#xE8AF;</sys:String>
+
+  <!-- Chevrons -->
+  <sys:String x:Key="Lumen.Icon.ChevronDown">&#xE70D;</sys:String>
+  <sys:String x:Key="Lumen.Icon.ChevronUp">&#xE70E;</sys:String>
+  <sys:String x:Key="Lumen.Icon.ChevronLeft">&#xE76B;</sys:String>
+  <sys:String x:Key="Lumen.Icon.ChevronRight">&#xE76C;</sys:String>
+
+  <!-- Window chrome -->
+  <sys:String x:Key="Lumen.Icon.WindowMinimize">&#xE921;</sys:String>
+  <sys:String x:Key="Lumen.Icon.WindowMaximize">&#xE922;</sys:String>
+  <sys:String x:Key="Lumen.Icon.WindowRestore">&#xE923;</sys:String>
+  <sys:String x:Key="Lumen.Icon.WindowClose">&#xE8BB;</sys:String>
+
+  <!-- Picture-in-picture -->
+  <sys:String x:Key="Lumen.Icon.Pin">&#xE718;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Unpin">&#xE77A;</sys:String>
+
+</ResourceDictionary>

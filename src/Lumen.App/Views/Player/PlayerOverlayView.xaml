@@ -1,0 +1,426 @@
+<UserControl x:Class="Lumen.App.Views.Player.PlayerOverlayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources"
+             xmlns:theming="clr-namespace:Lumen.App.Theming"
+             Focusable="True">
+  <Grid>
+
+    <!-- ==================== FULL PLAYER OVERLAY ==================== -->
+    <!-- Background is a near-invisible hit target (not Transparent): the overlay renders in
+         LibVLCSharp's layered airspace window, where alpha-0 pixels are click-through and stop
+         delivering MouseMove — which froze the auto-hidden chrome permanently. -->
+    <Grid Visibility="{Binding Playback.IsFullPlayerActive, Converter={StaticResource Lumen.BoolToVisibility}}"
+          Background="{StaticResource Lumen.Brush.Overlay.HitTarget}">
+
+      <!-- Fading chrome -->
+      <Grid x:Name="Chrome" IsHitTestVisible="{Binding IsOverlayVisible}">
+        <Grid.Style>
+          <Style TargetType="Grid">
+            <Setter Property="Opacity" Value="1" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding IsOverlayVisible}" Value="False">
+                <DataTrigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="{theming:Dur Slow}" />
+                    </Storyboard>
+                  </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="{theming:Dur Fast}" />
+                    </Storyboard>
+                  </BeginStoryboard>
+                </DataTrigger.ExitActions>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Grid.Style>
+
+        <!-- Top scrim: identity -->
+        <Border VerticalAlignment="Top" Height="128" Background="{StaticResource Lumen.Brush.Scrim.Top}">
+          <DockPanel VerticalAlignment="Top" Margin="{StaticResource Lumen.Pad.24}">
+            <Button DockPanel.Dock="Left"
+                    Style="{StaticResource Lumen.Button.Icon}"
+                    Content="{StaticResource Lumen.Icon.Back}"
+                    Command="{Binding BackCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Common_Back}"
+                    Margin="{StaticResource Lumen.Margin.R16}" />
+
+            <!-- Windowed playback keeps the app's real title bar (min/max/close); true fullscreen
+                 hides it, so offer an on-screen way out here. -->
+            <Button DockPanel.Dock="Right"
+                    Style="{StaticResource Lumen.Button.Caption}"
+                    Content="{StaticResource Lumen.Icon.ExitFullscreen}"
+                    Command="{Binding ToggleFullscreenCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Player_ExitFullscreen}"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding IsFullscreen, Converter={StaticResource Lumen.BoolToVisibility}}" />
+
+            <StackPanel Orientation="Horizontal">
+              <StackPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                             Text="{Binding Playback.CurrentChannel.Name}"
+                             TextTrimming="CharacterEllipsis" />
+                  <ContentControl Style="{StaticResource Lumen.Badge.Live}"
+                                  Content="{x:Static res:Strings.Badge_Live}"
+                                  VerticalAlignment="Center"
+                                  Margin="{StaticResource Lumen.Margin.L12}" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                           Text="{Binding NowTitle}"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+              </StackPanel>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
+        <!-- Bottom scrim: transport (with the current channel's ambient glow washed in) -->
+        <Grid VerticalAlignment="Bottom" Height="150">
+          <Border ctl:AmbientGlow.SourceUrl="{Binding Playback.CurrentChannel.LogoUrl}"
+                  ctl:AmbientGlow.Intensity="0.18" />
+          <Border Background="{StaticResource Lumen.Brush.Scrim.Bottom}">
+          <Grid VerticalAlignment="Bottom" Margin="24,0,24,16">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Now/next + progress -->
+            <Grid Margin="{StaticResource Lumen.Margin.B12}"
+                  Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B4}">
+                  <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                             Text="{Binding NowTitle}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Style="{StaticResource Lumen.Text.TabularCaption}"
+                             Text="{Binding NowTimeRange}"
+                             VerticalAlignment="Bottom"
+                             Margin="{StaticResource Lumen.Margin.L12}" />
+                </StackPanel>
+                <ProgressBar Value="{Binding NowProgress, Mode=OneWay}" Maximum="100" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Style="{StaticResource Lumen.Text.Caption}"
+                         VerticalAlignment="Bottom"
+                         Margin="{StaticResource Lumen.Margin.L16}"
+                         Visibility="{Binding NextTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+                <Run Text="{x:Static res:Strings.LiveTv_NextLabel}" /><Run Text="  " /><Run Text="{Binding NextTitle, Mode=OneWay}" />
+              </TextBlock>
+            </Grid>
+
+            <!-- Controls row -->
+            <DockPanel Grid.Row="1" LastChildFill="False">
+              <Button DockPanel.Dock="Left"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding TogglePlayPauseCommand}"
+                      AutomationProperties.Name="Play or pause">
+                <Button.Content>
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Pause}">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Playback.State}" Value="Paused">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.Play}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Button.Content>
+              </Button>
+
+              <Button DockPanel.Dock="Left"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding ToggleMuteCommand}"
+                      AutomationProperties.Name="Mute">
+                <Button.Content>
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Volume}">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Playback.IsMuted}" Value="True">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.Mute}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Button.Content>
+              </Button>
+
+              <Slider DockPanel.Dock="Left"
+                      Style="{StaticResource Lumen.Slider}"
+                      Width="110"
+                      Minimum="0"
+                      Maximum="100"
+                      Value="{Binding Playback.Volume}"
+                      VerticalAlignment="Center"
+                      Margin="{StaticResource Lumen.Margin.R16}"
+                      AutomationProperties.Name="Volume" />
+
+              <!-- right cluster -->
+              <Button DockPanel.Dock="Right"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding ToggleFullscreenCommand}"
+                      Content="{StaticResource Lumen.Icon.Fullscreen}"
+                      AutomationProperties.Name="Fullscreen" />
+              <Button DockPanel.Dock="Right"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding ToMiniPlayerCommand}"
+                      Content="{StaticResource Lumen.Icon.MiniPlayer}"
+                      AutomationProperties.Name="Mini player" />
+              <Button DockPanel.Dock="Right"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding ToggleChannelListCommand}"
+                      Content="{StaticResource Lumen.Icon.ChannelList}"
+                      AutomationProperties.Name="{x:Static res:Strings.Player_Channels}" />
+              <Button DockPanel.Dock="Right"
+                      Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding CycleAspectCommand}"
+                      Content="{StaticResource Lumen.Icon.AspectRatio}"
+                      AutomationProperties.Name="Aspect ratio" />
+
+              <ToggleButton x:Name="SubtitleMenuButton"
+                            DockPanel.Dock="Right"
+                            Style="{StaticResource Lumen.Button.Icon}"
+                            Content="{StaticResource Lumen.Icon.Subtitles}"
+                            AutomationProperties.Name="{x:Static res:Strings.Player_Subtitles}" />
+              <Popup PlacementTarget="{Binding ElementName=SubtitleMenuButton}"
+                     Placement="Top"
+                     AllowsTransparency="True"
+                     StaysOpen="False"
+                     IsOpen="{Binding IsChecked, ElementName=SubtitleMenuButton, Mode=TwoWay}">
+                <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
+                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                        BorderThickness="{StaticResource Lumen.Stroke.Border}"
+                        CornerRadius="{StaticResource Lumen.Radius.Control}"
+                        Padding="{StaticResource Lumen.Pad.8}"
+                        MinWidth="180">
+                  <StackPanel>
+                    <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                               Text="{x:Static res:Strings.Player_Subtitles}"
+                               Margin="12,4,12,8" />
+                    <ItemsControl ItemsSource="{Binding Playback.SubtitleTracks}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Style="{StaticResource Lumen.Button.Ghost}"
+                                  HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Content="{Binding Name}"
+                                  Command="{Binding DataContext.SelectSubtitleTrackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </Popup>
+
+              <ToggleButton x:Name="AudioMenuButton"
+                            DockPanel.Dock="Right"
+                            Style="{StaticResource Lumen.Button.Icon}"
+                            Content="{StaticResource Lumen.Icon.AudioTrack}"
+                            AutomationProperties.Name="{x:Static res:Strings.Player_Audio}" />
+              <Popup PlacementTarget="{Binding ElementName=AudioMenuButton}"
+                     Placement="Top"
+                     AllowsTransparency="True"
+                     StaysOpen="False"
+                     IsOpen="{Binding IsChecked, ElementName=AudioMenuButton, Mode=TwoWay}">
+                <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
+                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                        BorderThickness="{StaticResource Lumen.Stroke.Border}"
+                        CornerRadius="{StaticResource Lumen.Radius.Control}"
+                        Padding="{StaticResource Lumen.Pad.8}"
+                        MinWidth="180">
+                  <StackPanel>
+                    <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                               Text="{x:Static res:Strings.Player_Audio}"
+                               Margin="12,4,12,8" />
+                    <ItemsControl ItemsSource="{Binding Playback.AudioTracks}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Style="{StaticResource Lumen.Button.Ghost}"
+                                  HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Content="{Binding Name}"
+                                  Command="{Binding DataContext.SelectAudioTrackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </DockPanel>
+          </Grid>
+          </Border>
+        </Grid>
+      </Grid>
+
+      <!-- Buffering / opening spinner -->
+      <ContentControl Style="{StaticResource Lumen.Spinner}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}" />
+
+      <!-- Reconnecting pill -->
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="{StaticResource Lumen.Margin.T24}"
+              Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              BorderThickness="{StaticResource Lumen.Stroke.Border}"
+              CornerRadius="{StaticResource Lumen.Radius.Card}"
+              Padding="{StaticResource Lumen.Pad.Toast}"
+              Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Reconnecting}">
+        <StackPanel Orientation="Horizontal">
+          <ContentControl Style="{StaticResource Lumen.Spinner}"
+                          Width="18"
+                          Height="18"
+                          Margin="{StaticResource Lumen.Margin.R12}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="{Binding ReconnectStatus}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Inline error state (never a modal over video) -->
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  MaxWidth="420"
+                  Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Error}">
+        <TextBlock Style="{StaticResource Lumen.Text.Icon}"
+                   Text="{StaticResource Lumen.Icon.Warning}"
+                   FontSize="{StaticResource Lumen.FontSize.Display}"
+                   Foreground="{StaticResource Lumen.Brush.Error}"
+                   HorizontalAlignment="Center"
+                   Margin="{StaticResource Lumen.Margin.B16}" />
+        <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                   Text="{x:Static res:Strings.Player_ErrorTitle}"
+                   HorizontalAlignment="Center"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+        <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                   Text="{Binding Playback.ErrorMessage}"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   Margin="{StaticResource Lumen.Margin.B24}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+          <Button Style="{StaticResource Lumen.Button.Ghost}"
+                  Content="{x:Static res:Strings.Common_Back}"
+                  Command="{Binding BackCommand}"
+                  Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Primary}"
+                  Content="{x:Static res:Strings.Common_Retry}"
+                  Command="{Binding RetryCommand}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Zap banner -->
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,72,0,0"
+              MinWidth="320"
+              MaxWidth="480"
+              CornerRadius="{StaticResource Lumen.Radius.Card}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              BorderThickness="{StaticResource Lumen.Stroke.Border}"
+              Visibility="{Binding IsBannerVisible, Converter={StaticResource Lumen.BoolToVisibility}}">
+        <Border.Background>
+          <SolidColorBrush Color="{StaticResource Lumen.Color.Bg.Overlay}" />
+        </Border.Background>
+        <Grid>
+          <!-- Signature ambient glow: the current channel logo's dominant color washes in. -->
+          <Border ctl:AmbientGlow.SourceUrl="{Binding Playback.CurrentChannel.LogoUrl}"
+                  ctl:AmbientGlow.Intensity="0.5"
+                  CornerRadius="{StaticResource Lumen.Radius.Card}" />
+          <StackPanel Margin="{StaticResource Lumen.Pad.16}">
+            <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                       Text="{Binding BannerChannelName}"
+                       TextTrimming="CharacterEllipsis"
+                       Margin="{StaticResource Lumen.Margin.B4}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       TextTrimming="CharacterEllipsis"
+                       Visibility="{Binding BannerNowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+              <Run Text="{x:Static res:Strings.LiveTv_NowLabel}" /><Run Text="  " /><Run Text="{Binding BannerNowTitle, Mode=OneWay}" />
+            </TextBlock>
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                       TextTrimming="CharacterEllipsis"
+                       Visibility="{Binding BannerNextTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+              <Run Text="{x:Static res:Strings.LiveTv_NextLabel}" /><Run Text="  " /><Run Text="{Binding BannerNextTitle, Mode=OneWay}" />
+            </TextBlock>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Quick channel list (slide-in) -->
+      <Border x:Name="QuickList"
+              HorizontalAlignment="Right"
+              Width="280"
+              Background="{StaticResource Lumen.Brush.Bg.Overlay}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              BorderThickness="1,0,0,0"
+              Visibility="{Binding IsChannelListOpen, Converter={StaticResource Lumen.BoolToVisibility}}"
+              RenderTransformOrigin="1,0.5">
+        <Border.RenderTransform>
+          <TranslateTransform X="0" />
+        </Border.RenderTransform>
+        <Border.Triggers>
+          <!-- No Storyboard.TargetName: targets this Border's own RenderTransform, avoiding
+               fragile name resolution. -->
+          <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+            <BeginStoryboard>
+              <Storyboard>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                 From="280"
+                                 To="0"
+                                 Duration="{theming:Dur Slow}">
+                  <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                  </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+              </Storyboard>
+            </BeginStoryboard>
+          </EventTrigger>
+        </Border.Triggers>
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top"
+                     Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{x:Static res:Strings.Player_Channels}"
+                     Margin="{StaticResource Lumen.Pad.16}" />
+          <ListBox Style="{StaticResource Lumen.ListBox}"
+                   ItemContainerStyle="{StaticResource Lumen.ListRow}"
+                   ItemsSource="{Binding QuickChannels}"
+                   SelectedItem="{Binding Playback.CurrentChannel, Mode=OneWay}"
+                   AutomationProperties.Name="{x:Static res:Strings.Player_Channels}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Button Style="{StaticResource Lumen.Button.Ghost}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        Padding="0"
+                        Command="{Binding DataContext.PlayChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}">
+                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                </Button>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- The mini/picture-in-picture chrome now lives natively in MiniPlayerWindow (a Popup that
+         renders above the video HWND); the shared airspace overlay can't paint over the topmost
+         PiP window, so it carries no mini controls. -->
+
+  </Grid>
+</UserControl>

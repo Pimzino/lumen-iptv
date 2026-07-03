@@ -1,0 +1,3 @@
+# Library project: awaited tasks must state their continuation context explicitly.
+[*.cs]
+dotnet_diagnostic.CA2007.severity = warning

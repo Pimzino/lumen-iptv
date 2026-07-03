@@ -1,0 +1,13 @@
+<Window x:Class="Lumen.App.Views.Debug.GalleryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dbg="clr-namespace:Lumen.App.Views.Debug"
+        Style="{StaticResource Lumen.Window}"
+        Title="Lumen — design system gallery"
+        Width="1280"
+        Height="900"
+        WindowStartupLocation="CenterScreen">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <dbg:GalleryContent x:Name="Gallery" />
+  </ScrollViewer>
+</Window>

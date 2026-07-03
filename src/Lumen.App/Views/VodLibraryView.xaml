@@ -1,0 +1,152 @@
+<UserControl x:Class="Lumen.App.Views.VodLibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="240" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- ============ Category sidebar ============ -->
+    <DockPanel Grid.Column="0">
+      <TextBlock DockPanel.Dock="Top"
+                 Style="{StaticResource Lumen.Text.Title}"
+                 Text="{Binding Title}"
+                 Margin="24,24,16,16" />
+      <ListBox Style="{StaticResource Lumen.ListBox}"
+               ItemContainerStyle="{StaticResource Lumen.ListRow}"
+               ItemsSource="{Binding Categories}"
+               SelectedItem="{Binding SelectedCategory}"
+               AutomationProperties.Name="Categories">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- ============ Grid ============ -->
+    <Grid Grid.Column="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <!-- Sort bar -->
+      <StackPanel Orientation="Horizontal" Margin="24,24,24,12" HorizontalAlignment="Right">
+        <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                   Text="{x:Static res:Strings.Vod_Sort}"
+                   VerticalAlignment="Center"
+                   Margin="{StaticResource Lumen.Margin.R12}" />
+        <ComboBox Width="180"
+                  ItemsSource="{Binding SortOptions}"
+                  SelectedIndex="{Binding SortIndex}"
+                  AutomationProperties.Name="Sort order" />
+      </StackPanel>
+
+      <!-- loading -->
+      <WrapPanel Grid.Row="1"
+                 Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}"
+                 Margin="28,0,0,0">
+        <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="12" />
+        <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="12" />
+        <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="12" />
+        <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="12" />
+        <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="12" />
+      </WrapPanel>
+
+      <!-- empty -->
+      <TextBlock Grid.Row="1"
+                 Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{x:Static res:Strings.Vod_NoItems}"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center"
+                 MaxWidth="320"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 Visibility="{Binding HasItems, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+
+      <!-- poster grid -->
+      <ListBox x:Name="Grid"
+               Grid.Row="1"
+               Style="{StaticResource Lumen.ListBox}"
+               ItemContainerStyle="{StaticResource Lumen.PosterContainer}"
+               ItemsSource="{Binding Items}"
+               ScrollViewer.CanContentScroll="True"
+               ScrollViewer.VerticalScrollBarVisibility="Auto"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+               VirtualizingPanel.IsVirtualizing="True"
+               VirtualizingPanel.VirtualizationMode="Recycling"
+               Margin="16,0,0,16"
+               ScrollViewer.ScrollChanged="OnScrollChanged"
+               Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <ctl:VirtualizingWrapPanel ItemWidth="176" ItemHeight="304" />
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Button Style="{StaticResource Lumen.PosterCard}"
+                    Width="150"
+                    Margin="12"
+                    Command="{Binding DataContext.OpenDetailCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                    CommandParameter="{Binding}"
+                    AutomationProperties.Name="{Binding Name}">
+                <StackPanel>
+                  <Grid Height="225">
+                    <Border CornerRadius="{StaticResource Lumen.Radius.Card}"
+                            Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                      <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                                 Text="{Binding Monogram}"
+                                 Foreground="{StaticResource Lumen.Brush.Accent}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <Border CornerRadius="{StaticResource Lumen.Radius.Card}" ClipToBounds="True">
+                      <Image ctl:ImageLoader.Url="{Binding PosterUrl}"
+                             ctl:ImageLoader.DecodeWidth="300"
+                             Stretch="UniformToFill"
+                             RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Border>
+                    <Button Style="{StaticResource Lumen.Button.Icon}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="{StaticResource Lumen.Pad.4}"
+                            Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding}"
+                            AutomationProperties.Name="Favorite">
+                      <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                                <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </Button>
+                  </Grid>
+                  <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                             Text="{Binding Name}"
+                             TextTrimming="CharacterEllipsis"
+                             Margin="8,8,8,0" />
+                  <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                             Text="{Binding MetaLine}"
+                             Margin="8,2,8,8"
+                             Visibility="{Binding MetaLine, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                </StackPanel>
+              </Button>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+  </Grid>
+</UserControl>

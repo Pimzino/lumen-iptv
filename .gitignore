@@ -1,0 +1,21 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+publish/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# Tests
+TestResults/
+coverage/
+*.trx
+
+# Local state
+*.db
+*.db-shm
+*.db-wal

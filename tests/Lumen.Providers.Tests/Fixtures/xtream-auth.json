@@ -1,0 +1,25 @@
+{
+  "user_info": {
+    "username": "demo",
+    "password": "demo",
+    "message": "",
+    "auth": 1,
+    "status": "Active",
+    "exp_date": "1790812800",
+    "is_trial": "0",
+    "active_cons": "1",
+    "created_at": "1700000000",
+    "max_connections": "2",
+    "allowed_output_formats": ["m3u8", "ts"]
+  },
+  "server_info": {
+    "url": "portal.example.com",
+    "port": "8080",
+    "https_port": "8443",
+    "server_protocol": "http",
+    "rtmp_port": "25462",
+    "timezone": "Europe/London",
+    "timestamp_now": 1751500000,
+    "time_now": "2026-07-03 01:00:00"
+  }
+}

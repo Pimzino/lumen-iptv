@@ -1,0 +1,123 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="/Themes/Lumen.Colors.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <!--
+    Type scale: 34 / 24 / 18 / 15 / 13 / 11.
+    Line height 1.3 for headings, 1.5 for body. Nothing bolder than SemiBold
+    (the LIVE badge is the one sanctioned exception).
+  -->
+
+  <FontFamily x:Key="Lumen.Font.Display">Segoe UI Variable Display, Segoe UI</FontFamily>
+  <FontFamily x:Key="Lumen.Font.Text">Segoe UI Variable Text, Segoe UI</FontFamily>
+  <FontFamily x:Key="Lumen.Font.Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+  <sys:Double x:Key="Lumen.FontSize.Display">34</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Title">24</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Heading">18</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Body">15</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Caption">13</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Micro">11</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.Icon">16</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.IconSmall">12</sys:Double>
+  <sys:Double x:Key="Lumen.FontSize.IconLarge">20</sys:Double>
+
+  <sys:Double x:Key="Lumen.LineHeight.Display">44.2</sys:Double>
+  <sys:Double x:Key="Lumen.LineHeight.Title">31.2</sys:Double>
+  <sys:Double x:Key="Lumen.LineHeight.Heading">23.4</sys:Double>
+  <sys:Double x:Key="Lumen.LineHeight.Body">22.5</sys:Double>
+  <sys:Double x:Key="Lumen.LineHeight.Caption">19.5</sys:Double>
+  <sys:Double x:Key="Lumen.LineHeight.Micro">16.5</sys:Double>
+
+  <!-- ======================= TextBlock styles ======================= -->
+
+  <Style x:Key="Lumen.Text.Display" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Display}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Display}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Display}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.Title" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Display}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Title}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Title}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.Heading" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Heading}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Heading}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.Body" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Body}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Body}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.BodyStrong" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Body}">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.BodySecondary" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Body}">
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.Caption" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Caption}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Caption}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.CaptionStrong" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Caption}">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.Micro" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Micro}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Tertiary}" />
+    <Setter Property="LineHeight" Value="{StaticResource Lumen.LineHeight.Micro}" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <!-- Times, durations, channel numbers: always tabular figures. -->
+  <Style x:Key="Lumen.Text.Tabular" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Body}">
+    <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+  </Style>
+
+  <Style x:Key="Lumen.Text.TabularCaption" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Caption}">
+    <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+  </Style>
+
+  <!-- Icon glyph text (Segoe Fluent Icons) -->
+  <Style x:Key="Lumen.Text.Icon" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Icons}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Icon}" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+  </Style>
+
+</ResourceDictionary>

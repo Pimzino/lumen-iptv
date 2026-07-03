@@ -1,0 +1,203 @@
+<UserControl x:Class="Lumen.App.Views.LiveTvView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="240" />
+      <ColumnDefinition Width="360" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- ============ Categories ============ -->
+    <DockPanel Grid.Column="0">
+      <TextBlock DockPanel.Dock="Top"
+                 Style="{StaticResource Lumen.Text.Title}"
+                 Text="{x:Static res:Strings.Nav_LiveTv}"
+                 Margin="24,24,16,16" />
+      <ListBox Style="{StaticResource Lumen.ListBox}"
+               ItemContainerStyle="{StaticResource Lumen.ListRow}"
+               ItemsSource="{Binding Categories}"
+               SelectedItem="{Binding SelectedCategory}"
+               AutomationProperties.Name="Categories">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- ============ Channels ============ -->
+    <Border Grid.Column="1"
+            Background="{StaticResource Lumen.Brush.Bg.Raised}"
+            BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+            BorderThickness="1,0">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Pad.16}">
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}" Text="{Binding SelectedCategory.Name}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{Binding ChannelCountLabel}"
+                     VerticalAlignment="Bottom"
+                     Margin="{StaticResource Lumen.Margin.L8}" />
+        </StackPanel>
+
+        <!-- loading skeletons -->
+        <StackPanel Grid.Row="1"
+                    Margin="{StaticResource Lumen.Pad.16}"
+                    Visibility="{Binding IsLoadingChannels, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B8}" />
+          <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B8}" />
+          <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B8}" />
+          <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B8}" />
+          <ctl:SkeletonBlock Height="56" />
+        </StackPanel>
+
+        <!-- empty state -->
+        <TextBlock Grid.Row="1"
+                   Style="{StaticResource Lumen.Text.BodySecondary}"
+                   Text="{x:Static res:Strings.LiveTv_NoChannels}"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   MaxWidth="260"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Visibility="{Binding HasChannels, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+
+        <ListBox Grid.Row="1"
+                 Style="{StaticResource Lumen.ListBox.Channels}"
+                 ItemsSource="{Binding Channels}"
+                 SelectedItem="{Binding SelectedChannel}"
+                 Visibility="{Binding IsLoadingChannels, Converter={StaticResource Lumen.InverseBoolToVisibility}}"
+                 AutomationProperties.Name="Channel list">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Width="{StaticResource Lumen.Size.ChannelLogo}" Height="{StaticResource Lumen.Size.ChannelLogo}">
+                  <Border CornerRadius="{StaticResource Lumen.Radius.Control}"
+                          Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                    <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                               Text="{Binding Monogram}"
+                               Foreground="{StaticResource Lumen.Brush.Accent}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                  </Border>
+                  <Image ctl:ImageLoader.Url="{Binding LogoUrl}"
+                         ctl:ImageLoader.DecodeWidth="80"
+                         Stretch="Uniform"
+                         RenderOptions.BitmapScalingMode="HighQuality"
+                         Margin="2" />
+                </Grid>
+                <StackPanel Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Margin="{StaticResource Lumen.Margin.L12}">
+                  <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                             Text="{Binding Name}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                             TextTrimming="CharacterEllipsis"
+                             Margin="{StaticResource Lumen.Margin.B4}"
+                             Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+                    <Run Text="{Binding NowTitle, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding NowTimeRange, Mode=OneWay}" />
+                  </TextBlock>
+                  <ProgressBar Value="{Binding NowProgress, Mode=OneWay}"
+                               Maximum="100"
+                               Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+
+    <!-- ============ Preview ============ -->
+    <Grid Grid.Column="2" Margin="{StaticResource Lumen.Pad.24}">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Border CornerRadius="{StaticResource Lumen.Radius.Card}"
+              Background="{StaticResource Lumen.Brush.VideoBackground}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              BorderThickness="{StaticResource Lumen.Stroke.Border}"
+              MinHeight="220"
+              Height="320">
+        <ctl:VideoSurface Kind="Preview" />
+      </Border>
+
+      <StackPanel Grid.Row="1" Margin="{StaticResource Lumen.Margin.T24}">
+        <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B12}">
+          <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                     Text="{Binding SelectedChannel.Name}"
+                     TextTrimming="CharacterEllipsis" />
+          <ContentControl Style="{StaticResource Lumen.Badge.Live}"
+                          Content="{x:Static res:Strings.Badge_Live}"
+                          Margin="{StaticResource Lumen.Margin.L12}"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+        </StackPanel>
+
+        <StackPanel Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B4}">
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                       Foreground="{StaticResource Lumen.Brush.Accent}"
+                       Text="{x:Static res:Strings.LiveTv_NowLabel}"
+                       Width="42" />
+            <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                       Text="{Binding SelectedChannel.NowTitle}"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="42,0,0,8">
+            <TextBlock Style="{StaticResource Lumen.Text.TabularCaption}"
+                       Text="{Binding SelectedChannel.NowTimeRange}" />
+          </StackPanel>
+          <ProgressBar Value="{Binding SelectedChannel.NowProgress, Mode=OneWay}"
+                       Maximum="100"
+                       Width="360"
+                       HorizontalAlignment="Left"
+                       Margin="42,0,0,12" />
+          <StackPanel Orientation="Horizontal"
+                      Margin="{StaticResource Lumen.Margin.B16}"
+                      Visibility="{Binding SelectedChannel.NextTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+            <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                       Text="{x:Static res:Strings.LiveTv_NextLabel}"
+                       Width="42" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Text="{Binding SelectedChannel.NextTitle}"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal">
+          <Button Style="{StaticResource Lumen.Button.Primary}"
+                  Command="{Binding WatchCommand}"
+                  Margin="{StaticResource Lumen.Margin.R12}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="{StaticResource Lumen.Icon.Play}"
+                         FontFamily="{StaticResource Lumen.Font.Icons}"
+                         FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                         VerticalAlignment="Center"
+                         Margin="{StaticResource Lumen.Margin.R8}" />
+              <TextBlock Text="{x:Static res:Strings.LiveTv_Watch}" />
+            </StackPanel>
+          </Button>
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.LiveTv_MutedPreview}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

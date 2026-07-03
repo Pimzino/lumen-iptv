@@ -1,0 +1,14 @@
+{
+  "user_info": {
+    "username": "demo",
+    "auth": 1,
+    "status": "Expired",
+    "exp_date": "1600000000",
+    "is_trial": "1",
+    "max_connections": ""
+  },
+  "server_info": {
+    "url": "portal.example.com",
+    "port": 8080
+  }
+}

@@ -12,6 +12,21 @@
                  Text="{x:Static res:Strings.Settings_Title}"
                  Margin="{StaticResource Lumen.Margin.B24}" />
 
+      <!-- Loading skeleton (initial page load only) -->
+      <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
+        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                           Margin="{StaticResource Lumen.Margin.B12}" />
+        <ctl:SkeletonBlock Height="120" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B32}" />
+        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                           Margin="{StaticResource Lumen.Margin.B12}" />
+        <ctl:SkeletonBlock Height="160" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B32}" />
+        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                           Margin="{StaticResource Lumen.Margin.B12}" />
+        <ctl:SkeletonBlock Height="120" CornerRadius="12" />
+      </StackPanel>
+
+      <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+
       <!-- ============ Profiles ============ -->
       <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                  Text="{x:Static res:Strings.Settings_Profiles}"
@@ -258,6 +273,7 @@
         </StackPanel>
       </Border>
 
+      </StackPanel>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

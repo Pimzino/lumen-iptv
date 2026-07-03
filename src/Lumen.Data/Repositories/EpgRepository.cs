@@ -17,62 +17,65 @@ public sealed class EpgRepository : IEpgRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<IReadOnlyDictionary<string, NowNext>> GetNowNextAsync(
+    public Task<IReadOnlyDictionary<string, NowNext>> GetNowNextAsync(
         long profileId, IReadOnlyCollection<string> xmltvIds, long nowUnix, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(xmltvIds);
-        var result = new Dictionary<string, NowNext>(xmltvIds.Count, StringComparer.OrdinalIgnoreCase);
-        if (xmltvIds.Count == 0)
+        return DbOffload.Run<IReadOnlyDictionary<string, NowNext>>(async () =>
         {
-            return result;
-        }
-
-        var horizon = nowUnix + 24 * 3600;
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
-        {
-            foreach (var chunk in Chunk(xmltvIds))
+            var result = new Dictionary<string, NowNext>(xmltvIds.Count, StringComparer.OrdinalIgnoreCase);
+            if (xmltvIds.Count == 0)
             {
-                var rows = await connection.QueryAsync<Programme>(new CommandDefinition(
-                    """
-                    SELECT * FROM (
-                        SELECT p.*, ROW_NUMBER() OVER (
-                            PARTITION BY p.channel_xmltv_id ORDER BY p.start_utc) AS rn
-                        FROM programmes p
-                        WHERE p.profile_id = @profileId
-                          AND p.channel_xmltv_id IN @chunk
-                          AND p.stop_utc > @nowUnix
-                          AND p.start_utc < @horizon
-                    ) WHERE rn <= 2
-                    """,
-                    new { profileId, chunk, nowUnix, horizon },
-                    cancellationToken: cancellationToken)).ConfigureAwait(false);
+                return result;
+            }
 
-                foreach (var group in rows.GroupBy(p => p.ChannelXmltvId, StringComparer.OrdinalIgnoreCase))
+            var horizon = nowUnix + 24 * 3600;
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                foreach (var chunk in Chunk(xmltvIds))
                 {
-                    Programme? now = null;
-                    Programme? next = null;
-                    foreach (var programme in group.OrderBy(p => p.StartUtc))
-                    {
-                        if (programme.StartUtc <= nowUnix && nowUnix < programme.StopUtc)
-                        {
-                            now = programme;
-                        }
-                        else if (programme.StartUtc > nowUnix && next is null)
-                        {
-                            next = programme;
-                        }
-                    }
+                    var rows = await connection.QueryAsync<Programme>(new CommandDefinition(
+                        """
+                        SELECT * FROM (
+                            SELECT p.*, ROW_NUMBER() OVER (
+                                PARTITION BY p.channel_xmltv_id ORDER BY p.start_utc) AS rn
+                            FROM programmes p
+                            WHERE p.profile_id = @profileId
+                              AND p.channel_xmltv_id IN @chunk
+                              AND p.stop_utc > @nowUnix
+                              AND p.start_utc < @horizon
+                        ) WHERE rn <= 2
+                        """,
+                        new { profileId, chunk, nowUnix, horizon },
+                        cancellationToken: cancellationToken)).ConfigureAwait(false);
 
-                    result[group.Key] = new NowNext(now, next);
+                    foreach (var group in rows.GroupBy(p => p.ChannelXmltvId, StringComparer.OrdinalIgnoreCase))
+                    {
+                        Programme? now = null;
+                        Programme? next = null;
+                        foreach (var programme in group.OrderBy(p => p.StartUtc))
+                        {
+                            if (programme.StartUtc <= nowUnix && nowUnix < programme.StopUtc)
+                            {
+                                now = programme;
+                            }
+                            else if (programme.StartUtc > nowUnix && next is null)
+                            {
+                                next = programme;
+                            }
+                        }
+
+                        result[group.Key] = new NowNext(now, next);
+                    }
                 }
             }
-        }
 
-        return result;
+            return result;
+        }, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Programme>> GetProgrammesAsync(
+    public Task<IReadOnlyList<Programme>> GetProgrammesAsync(
         long profileId,
         IReadOnlyCollection<string> xmltvIds,
         long fromUnix,
@@ -80,35 +83,39 @@ public sealed class EpgRepository : IEpgRepository
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(xmltvIds);
-        if (xmltvIds.Count == 0)
+        return DbOffload.Run<IReadOnlyList<Programme>>(async () =>
         {
-            return [];
-        }
-
-        var result = new List<Programme>();
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
-        {
-            foreach (var chunk in Chunk(xmltvIds))
+            if (xmltvIds.Count == 0)
             {
-                var rows = await connection.QueryAsync<Programme>(new CommandDefinition(
-                    """
-                    SELECT * FROM programmes
-                    WHERE profile_id = @profileId
-                      AND channel_xmltv_id IN @chunk
-                      AND start_utc < @toUnix AND stop_utc > @fromUnix
-                    ORDER BY channel_xmltv_id, start_utc
-                    """,
-                    new { profileId, chunk, fromUnix, toUnix },
-                    cancellationToken: cancellationToken)).ConfigureAwait(false);
-                result.AddRange(rows);
+                return [];
             }
-        }
 
-        return result;
+            var result = new List<Programme>();
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                foreach (var chunk in Chunk(xmltvIds))
+                {
+                    var rows = await connection.QueryAsync<Programme>(new CommandDefinition(
+                        """
+                        SELECT * FROM programmes
+                        WHERE profile_id = @profileId
+                          AND channel_xmltv_id IN @chunk
+                          AND start_utc < @toUnix AND stop_utc > @fromUnix
+                        ORDER BY channel_xmltv_id, start_utc
+                        """,
+                        new { profileId, chunk, fromUnix, toUnix },
+                        cancellationToken: cancellationToken)).ConfigureAwait(false);
+                    result.AddRange(rows);
+                }
+            }
+
+            return result;
+        }, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<EpgChannel>> GetEpgChannelsAsync(long profileId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<EpgChannel>> GetEpgChannelsAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run<IReadOnlyList<EpgChannel>>(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -118,9 +125,10 @@ public sealed class EpgRepository : IEpgRepository
                 new { profileId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.AsList();
         }
-    }
+    }, cancellationToken);
 
-    public async Task<int> PurgeProgrammesBeforeAsync(long profileId, long cutoffUnix, CancellationToken cancellationToken)
+    public Task<int> PurgeProgrammesBeforeAsync(long profileId, long cutoffUnix, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -129,9 +137,10 @@ public sealed class EpgRepository : IEpgRepository
                 "DELETE FROM programmes WHERE profile_id = @profileId AND stop_utc < @cutoffUnix",
                 new { profileId, cutoffUnix }, cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
-    }
+    }, cancellationToken);
 
-    public async Task<IReadOnlyList<ChannelEpgMapping>> GetMappingsAsync(long profileId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<ChannelEpgMapping>> GetMappingsAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run<IReadOnlyList<ChannelEpgMapping>>(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -145,9 +154,10 @@ public sealed class EpgRepository : IEpgRepository
                 new { profileId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.AsList();
         }
-    }
+    }, cancellationToken);
 
-    public async Task SetManualMappingAsync(long channelId, string? xmltvId, CancellationToken cancellationToken)
+    public Task SetManualMappingAsync(long channelId, string? xmltvId, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -169,9 +179,10 @@ public sealed class EpgRepository : IEpgRepository
                     new { channelId, xmltvId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             }
         }
-    }
+    }, cancellationToken);
 
-    public async Task<int> ApplyAutoMappingsAsync(long profileId, CancellationToken cancellationToken)
+    public Task<int> ApplyAutoMappingsAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -218,9 +229,10 @@ public sealed class EpgRepository : IEpgRepository
             transaction.Commit();
             return mappings.Count;
         }
-    }
+    }, cancellationToken);
 
-    public async Task<(long Channels, long Programmes)> GetCountsAsync(long profileId, CancellationToken cancellationToken)
+    public Task<(long Channels, long Programmes)> GetCountsAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -233,7 +245,7 @@ public sealed class EpgRepository : IEpgRepository
                 new { profileId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return (channels, programmes);
         }
-    }
+    }, cancellationToken);
 
     private static IEnumerable<List<string>> Chunk(IReadOnlyCollection<string> ids)
     {

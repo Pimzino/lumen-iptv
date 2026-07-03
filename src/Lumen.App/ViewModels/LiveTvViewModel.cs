@@ -93,7 +93,9 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
     public ObservableCollection<Category> Categories { get; } = [];
 
-    public ObservableCollection<ChannelListItem> Channels { get; } = [];
+    /// <summary>Replaced wholesale per category — one collection reset instead of thousands of Adds.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<ChannelListItem> _channels = [];
 
     [ObservableProperty]
     private Category? _selectedCategory;
@@ -187,11 +189,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
                 profile.Id, category.Id == 0 ? null : category.Id, token);
             token.ThrowIfCancellationRequested();
 
-            Channels.Clear();
-            foreach (var channel in channels)
-            {
-                Channels.Add(new ChannelListItem(channel));
-            }
+            Channels = channels.Select(channel => new ChannelListItem(channel)).ToList();
 
             HasChannels = Channels.Count > 0;
             ChannelCountLabel = $"{Channels.Count:N0}";

@@ -166,7 +166,9 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         if (_movieDetails?.DurationSeconds is { } secs and > 0)
         {
-            chips.Add(TimeSpan.FromSeconds(secs).ToString(@"h\'h\' m\'m\'"));
+            // Not TimeSpan.ToString: unescaped spaces in TimeSpan custom formats throw.
+            var duration = TimeSpan.FromSeconds(secs);
+            chips.Add($"{(int)duration.TotalHours}h {duration.Minutes}m");
         }
 
         if ((_movieDetails?.Rating ?? item.Rating) is { } rating and > 0)

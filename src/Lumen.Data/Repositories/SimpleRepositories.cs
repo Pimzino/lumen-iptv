@@ -14,7 +14,8 @@ public sealed class FavoritesRepository : IFavoritesRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<IReadOnlyList<FavoriteItem>> GetAllAsync(long profileId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<FavoriteItem>> GetAllAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run<IReadOnlyList<FavoriteItem>>(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -24,27 +25,31 @@ public sealed class FavoritesRepository : IFavoritesRepository
                 new { profileId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.AsList();
         }
-    }
+    }, cancellationToken);
 
-    public async Task AddAsync(
+    public Task AddAsync(
         long profileId, ContentKind kind, string itemKey, long unixSeconds, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(itemKey);
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        return DbOffload.Run(async () =>
         {
-            await connection.ExecuteAsync(new CommandDefinition(
-                """
-                INSERT INTO favorites (profile_id, item_kind, item_key, added_utc)
-                VALUES (@profileId, @kind, @itemKey, @unixSeconds)
-                ON CONFLICT (profile_id, item_kind, item_key) DO NOTHING
-                """,
-                new { profileId, kind, itemKey, unixSeconds },
-                cancellationToken: cancellationToken)).ConfigureAwait(false);
-        }
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    """
+                    INSERT INTO favorites (profile_id, item_kind, item_key, added_utc)
+                    VALUES (@profileId, @kind, @itemKey, @unixSeconds)
+                    ON CONFLICT (profile_id, item_kind, item_key) DO NOTHING
+                    """,
+                    new { profileId, kind, itemKey, unixSeconds },
+                    cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
+        }, cancellationToken);
     }
 
-    public async Task RemoveAsync(long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken)
+    public Task RemoveAsync(long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -54,7 +59,7 @@ public sealed class FavoritesRepository : IFavoritesRepository
                 new { profileId, kind, itemKey },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
-    }
+    }, cancellationToken);
 }
 
 /// <summary>SQLite-backed <see cref="IWatchHistoryRepository"/>.</summary>
@@ -67,30 +72,34 @@ public sealed class WatchHistoryRepository : IWatchHistoryRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task UpsertAsync(WatchHistoryEntry entry, CancellationToken cancellationToken)
+    public Task UpsertAsync(WatchHistoryEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        return DbOffload.Run(async () =>
         {
-            await connection.ExecuteAsync(new CommandDefinition(
-                """
-                INSERT INTO watch_history
-                    (profile_id, item_kind, item_key, title, poster_url, position_seconds, duration_seconds, watched_utc)
-                VALUES (@ProfileId, @ItemKind, @ItemKey, @Title, @PosterUrl, @PositionSeconds, @DurationSeconds, @WatchedUtc)
-                ON CONFLICT (profile_id, item_kind, item_key) DO UPDATE SET
-                    title = excluded.title,
-                    poster_url = excluded.poster_url,
-                    position_seconds = excluded.position_seconds,
-                    duration_seconds = excluded.duration_seconds,
-                    watched_utc = excluded.watched_utc
-                """,
-                entry, cancellationToken: cancellationToken)).ConfigureAwait(false);
-        }
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    """
+                    INSERT INTO watch_history
+                        (profile_id, item_kind, item_key, title, poster_url, position_seconds, duration_seconds, watched_utc)
+                    VALUES (@ProfileId, @ItemKind, @ItemKey, @Title, @PosterUrl, @PositionSeconds, @DurationSeconds, @WatchedUtc)
+                    ON CONFLICT (profile_id, item_kind, item_key) DO UPDATE SET
+                        title = excluded.title,
+                        poster_url = excluded.poster_url,
+                        position_seconds = excluded.position_seconds,
+                        duration_seconds = excluded.duration_seconds,
+                        watched_utc = excluded.watched_utc
+                    """,
+                    entry, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
+        }, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<WatchHistoryEntry>> GetRecentAsync(
-        long profileId, int limit, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<WatchHistoryEntry>> GetRecentAsync(
+        long profileId, int limit, CancellationToken cancellationToken) =>
+        DbOffload.Run<IReadOnlyList<WatchHistoryEntry>>(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -100,10 +109,11 @@ public sealed class WatchHistoryRepository : IWatchHistoryRepository
                 new { profileId, limit }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.AsList();
         }
-    }
+    }, cancellationToken);
 
-    public async Task<WatchHistoryEntry?> GetAsync(
-        long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken)
+    public Task<WatchHistoryEntry?> GetAsync(
+        long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -112,9 +122,9 @@ public sealed class WatchHistoryRepository : IWatchHistoryRepository
                 "SELECT * FROM watch_history WHERE profile_id = @profileId AND item_kind = @kind AND item_key = @itemKey",
                 new { profileId, kind, itemKey }, cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
-    }
+    }, cancellationToken);
 
-    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    public Task DeleteAsync(long id, CancellationToken cancellationToken) => DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -123,7 +133,7 @@ public sealed class WatchHistoryRepository : IWatchHistoryRepository
                 "DELETE FROM watch_history WHERE id = @id", new { id }, cancellationToken: cancellationToken))
                 .ConfigureAwait(false);
         }
-    }
+    }, cancellationToken);
 }
 
 /// <summary>SQLite-backed <see cref="ISettingsRepository"/>.</summary>
@@ -136,35 +146,42 @@ public sealed class SettingsRepository : ISettingsRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<string?> GetAsync(long profileId, string key, CancellationToken cancellationToken)
+    public Task<string?> GetAsync(long profileId, string key, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        return DbOffload.Run(async () =>
         {
-            return await connection.ExecuteScalarAsync<string?>(new CommandDefinition(
-                "SELECT value FROM settings WHERE profile_id = @profileId AND key = @key",
-                new { profileId, key }, cancellationToken: cancellationToken)).ConfigureAwait(false);
-        }
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                return await connection.ExecuteScalarAsync<string?>(new CommandDefinition(
+                    "SELECT value FROM settings WHERE profile_id = @profileId AND key = @key",
+                    new { profileId, key }, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
+        }, cancellationToken);
     }
 
-    public async Task SetAsync(long profileId, string key, string value, CancellationToken cancellationToken)
+    public Task SetAsync(long profileId, string key, string value, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
-        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        return DbOffload.Run(async () =>
         {
-            await connection.ExecuteAsync(new CommandDefinition(
-                """
-                INSERT INTO settings (profile_id, key, value) VALUES (@profileId, @key, @value)
-                ON CONFLICT (profile_id, key) DO UPDATE SET value = excluded.value
-                """,
-                new { profileId, key, value }, cancellationToken: cancellationToken)).ConfigureAwait(false);
-        }
+            var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (connection.ConfigureAwait(false))
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    """
+                    INSERT INTO settings (profile_id, key, value) VALUES (@profileId, @key, @value)
+                    ON CONFLICT (profile_id, key) DO UPDATE SET value = excluded.value
+                    """,
+                    new { profileId, key, value }, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
+        }, cancellationToken);
     }
 
-    public async Task DeleteAsync(long profileId, string key, CancellationToken cancellationToken)
+    public Task DeleteAsync(long profileId, string key, CancellationToken cancellationToken) =>
+        DbOffload.Run(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -173,9 +190,10 @@ public sealed class SettingsRepository : ISettingsRepository
                 "DELETE FROM settings WHERE profile_id = @profileId AND key = @key",
                 new { profileId, key }, cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
-    }
+    }, cancellationToken);
 
-    public async Task<IReadOnlyDictionary<string, string>> GetAllAsync(long profileId, CancellationToken cancellationToken)
+    public Task<IReadOnlyDictionary<string, string>> GetAllAsync(long profileId, CancellationToken cancellationToken) =>
+        DbOffload.Run<IReadOnlyDictionary<string, string>>(async () =>
     {
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
@@ -185,5 +203,5 @@ public sealed class SettingsRepository : ISettingsRepository
                 new { profileId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
         }
-    }
+    }, cancellationToken);
 }

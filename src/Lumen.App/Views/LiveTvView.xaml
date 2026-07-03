@@ -134,7 +134,23 @@
               BorderThickness="{StaticResource Lumen.Stroke.Border}"
               MinHeight="220"
               Height="320">
-        <ctl:VideoSurface Kind="Preview" />
+        <Grid>
+          <!-- Fallback loading state for the gaps the in-video overlay can't cover (LibVLC cold
+               init, HWND rebuild). Hidden behind the video HWND once it exists. -->
+          <StackPanel HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}">
+            <ContentControl Style="{StaticResource Lumen.Spinner}"
+                            Width="28"
+                            Height="28"
+                            HorizontalAlignment="Center" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Text="{x:Static res:Strings.Player_Opening}"
+                       HorizontalAlignment="Center"
+                       Margin="{StaticResource Lumen.Margin.T16}" />
+          </StackPanel>
+          <ctl:VideoSurface Kind="Preview" />
+        </Grid>
       </Border>
 
       <StackPanel Grid.Row="1" Margin="{StaticResource Lumen.Margin.T24}">

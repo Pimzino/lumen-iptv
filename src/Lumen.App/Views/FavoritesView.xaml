@@ -10,6 +10,26 @@
                    Text="{x:Static res:Strings.Nav_Favorites}"
                    Margin="{StaticResource Lumen.Margin.B24}" />
 
+        <!-- Loading skeleton -->
+        <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <ctl:SkeletonBlock Width="180" Height="20" HorizontalAlignment="Left"
+                             Margin="{StaticResource Lumen.Margin.B16}" />
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B32}">
+            <ctl:SkeletonBlock Width="240" Height="64" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="240" Height="64" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="240" Height="64" CornerRadius="12" />
+          </StackPanel>
+          <ctl:SkeletonBlock Width="180" Height="20" HorizontalAlignment="Left"
+                             Margin="{StaticResource Lumen.Margin.B16}" />
+          <StackPanel Orientation="Horizontal">
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" />
+          </StackPanel>
+        </StackPanel>
+
         <!-- Empty -->
         <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
                    Text="{x:Static res:Strings.Favorites_Empty}"

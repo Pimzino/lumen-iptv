@@ -258,6 +258,12 @@ public partial class App : Application
             _hangMonitor = new Diagnostics.DispatcherHangMonitor(Dispatcher);
             _hangMonitor.Start();
 
+            // Pre-warm LibVLC (native DLL load, player, video surface) in parallel with shell
+            // init and the first page load, so an early channel click doesn't queue behind a
+            // cold native init that can take many seconds on a busy first launch.
+            _ = _host.Services.GetRequiredService<Services.Playback.PlaybackService>()
+                .WarmUpAsync(CancellationToken.None);
+
             await _host.Services.GetRequiredService<ShellViewModel>().InitializeAsync();
 
             if (shellShotDir is not null)
@@ -510,6 +516,18 @@ public partial class App : Application
             _hangMonitor?.Dispose();
             if (_host is not null)
             {
+                // Watch-history writes run on pool threads; drain the last one so quitting
+                // right after pausing doesn't lose the resume position.
+                try
+                {
+                    _host.Services.GetRequiredService<Services.Playback.PlaybackService>()
+                        .FlushProgressAsync().Wait(TimeSpan.FromSeconds(2));
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "Watch-history flush at exit failed");
+                }
+
                 _host.StopAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
                 _host.Dispose();
             }

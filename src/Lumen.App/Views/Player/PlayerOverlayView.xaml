@@ -301,12 +301,6 @@
         </Grid>
       </Grid>
 
-      <!-- Buffering / opening spinner -->
-      <ContentControl Style="{StaticResource Lumen.Spinner}"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}" />
-
       <!-- Reconnecting pill -->
       <Border HorizontalAlignment="Center"
               VerticalAlignment="Top"
@@ -450,6 +444,27 @@
         </DockPanel>
       </Border>
     </Grid>
+
+    <!-- Buffering / opening spinner with status caption. Deliberately OUTSIDE the full-player
+         section: the overlay travels with the shared video view, so this also covers the muted
+         Live TV preview and the mini player — a stream open takes seconds on real providers and
+         must never look like a dead black pane, whatever surface it's on. -->
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"
+                Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}">
+      <ContentControl Style="{StaticResource Lumen.Spinner}" HorizontalAlignment="Center" />
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{x:Static res:Strings.Player_Opening}"
+                 HorizontalAlignment="Center"
+                 Margin="{StaticResource Lumen.Margin.T16}"
+                 Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening}" />
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{Binding Playback.BufferingProgress, StringFormat={x:Static res:Strings.Player_BufferingFormat}}"
+                 HorizontalAlignment="Center"
+                 Margin="{StaticResource Lumen.Margin.T16}"
+                 Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Buffering}" />
+    </StackPanel>
 
     <!-- The mini/picture-in-picture chrome now lives natively in MiniPlayerWindow (a Popup that
          renders above the video HWND); the shared airspace overlay can't paint over the topmost

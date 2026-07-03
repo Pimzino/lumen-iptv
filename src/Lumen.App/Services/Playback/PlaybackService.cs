@@ -58,6 +58,10 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     private double _pendingResumeSeconds;
     private bool _resumeApplied;
 
+    // Watch-history writes run on pool threads; shutdown drains the last one (FlushProgressAsync)
+    // so a pause-then-quit doesn't lose the resume position.
+    private Task _lastProgressSave = Task.CompletedTask;
+
     [ObservableProperty]
     private PlaybackState _state = PlaybackState.Idle;
 
@@ -102,6 +106,10 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
     [ObservableProperty]
     private double _durationSeconds;
+
+    /// <summary>Last reported LibVLC cache fill (0–100) while <see cref="PlaybackState.Buffering"/>.</summary>
+    [ObservableProperty]
+    private double _bufferingProgress;
 
     public PlaybackService(
         ISessionService session,
@@ -173,7 +181,17 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         ArgumentNullException.ThrowIfNull(channel);
         var sequence = Interlocked.Increment(ref _playRequestSequence);
 
-        await EnsureInitializedAsync(cancellationToken);
+        // Loading feedback first: flip to Opening before (possibly cold) LibVLC init so the
+        // spinner covers the whole open, not just the tail after native init.
+        ErrorMessage = null;
+        ReconnectAttempt = 0;
+        BufferingProgress = 0;
+        State = PlaybackState.Opening;
+
+        if (!await TryInitializeAsync(cancellationToken))
+        {
+            return;
+        }
 
         var url = ResolveStreamUrl(channel);
         if (url is null)
@@ -210,9 +228,6 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         }
         _isPreviewContext = preview;
         _currentUrl = url;
-        ErrorMessage = null;
-        ReconnectAttempt = 0;
-        State = PlaybackState.Opening;
 
         ApplyMute();
         await StartPlaybackAsync(url, channel, sequence);
@@ -265,7 +280,20 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     {
         ArgumentNullException.ThrowIfNull(request);
         var sequence = Interlocked.Increment(ref _playRequestSequence);
-        await EnsureInitializedAsync(cancellationToken);
+
+        // Feedback first: enter the full player in the Opening state before any awaits, so the
+        // click lands on a spinner immediately instead of a dead detail page while (possibly
+        // cold) LibVLC init and the stream open run.
+        ErrorMessage = null;
+        ReconnectAttempt = 0;
+        BufferingProgress = 0;
+        State = PlaybackState.Opening;
+        EnterFullPlayer();
+
+        if (!await TryInitializeAsync(cancellationToken))
+        {
+            return;
+        }
 
         CancelReconnect();
         _userStopped = false;
@@ -284,13 +312,9 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         IsVod = true;
         PositionSeconds = request.ResumeSeconds;
         DurationSeconds = 0;
-        ErrorMessage = null;
-        ReconnectAttempt = 0;
-        State = PlaybackState.Opening;
 
         ApplyMute();
         await StartVodAsync(request, sequence);
-        EnterFullPlayer();
     }
 
     private async Task StartVodAsync(VodPlayRequest request, int sequence)
@@ -455,8 +479,11 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
             DurationSeconds = DurationSeconds,
             WatchedUtc = _clock.UtcNow.ToUnixTimeSeconds(),
         };
-        _ = _watchHistory.UpsertAsync(entry, CancellationToken.None);
+        _lastProgressSave = _watchHistory.UpsertAsync(entry, CancellationToken.None);
     }
+
+    /// <summary>The most recent watch-history write, awaited at shutdown.</summary>
+    public Task FlushProgressAsync() => _lastProgressSave;
 
     // ------------------------------------------------------------------ tracks & aspect
 
@@ -557,7 +584,20 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         ApplyMute();
         IsMiniPlayerActive = false;
         IsFullPlayerActive = true;
-        ActivateSurface(VideoSurfaceKind.FullPlayer);
+
+        // Attach the video surface one Background beat later: moving the shared view rebuilds
+        // the native HWND and its overlay airspace, none of which can render this frame anyway.
+        // Deferring lets the player layer (background + loading caption) paint first, so the
+        // click lands on instant feedback instead of a black pane.
+        _dispatcher.InvokeAsync(
+            () =>
+            {
+                if (IsFullPlayerActive)
+                {
+                    ActivateSurface(VideoSurfaceKind.FullPlayer);
+                }
+            },
+            DispatcherPriority.Background);
     }
 
     public void ExitFullPlayer(PlayerExitMode mode)
@@ -654,6 +694,46 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     private Task? _initTask;
 
     /// <summary>
+    /// Pre-initializes LibVLC so the first real play skips the cold native init.
+    /// Called fire-and-forget at startup; failures are logged and retried on the next play.
+    /// </summary>
+    public async Task WarmUpAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EnsureInitializedAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Playback warm-up failed; init will retry on first play");
+        }
+    }
+
+    /// <summary>
+    /// <see cref="EnsureInitializedAsync"/>, but a failure surfaces as the Error playback state
+    /// instead of leaving the caller's Opening spinner up forever.
+    /// </summary>
+    private async Task<bool> TryInitializeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EnsureInitializedAsync(cancellationToken);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "LibVLC initialization failed");
+            State = PlaybackState.Error;
+            ErrorMessage = "The video engine failed to start. Try again, or check the logs.";
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Initializes LibVLC + the MediaPlayer exactly once. Concurrent first-play requests share
     /// one init Task rather than each racing to build (and leak) a second player.
     /// </summary>
@@ -661,6 +741,11 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     {
         lock (_initGate)
         {
+            if (_initTask is { IsCompleted: true, IsCompletedSuccessfully: false })
+            {
+                _initTask = null; // a failed init (e.g. warm-up racing startup) retries next time
+            }
+
             return _initTask ??= InitializeCoreAsync(cancellationToken);
         }
     }
@@ -724,6 +809,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         });
         player.Buffering += (_, e) => OnUi(() =>
         {
+            BufferingProgress = e.Cache;
             if (e.Cache < 100 && State is PlaybackState.Opening or PlaybackState.Playing or PlaybackState.Buffering)
             {
                 State = PlaybackState.Buffering;
@@ -767,16 +853,21 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         player.Stopped += (_, _) => _logger.LogDebug("libvlc event: Stopped");
         player.Opening += (_, _) => _logger.LogDebug("libvlc event: Opening");
 
-        _videoView = new VideoView { MediaPlayer = player };
-        if (_overlayContent is not null)
+        // The VideoView is a WPF control (HwndHost) — always build it on the dispatcher, whatever
+        // thread the initiating play/warm-up continuation happens to run on.
+        _dispatcher.Invoke(() =>
         {
-            _videoView.Content = _overlayContent;
-        }
+            _videoView = new VideoView { MediaPlayer = player };
+            if (_overlayContent is not null)
+            {
+                _videoView.Content = _overlayContent;
+            }
 
-        if (_surfaces.TryGetValue(_activeSurface, out var host))
-        {
-            AttachViewTo(host);
-        }
+            if (_surfaces.TryGetValue(_activeSurface, out var host))
+            {
+                AttachViewTo(host);
+            }
+        });
         _logger.LogInformation(
             "LibVLC initialized (hardware={Hardware}, caching={CachingMs}ms)", hardware, _networkCachingMs);
     }

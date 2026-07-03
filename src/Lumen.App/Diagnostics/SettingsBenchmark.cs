@@ -42,6 +42,7 @@ public static class SettingsBenchmark
             }
 
             vm.HasUnmappedChannels = true;
+            vm.IsLoading = false; // the page content (and its mapping list) is skeleton-gated during load
             var populateMs = populate.ElapsedMilliseconds;
 
             var view = new Views.SettingsView { DataContext = vm };

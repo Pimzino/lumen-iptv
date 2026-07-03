@@ -149,6 +149,8 @@ public static class Strings
     public static string Player_Audio => Get(nameof(Player_Audio));
     public static string Player_Subtitles => Get(nameof(Player_Subtitles));
     public static string Player_Channels => Get(nameof(Player_Channels));
+    public static string Player_Opening => Get(nameof(Player_Opening));
+    public static string Player_BufferingFormat => Get(nameof(Player_BufferingFormat));
 
     public static string Guide_JumpToNow => Get(nameof(Guide_JumpToNow));
     public static string Guide_NoData => Get(nameof(Guide_NoData));

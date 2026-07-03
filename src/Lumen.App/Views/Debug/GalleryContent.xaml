@@ -198,6 +198,10 @@
       <StackPanel x:Name="SectionProgress" Margin="{StaticResource Lumen.Margin.B48}">
         <TextBlock Style="{StaticResource Lumen.Text.Title}" Text="Progress &amp; skeletons" Margin="{StaticResource Lumen.Margin.B16}" />
         <ProgressBar Value="62" Maximum="100" Width="380" HorizontalAlignment="Left" Margin="{StaticResource Lumen.Margin.B16}" />
+        <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+          <ContentControl Style="{StaticResource Lumen.Spinner}" Margin="{StaticResource Lumen.Margin.R24}" />
+          <ContentControl Style="{StaticResource Lumen.Spinner}" Width="18" Height="18" VerticalAlignment="Center" />
+        </StackPanel>
         <StackPanel Orientation="Horizontal">
           <StackPanel Margin="{StaticResource Lumen.Margin.R24}">
             <ctl:SkeletonBlock Width="150" Height="210" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B8}" />

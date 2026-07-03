@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -108,6 +109,16 @@ public sealed partial class NavigationService : ObservableObject, INavigationSer
     {
         try
         {
+            // Let the content swap reach the screen before the load starts. Await continuations
+            // resume at Normal dispatcher priority, which outranks Render — without this hop, a
+            // chain of quick queries runs the whole load before the new page (and its loading
+            // skeleton) ever paints, and the old page appears frozen for the duration.
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             await target.OnNavigatedToAsync(parameter, cancellationToken);
         }
         catch (OperationCanceledException)

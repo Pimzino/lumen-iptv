@@ -171,17 +171,38 @@
     </Border>
 
     <!-- ======================= Content ======================= -->
-    <ContentControl Grid.Column="1"
-                    Content="{Binding Navigation.CurrentViewModel}"
-                    IsTabStop="False"
-                    Focusable="False" />
+    <ctl:TransitioningContentControl Grid.Column="1"
+                                     Content="{Binding Navigation.CurrentViewModel}"
+                                     IsTabStop="False"
+                                     Focusable="False" />
 
     <!-- ======================= Full player layer ======================= -->
     <Border Grid.Column="0"
             Grid.ColumnSpan="2"
             Background="{StaticResource Lumen.Brush.VideoBackground}"
             Visibility="{Binding Playback.IsFullPlayerActive, Converter={StaticResource Lumen.BoolToVisibility}}">
-      <ctl:VideoSurface Kind="FullPlayer" />
+      <Grid>
+        <!-- Fallback loading state. The native video HWND covers all WPF drawing in this area,
+             so this only shows in the gaps the in-video overlay cannot cover: before LibVLC
+             cold init finishes, and for the beat while the surface swap rebuilds the HWND.
+             Those gaps are exactly when the click would otherwise show a dead black pane. -->
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}">
+          <ContentControl Style="{StaticResource Lumen.Spinner}" HorizontalAlignment="Center" />
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{Binding Playback.NowPlayingTitle}"
+                     TextTrimming="CharacterEllipsis"
+                     MaxWidth="520"
+                     HorizontalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.T16}" />
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{x:Static res:Strings.Player_Opening}"
+                     HorizontalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.T8}" />
+        </StackPanel>
+        <ctl:VideoSurface Kind="FullPlayer" />
+      </Grid>
     </Border>
 
     <!-- The mini player is now a separate always-on-top window (Controls/MiniPlayerWindow.cs),

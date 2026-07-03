@@ -126,6 +126,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     public ObservableCollection<EpgChannelOption> EpgChannelOptions { get; } = [];
 
+    /// <summary>True during the initial page load only — manual refreshes keep the page visible.</summary>
+    [ObservableProperty]
+    private bool _isLoading = true;
+
     [ObservableProperty]
     private string _mappingSummary = string.Empty;
 
@@ -165,8 +169,16 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     public async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
-        await ReloadAsync(cancellationToken);
-        _loaded = true;
+        IsLoading = true;
+        try
+        {
+            await ReloadAsync(cancellationToken);
+            _loaded = true;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     public void OnNavigatedFrom()

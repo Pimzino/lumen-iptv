@@ -22,6 +22,7 @@
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <TextBlock Text="{StaticResource Lumen.Icon.Search}"
                    FontFamily="{StaticResource Lumen.Font.Icons}"
@@ -40,6 +41,13 @@
                  Padding="12,14"
                  Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
                  AutomationProperties.Name="{x:Static res:Strings.Search_Placeholder}" />
+        <ContentControl Grid.Column="2"
+                        Style="{StaticResource Lumen.Spinner}"
+                        Width="18"
+                        Height="18"
+                        VerticalAlignment="Center"
+                        Margin="0,0,16,0"
+                        Visibility="{Binding IsSearching, Converter={StaticResource Lumen.BoolToVisibility}}" />
       </Grid>
     </Border>
 

@@ -467,3 +467,70 @@ TV-remote map (↑/↓ zap, ←/→ volume), VOD uses the media-player map (←/
 zap is meaningless without a channel list). `--e2e-vod-ui` now also asserts the rendered
 timeline: visible with `Maximum` ≈ duration for VOD, a `Seek` moves the rendered slider, and the
 bar collapses when switching to live.
+
+## Post-release UX pass — loading states + genuinely-async data layer
+
+Symptom: switching rail sections or starting playback froze the UI briefly with no loading
+feedback — even though skeleton screens already existed and were correctly gated on `IsLoading`.
+
+- **Microsoft.Data.Sqlite is fake-async, so repositories now offload via `Task.Run`
+  (`DbOffload`).** The provider completes its `...Async` methods synchronously, so every awaited
+  Dapper call ran the query + row materialization **inline on the UI thread** (an `await` on an
+  already-completed task never yields, and `ConfigureAwait(false)` is a no-op there). Page loads
+  fired from `NavigationService.Activate` therefore blocked the dispatcher for the whole load —
+  `IsLoading` flipped true→false without a frame ever painting, which is why the skeletons never
+  showed. Every method in the five repositories now wraps its body in `Task.Run` via the
+  `DbOffload` helper; **UI code must never rely on a repository call completing synchronously.**
+  Safe by construction: WAL + 15 s busy timeout were already in place, background-thread DB access
+  already existed (EPG scheduler, settings refresh), and no view model uses `ConfigureAwait(false)`
+  before mutating UI-bound collections. `SqliteEpgImportSink` stays unwrapped (stateful, driven
+  from already-pool-threaded sync paths).
+- **Watch-history progress writes are drained at exit.** `SaveVodProgress` is fire-and-forget;
+  now that it genuinely runs on a pool thread, `App.OnExit` awaits the last write (2 s cap) so
+  pause-then-quit can't lose the resume position.
+- **Live TV channel list is replaced wholesale** (`IReadOnlyList` + single assignment, the Guide
+  pattern) instead of thousands of `ObservableCollection.Add`s after load.
+- **Playback shows feedback from the first millisecond.** `State = Opening` moves to the top of
+  `PlayChannelAsync`/`PlayVodAsync` (before LibVLC init), `PlayVodAsync` enters the full player
+  *before* dispatching the stream (the spinner is gated on `IsFullPlayerActive`, so it previously
+  couldn't render until after the open), LibVLC is **pre-warmed at startup** (`WarmUpAsync`,
+  fire-and-forget after shell init; a failed init is retryable instead of memoized-faulted), and
+  the overlay spinner gains a caption — "Opening stream…" / "Buffering NN%" from the previously
+  discarded `Buffering` event `e.Cache` (new `BufferingProgress`).
+- **Coverage gaps filled**: Favorites/VodDetail/Settings get skeletons (Settings only for the
+  initial nav load — manual refreshes keep the page visible), Search's existing `IsSearching`
+  gets a visible 18 px spinner in the field, and the shell content host is a new
+  `TransitioningContentControl` (150 ms fade + 8 px rise on page change; no-op under OS
+  reduced-motion, consistent with the toast entrance).
+
+## Loading-states follow-up — paint ordering + video airspace fallbacks
+
+Field testing on a real provider (6 s stream opens; one 25 s cold LibVLC init) showed the first
+pass wasn't enough: page switches still appeared to hang ~1 s, and Watch/preview clicks showed a
+black pane before any feedback. Log analysis (hang monitor: max UI stall 250 ms) proved the UI
+thread was *free* — both problems were ordering, not blocking.
+
+- **Page loads start only after the swap has painted.** `await` continuations resume at `Normal`
+  dispatcher priority, which **outranks `Render`** — so a navigation whose load is a chain of
+  quick pool-thread queries replays the whole chain before the new page (and its skeleton) ever
+  renders: the old page looks frozen, then the new page pops in fully loaded.
+  `NavigationService.RunNavigationAsync` now yields once at `Background` priority (below
+  `Render`) before calling `OnNavigatedToAsync`, guaranteeing the swap + skeleton paint first.
+  **Corollary: never start dispatcher-resuming async work you expect to happen "after the UI
+  updates" without dropping below `Render` priority first.**
+- **Every video surface shows the Opening/Buffering state, with WPF fallbacks for the airspace
+  gaps.** The spinner+caption block lived inside the overlay's `IsFullPlayerActive` section, so
+  the muted Live TV preview had *no* loading UI for the full 6–25 s open. It's now at the overlay
+  root (the overlay travels with the shared `VideoView` to whatever surface hosts it). But the
+  overlay renders inside the video's native airspace, which **doesn't exist before LibVLC init
+  and is rebuilt whenever the view is reparented** — exactly the moments feedback matters. The
+  full-player layer (`MainWindow`) and the preview pane (`LiveTvView`) therefore carry a plain
+  WPF spinner/caption layer *behind* the `VideoSurface`: painted whenever the HWND isn't
+  covering, hidden the instant it is.
+- **`EnterFullPlayer` defers the surface attach by one `Background` beat** so the click paints
+  the player layer + loading caption before the HWND reparent (which can't render that frame
+  anyway). The deferred attach re-checks `IsFullPlayerActive` so a fast exit can't resurrect the
+  full-player surface.
+- **Warm-up starts before shell init** (was after), overlapping native LibVLC init with session
+  init + first page load, and `PlayChannelAsync`/`PlayVodAsync` surface an init failure as the
+  `Error` state (Back/Retry UI) instead of an eternal Opening spinner.

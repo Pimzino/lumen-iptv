@@ -139,6 +139,8 @@
   <data name="LiveTv_NextLabel" xml:space="preserve"><value>NEXT</value></data>
   <data name="LiveTv_NoGuideData" xml:space="preserve"><value>No guide data for this channel.</value></data>
   <data name="Player_ReconnectingFormat" xml:space="preserve"><value>Connection lost — reconnecting (attempt {0} of 5)…</value></data>
+  <data name="Player_Opening" xml:space="preserve"><value>Opening stream…</value></data>
+  <data name="Player_BufferingFormat" xml:space="preserve"><value>Buffering {0:0}%</value></data>
   <data name="Player_ErrorTitle" xml:space="preserve"><value>Playback stopped</value></data>
   <data name="Player_Audio" xml:space="preserve"><value>Audio</value></data>
   <data name="Player_Subtitles" xml:space="preserve"><value>Subtitles</value></data>

@@ -57,6 +57,22 @@
                        TextWrapping="Wrap"
                        Margin="{StaticResource Lumen.Margin.B12}" />
 
+            <!-- Loading skeleton: chips + plot while details fetch -->
+            <StackPanel HorizontalAlignment="Left"
+                        Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
+              <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+                <ctl:SkeletonBlock Width="56" Height="24" CornerRadius="6" Margin="{StaticResource Lumen.Margin.R8}" />
+                <ctl:SkeletonBlock Width="72" Height="24" CornerRadius="6" Margin="{StaticResource Lumen.Margin.R8}" />
+                <ctl:SkeletonBlock Width="96" Height="24" CornerRadius="6" />
+              </StackPanel>
+              <ctl:SkeletonBlock Width="620" Height="14" CornerRadius="4" HorizontalAlignment="Left"
+                                 Margin="{StaticResource Lumen.Margin.B8}" />
+              <ctl:SkeletonBlock Width="580" Height="14" CornerRadius="4" HorizontalAlignment="Left"
+                                 Margin="{StaticResource Lumen.Margin.B8}" />
+              <ctl:SkeletonBlock Width="420" Height="14" CornerRadius="4" HorizontalAlignment="Left"
+                                 Margin="{StaticResource Lumen.Margin.B24}" />
+            </StackPanel>
+
             <ItemsControl ItemsSource="{Binding MetadataChips}" Margin="{StaticResource Lumen.Margin.B16}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -188,6 +204,20 @@
             </Button>
           </StackPanel>
         </Grid>
+
+        <!-- Episodes loading skeleton (series only) -->
+        <StackPanel MaxWidth="784"
+                    HorizontalAlignment="Left"
+                    Visibility="{Binding IsSeries, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
+            <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                               Margin="{StaticResource Lumen.Margin.B12}" />
+            <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B4}" />
+            <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B4}" />
+            <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B4}" />
+            <ctl:SkeletonBlock Height="56" />
+          </StackPanel>
+        </StackPanel>
 
         <!-- Seasons / episodes -->
         <ItemsControl ItemsSource="{Binding Seasons}"

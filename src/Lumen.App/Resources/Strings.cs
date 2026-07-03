@@ -51,6 +51,7 @@ public static class Strings
     public static string Window_Restore => Get(nameof(Window_Restore));
     public static string Window_Close => Get(nameof(Window_Close));
     public static string Player_ExitFullscreen => Get(nameof(Player_ExitFullscreen));
+    public static string Player_PictureInPicture => Get(nameof(Player_PictureInPicture));
     public static string Player_Pin => Get(nameof(Player_Pin));
     public static string Player_Unpin => Get(nameof(Player_Unpin));
     public static string Common_Refresh => Get(nameof(Common_Refresh));

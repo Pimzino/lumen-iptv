@@ -45,6 +45,7 @@
   <data name="Window_Restore" xml:space="preserve"><value>Restore</value></data>
   <data name="Window_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Player_ExitFullscreen" xml:space="preserve"><value>Exit fullscreen</value></data>
+  <data name="Player_PictureInPicture" xml:space="preserve"><value>Picture-in-picture</value></data>
   <data name="Player_Pin" xml:space="preserve"><value>Pin on top</value></data>
   <data name="Player_Unpin" xml:space="preserve"><value>Unpin</value></data>
   <data name="Common_Refresh" xml:space="preserve"><value>Refresh</value></data>

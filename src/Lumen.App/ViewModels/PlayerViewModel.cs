@@ -189,8 +189,9 @@ public sealed partial class PlayerViewModel : ObservableObject,
     }
 
     /// <summary>
-    /// Esc / back arrow: close the channel list, then leave fullscreen, then drop to the floating
-    /// mini player — which reveals the page you were browsing while playback keeps going in PiP.
+    /// Esc / back arrow: close the channel list, then leave fullscreen, then return to browsing —
+    /// the video keeps playing as the muted list preview. The floating PiP is a separate,
+    /// dedicated button.
     /// </summary>
     [RelayCommand]
     private void Back()
@@ -207,7 +208,7 @@ public sealed partial class PlayerViewModel : ObservableObject,
             return;
         }
 
-        Playback.ExitFullPlayer(PlayerExitMode.MiniPlayer);
+        Playback.ExitFullPlayer(PlayerExitMode.Browse);
     }
 
     /// <summary>Collapse the full player into the floating picture-in-picture window.</summary>

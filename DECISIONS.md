@@ -433,3 +433,23 @@ the player-bar duplicates were removed (only an on-screen exit-fullscreen button
 true fullscreen hides the title bar). (2) `Back` was changed to `Browse`, which removed the way into
 PiP; reverted so **Back drops to the mini player** (reveals the page behind *and* floats the PiP),
 matching the prior behaviour. `PlayerExitMode.Browse` is retained but currently unused.
+
+**Corrections after second hands-on pass (PiP interior).** (1) **No sound** — the mini player kept
+the muted preview context; `ExitFullPlayer(MiniPlayer)` now clears `_isPreviewContext` and re-applies
+mute, and `LiveTvViewModel` no longer starts a muted preview while the full/mini player is active
+(that was stealing the shared surface and muting it). (2) **Close/expand didn't respond** — pin (a
+code-behind `Click`) worked but the command-bound buttons didn't: binding into the airspace Popup is
+unreliable for nested content (`--e2e-fullscreen` showed only 1 of 3 command bindings resolved even
+with the VM DataContext present). So the PiP's commands and dynamic display (title, play/pause glyph,
+time, seek) are now **driven entirely from code-behind**, not bindings. (3) Added the requested
+**transport**: play/pause, stop, and — for VOD — a seek slider + elapsed/total time (updated on a
+200 ms tick; seeking suspends the tick and calls `Seek` on release). Drag is suppressed when the
+press lands on a control. Gate: `pipControls buttons=5 clickButtons=4 vm=True`.
+
+**PiP entry/exit refinements.** After hands-on, the Back/PiP roles were separated cleanly: **Back
+(←) returns to the list** with the muted list-preview (`ExitFullPlayer(Browse)`), and a **dedicated
+picture-in-picture button** next to Back opens the floating window (`ToMiniPlayer` →
+`ExitFullPlayer(MiniPlayer)`); the redundant transport-bar mini button was removed. Dismissing the
+PiP now **brings the shell forward** — `MainWindow.SetMiniPlayerVisible(false)` restores the window
+if minimized and calls `Activate()`, so closing (stop) or expanding (→ full player) no longer leaves
+the main window stranded behind another app.

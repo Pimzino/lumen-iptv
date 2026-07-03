@@ -31,13 +31,14 @@
            IsOpen="False">
       <Grid x:Name="ControlsRoot" Background="{StaticResource Lumen.Brush.Overlay.HitTarget}">
 
-        <!-- Top bar = drag handle + window buttons -->
+        <!-- Top bar = drag handle + window buttons. Sizes to the buttons (a fixed height clipped
+             their glyphs); vertical padding keeps them off the edges. -->
         <Border x:Name="DragBar"
                 Background="{StaticResource Lumen.Brush.Scrim.Top}"
                 VerticalAlignment="Top"
-                Height="40"
+                Padding="8,4"
                 MouseLeftButtonDown="OnMoveStart">
-          <DockPanel Margin="{StaticResource Lumen.Pad.8}">
+          <DockPanel>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
               <ToggleButton x:Name="PinButton"
                             Style="{StaticResource Lumen.Button.Icon}"

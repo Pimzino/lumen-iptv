@@ -64,6 +64,15 @@ public partial class MainWindow : Window
         else
         {
             _miniWindow?.Hide();
+
+            // Dismissing the PiP (close or expand) returns attention to the shell — bring it to the
+            // front instead of leaving it stranded behind whatever app the user was in.
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+
+            Activate();
         }
     }
 

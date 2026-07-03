@@ -179,7 +179,8 @@
                       Style="{StaticResource Lumen.Button.Icon}"
                       Command="{Binding ToMiniPlayerCommand}"
                       Content="{StaticResource Lumen.Icon.MiniPlayer}"
-                      AutomationProperties.Name="Mini player" />
+                      AutomationProperties.Name="{x:Static res:Strings.Player_PictureInPicture}"
+                      ToolTip="{x:Static res:Strings.Player_PictureInPicture}" />
               <Button DockPanel.Dock="Right"
                       Style="{StaticResource Lumen.Button.Icon}"
                       Command="{Binding ToggleChannelListCommand}"

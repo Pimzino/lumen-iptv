@@ -26,7 +26,11 @@ public static class E2eResumeRunner
             await session.InitializeAsync(CancellationToken.None);
 
             var profiles = await services.GetRequiredService<IProfileRepository>().GetAllAsync(CancellationToken.None);
-            var xtream = profiles.First(p => p.Kind == ProfileKind.Xtream);
+
+            // Prefer the --e2e fixture profile: on a dev machine the database can also hold real
+            // provider profiles, and this gate must never play against a real provider.
+            var xtream = profiles.FirstOrDefault(p => p.Kind == ProfileKind.Xtream && p.Name == "E2E Xtream")
+                ?? profiles.First(p => p.Kind == ProfileKind.Xtream);
             await session.SwitchProfileAsync(xtream.Id, CancellationToken.None);
 
             var catalog = services.GetRequiredService<ICatalogRepository>();

@@ -95,6 +95,27 @@ public static class VodUiProbe
             report.AppendLine($"vod heading=\"{vodTitle}\" expected=\"{movie.Name}\" ok={vodTitleOk}");
             report.AppendLine($"vod liveBadge={vodBadge} ok={vodBadgeOk}");
 
+            // 1b) The timeline must be rendered and scrubbable: visible, sized to the real
+            // duration once the position timer resolves it, and a Seek must move the
+            // rendered slider (not just the service state).
+            await WaitForAsync(() => playback.DurationSeconds > 0, TimeSpan.FromSeconds(10));
+            await PumpAsync(window);
+            var (seekVisibility, seekMax, _, seekDurationText) = ReadSeekBar(window, overlay);
+            var seekVisibleOk = seekVisibility == Visibility.Visible;
+            var seekMaxOk = playback.DurationSeconds > 0
+                && Math.Abs(seekMax - playback.DurationSeconds) < 2;
+            report.AppendLine($"vod seekBar={seekVisibility} ok={seekVisibleOk}");
+            report.AppendLine(
+                $"vod seekMax={seekMax:F0} duration={playback.DurationSeconds:F0} " +
+                $"durationText=\"{seekDurationText}\" ok={seekMaxOk}");
+
+            var seekTarget = playback.DurationSeconds / 2;
+            playback.Seek(seekTarget);
+            await PumpAsync(window);
+            var (_, _, seekValue, _) = ReadSeekBar(window, overlay);
+            var seekMovedOk = Math.Abs(seekValue - seekTarget) < 5;
+            report.AppendLine($"vod seekValue={seekValue:F0} target={seekTarget:F0} ok={seekMovedOk}");
+
             // 2) Switch to a live channel in-place; the heading must follow and the badge return.
             await playback.PlayChannelAsync(channels[0], channels, preview: false, CancellationToken.None);
             var livePlaying = await WaitForAsync(() => playback.State == PlaybackState.Playing, TimeSpan.FromSeconds(15));
@@ -110,6 +131,11 @@ public static class VodUiProbe
             report.AppendLine($"live liveBadge={liveBadge} ok={liveBadgeOk}");
             report.AppendLine($"live isVod={playback.IsVod}");
 
+            // Live streams are not seekable — the timeline must leave with the VOD.
+            var (liveSeekVisibility, _, _, _) = ReadSeekBar(window, overlay);
+            var liveSeekOk = liveSeekVisibility == Visibility.Collapsed;
+            report.AppendLine($"live seekBar={liveSeekVisibility} ok={liveSeekOk}");
+
             playback.Stop();
             await PumpAsync(window);
 
@@ -118,7 +144,9 @@ public static class VodUiProbe
                 report.AppendLine($"ERROR {fault}");
             }
 
-            var pass = vodTitleOk && vodBadgeOk && liveTitleOk && liveBadgeOk
+            var pass = vodTitleOk && vodBadgeOk
+                && seekVisibleOk && seekMaxOk && seekMovedOk
+                && liveTitleOk && liveBadgeOk && liveSeekOk
                 && !playback.IsVod && faults.Count == 0;
             report.AppendLine(pass ? "VODUI-RESULT=PASS" : "VODUI-RESULT=FAIL");
             return pass ? 0 : 1;
@@ -141,6 +169,12 @@ public static class VodUiProbe
         Window window, PlayerOverlayView overlay) =>
         window.Dispatcher.Invoke(() =>
             (overlay.NowPlayingTitleText.Text, overlay.LiveBadge.Visibility, overlay.IsLoaded));
+
+    private static (Visibility Visibility, double Maximum, double Value, string DurationText) ReadSeekBar(
+        Window window, PlayerOverlayView overlay) =>
+        window.Dispatcher.Invoke(() =>
+            (overlay.SeekBar.Visibility, overlay.SeekSlider.Maximum,
+             overlay.SeekSlider.Value, overlay.SeekDurationText.Text));
 
     private static async Task PumpAsync(Window window)
     {

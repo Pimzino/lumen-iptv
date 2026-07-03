@@ -104,8 +104,9 @@ dictionaries. They read a static flag captured from `SystemParameters.ClientArea
 Every interactive element carries `AutomationProperties.Name` and a 2px accent focus ring (2px
 offset). The app is fully keyboard-navigable: Tab/Shift+Tab across the nav rail, lists, and
 controls; Enter/Space activates; arrow keys move within lists and the guide. The player has its
-own map (Space play/pause, F fullscreen, M mute, ↑/↓ zap, ←/→ volume, Esc back, Enter channel
-list), routed from the window so focus never eats a key. Ctrl+K opens search from anywhere;
+own map (Space play/pause, F fullscreen, M mute, Esc back, Enter channel list; arrows follow the
+content — live: ↑/↓ zap, ←/→ volume; VOD: ←/→ seek ±10s, ↑/↓ volume), routed from the window so
+focus never eats a key. Ctrl+K opens search from anywhere;
 Ctrl+Shift+G opens the design-system gallery (debug).
 
 ## Diagnostics & gates

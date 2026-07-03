@@ -92,6 +92,7 @@
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Now/next + progress -->
@@ -122,8 +123,36 @@
               </TextBlock>
             </Grid>
 
+            <!-- VOD timeline: elapsed / scrubbable seek bar / total. Live has no timeline —
+                 the read-only EPG programme progress above fills that role. Updates and the
+                 seek gesture are driven from code-behind, mirroring MiniPlayerWindow. -->
+            <Grid x:Name="SeekBar"
+                  Grid.Row="1"
+                  Margin="{StaticResource Lumen.Margin.B12}"
+                  Visibility="{Binding Playback.IsVod, Converter={StaticResource Lumen.BoolToVisibility}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock x:Name="SeekPositionText"
+                         Style="{StaticResource Lumen.Text.TabularCaption}"
+                         VerticalAlignment="Center" />
+              <Slider x:Name="SeekSlider"
+                      Grid.Column="1"
+                      Style="{StaticResource Lumen.Slider}"
+                      Minimum="0"
+                      VerticalAlignment="Center"
+                      Margin="12,0"
+                      AutomationProperties.Name="Seek" />
+              <TextBlock x:Name="SeekDurationText"
+                         Grid.Column="2"
+                         Style="{StaticResource Lumen.Text.TabularCaption}"
+                         VerticalAlignment="Center" />
+            </Grid>
+
             <!-- Controls row -->
-            <DockPanel Grid.Row="1" LastChildFill="False">
+            <DockPanel Grid.Row="2" LastChildFill="False">
               <Button DockPanel.Dock="Left"
                       Style="{StaticResource Lumen.Button.Icon}"
                       Command="{Binding TogglePlayPauseCommand}"

@@ -354,9 +354,14 @@ public sealed partial class PlayerViewModel : ObservableObject,
         UpdateProgress();
     }
 
+    /// <summary>Arrow-key seek stride for VOD content.</summary>
+    private const double SeekStepSeconds = 10;
+
     /// <summary>
     /// The player keyboard map (spec §4.4): Space play/pause, F fullscreen, M mute,
-    /// ↑/↓ zap, ←/→ volume, Esc back, Enter channel list. Routed from both the overlay
+    /// Esc back, Enter channel list. Arrows follow the content: live keeps the TV-remote
+    /// map (↑/↓ zap, ←/→ volume); VOD uses the media-player map (←/→ seek ±10s,
+    /// ↑/↓ volume — zapping has no meaning in a clip). Routed from both the overlay
     /// and the main window so focus quirks never eat a key.
     /// </summary>
     public bool HandleKey(System.Windows.Input.Key key)
@@ -378,16 +383,48 @@ public sealed partial class PlayerViewModel : ObservableObject,
                 ToggleMute();
                 return true;
             case System.Windows.Input.Key.Up:
-                _ = ZapUpAsync();
+                if (Playback.IsVod)
+                {
+                    VolumeUp();
+                }
+                else
+                {
+                    _ = ZapUpAsync();
+                }
+
                 return true;
             case System.Windows.Input.Key.Down:
-                _ = ZapDownAsync();
+                if (Playback.IsVod)
+                {
+                    VolumeDown();
+                }
+                else
+                {
+                    _ = ZapDownAsync();
+                }
+
                 return true;
             case System.Windows.Input.Key.Left:
-                VolumeDown();
+                if (Playback.IsVod)
+                {
+                    Playback.Seek(Playback.PositionSeconds - SeekStepSeconds);
+                }
+                else
+                {
+                    VolumeDown();
+                }
+
                 return true;
             case System.Windows.Input.Key.Right:
-                VolumeUp();
+                if (Playback.IsVod)
+                {
+                    Playback.Seek(Playback.PositionSeconds + SeekStepSeconds);
+                }
+                else
+                {
+                    VolumeUp();
+                }
+
                 return true;
             case System.Windows.Input.Key.Enter:
                 ToggleChannelList();

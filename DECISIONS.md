@@ -453,3 +453,17 @@ picture-in-picture button** next to Back opens the floating window (`ToMiniPlaye
 PiP now **brings the shell forward** — `MainWindow.SetMiniPlayerVisible(false)` restores the window
 if minimized and calls `Activate()`, so closing (stop) or expanding (→ full player) no longer leaves
 the main window stranded behind another app.
+
+**VOD seek timeline in the full player.** The full overlay had no way to scrub a movie/episode —
+live got the read-only EPG programme progress, VOD got nothing (only the PiP window had a seek
+slider). The bottom scrim gains a VOD-only timeline row above the transport (elapsed /
+full-width slider / total, `Lumen.Text.TabularCaption`), collapsed for live since raw IPTV
+streams aren't seekable and the EPG progress already fills that slot. It reuses the PiP's proven
+mechanics — code-behind drives the slider from `PositionSeconds`/`DurationSeconds` change
+notifications, a `_seeking` flag suspends updates mid-drag (a two-way binding would let the 1 s
+position tick yank the thumb), and release calls the existing `PlaybackService.Seek`; while
+scrubbing, the elapsed label follows the thumb. Arrow keys now follow the content: live keeps the
+TV-remote map (↑/↓ zap, ←/→ volume), VOD uses the media-player map (←/→ seek ±10 s, ↑/↓ volume —
+zap is meaningless without a channel list). `--e2e-vod-ui` now also asserts the rendered
+timeline: visible with `Maximum` ≈ duration for VOD, a `Seek` moves the rendered slider, and the
+bar collapses when switching to live.

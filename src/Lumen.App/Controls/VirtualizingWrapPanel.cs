@@ -40,6 +40,13 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        // WPF connects an items host to its ItemContainerGenerator lazily, on the first
+        // InternalChildren access. Touch it before anything else: a first measure that skips
+        // this (e.g. items still loading) would leave the panel unsubscribed from the
+        // generator's ItemsChanged, so items added afterwards would never invalidate measure
+        // and the grid would stay blank until an unrelated layout pass (window resize).
+        _ = InternalChildren;
+
         var itemCount = GetItemCount(this);
         _columns = Math.Max(1, (int)(availableSize.Width / ItemWidth));
         var rows = (int)Math.Ceiling(itemCount / (double)_columns);

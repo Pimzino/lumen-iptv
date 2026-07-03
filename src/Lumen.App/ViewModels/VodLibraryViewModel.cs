@@ -50,6 +50,7 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     private CancellationTokenSource? _loadCts;
     private int _loadedCount;
     private bool _hasMore;
+    private bool _suppressReload;
     private HashSet<string> _favoriteKeys = [];
 
     protected VodLibraryViewModel(
@@ -108,7 +109,11 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
             Categories.Add(category);
         }
 
+        // Suppress the selection hook: it would kick off a second, concurrent reload racing
+        // the awaited one below.
+        _suppressReload = true;
         SelectedCategory = Categories[0];
+        _suppressReload = false;
         await ReloadAsync();
     }
 
@@ -121,7 +126,13 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         _ => VodSortOrder.Added,
     };
 
-    partial void OnSelectedCategoryChanged(Category? value) => _ = ReloadAsync();
+    partial void OnSelectedCategoryChanged(Category? value)
+    {
+        if (!_suppressReload)
+        {
+            _ = ReloadAsync();
+        }
+    }
 
     partial void OnSortIndexChanged(int value) => _ = ReloadAsync();
 
@@ -145,7 +156,6 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         try
         {
             await LoadPageAsync(profile.Id, token);
-            HasItems = Items.Count > 0;
         }
         catch (OperationCanceledException)
         {
@@ -157,7 +167,12 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         }
         finally
         {
-            IsLoading = false;
+            // A superseded reload must not clear the loading state the newer reload owns.
+            if (!token.IsCancellationRequested)
+            {
+                HasItems = Items.Count > 0;
+                IsLoading = false;
+            }
         }
     }
 

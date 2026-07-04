@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Lumen.App.Controls;
 
@@ -84,6 +86,50 @@ public static class LumenUi
         {
             box.Password = (string)e.NewValue;
         }
+    }
+
+    /// <summary>
+    /// Shows the type-to-filter box inside a Lumen.ComboBox dropdown. Opening the dropdown
+    /// clears the previous filter and moves keyboard focus into the box.
+    /// </summary>
+    public static readonly DependencyProperty ShowPopupFilterProperty = DependencyProperty.RegisterAttached(
+        "ShowPopupFilter", typeof(bool), typeof(LumenUi), new PropertyMetadata(false, OnShowPopupFilterChanged));
+
+    public static bool GetShowPopupFilter(DependencyObject element) => (bool)element.GetValue(ShowPopupFilterProperty);
+
+    public static void SetShowPopupFilter(DependencyObject element, bool value) => element.SetValue(ShowPopupFilterProperty, value);
+
+    /// <summary>Current text of the dropdown filter box (bind to a view-model filter property).</summary>
+    public static readonly DependencyProperty PopupFilterTextProperty = DependencyProperty.RegisterAttached(
+        "PopupFilterText", typeof(string), typeof(LumenUi),
+        new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
+    public static string GetPopupFilterText(DependencyObject element) => (string)element.GetValue(PopupFilterTextProperty);
+
+    public static void SetPopupFilterText(DependencyObject element, string value) => element.SetValue(PopupFilterTextProperty, value);
+
+    private static void OnShowPopupFilterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not ComboBox comboBox || e.NewValue is not true)
+        {
+            return;
+        }
+
+        comboBox.DropDownOpened += (_, _) =>
+        {
+            // Each open starts a fresh search over the full list.
+            SetPopupFilterText(comboBox, string.Empty);
+
+            // The popup's visual tree only exists once the dropdown has rendered; focus a beat later.
+            comboBox.Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (comboBox.IsDropDownOpen
+                    && comboBox.Template?.FindName("PopupFilter", comboBox) is TextBox filter)
+                {
+                    Keyboard.Focus(filter);
+                }
+            });
+        };
     }
 
     private static void OnEnableFloatingLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

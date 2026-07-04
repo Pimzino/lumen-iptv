@@ -337,6 +337,7 @@ public sealed class CatalogRepository : ICatalogRepository
         long profileId,
         ContentKind kind,
         long? categoryId,
+        string? search,
         VodSortOrder sort,
         int limit,
         int offset,
@@ -350,17 +351,20 @@ public sealed class CatalogRepository : ICatalogRepository
         };
 
         var filter = categoryId is null ? string.Empty : "AND category_id = @categoryId";
+        var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        var searchFilter = term is null ? string.Empty : "AND name LIKE @pattern ESCAPE '\\'";
+        var pattern = term is null ? null : $"%{SqlLike.Escape(term)}%";
         var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using (connection.ConfigureAwait(false))
         {
             var rows = await connection.QueryAsync<VodItem>(new CommandDefinition(
                 $"""
                  SELECT * FROM vod_items
-                 WHERE profile_id = @profileId AND kind = @kind {filter}
+                 WHERE profile_id = @profileId AND kind = @kind {filter} {searchFilter}
                  ORDER BY {orderBy}
                  LIMIT @limit OFFSET @offset
                  """,
-                new { profileId, kind, categoryId, limit, offset },
+                new { profileId, kind, categoryId, pattern, limit, offset },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
             return rows.AsList();
         }
@@ -377,9 +381,21 @@ public sealed class CatalogRepository : ICatalogRepository
         }
     }, cancellationToken);
 
+    public Task<VodItem?> GetVodItemByProviderIdAsync(
+        long profileId, ContentKind kind, string providerItemId, CancellationToken cancellationToken) => DbOffload.Run(async () =>
+    {
+        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            return await connection.QuerySingleOrDefaultAsync<VodItem>(new CommandDefinition(
+                "SELECT * FROM vod_items WHERE profile_id = @profileId AND kind = @kind AND provider_item_id = @providerItemId",
+                new { profileId, kind, providerItemId }, cancellationToken: cancellationToken)).ConfigureAwait(false);
+        }
+    }, cancellationToken);
+
     public Task<IReadOnlyList<VodItem>> GetRecentVodAsync(
         long profileId, ContentKind kind, int limit, CancellationToken cancellationToken) =>
-        GetVodItemsAsync(profileId, kind, categoryId: null, VodSortOrder.Added, limit, 0, cancellationToken);
+        GetVodItemsAsync(profileId, kind, categoryId: null, search: null, VodSortOrder.Added, limit, 0, cancellationToken);
 
     public Task SetCategoryKindOverrideAsync(
         long categoryId, ContentKind? kind, CancellationToken cancellationToken) => DbOffload.Run(async () =>

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Lumen.App.Services;
@@ -46,12 +47,15 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     private readonly IFavoritesRepository _favorites;
     private readonly ISessionService _session;
     private readonly INavigationService _navigation;
+    private readonly DispatcherTimer _searchDebounce;
 
     private CancellationTokenSource? _loadCts;
     private int _loadedCount;
     private bool _hasMore;
     private bool _suppressReload;
     private HashSet<string> _favoriteKeys = [];
+    private List<Category> _allCategories = [];
+    private Category? _lastRealCategory;
 
     protected VodLibraryViewModel(
         ICatalogRepository catalog,
@@ -63,6 +67,13 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         _favorites = favorites;
         _session = session;
         _navigation = navigation;
+
+        _searchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        _searchDebounce.Tick += (_, _) =>
+        {
+            _searchDebounce.Stop();
+            _ = ReloadAsync();
+        };
     }
 
     protected abstract ContentKind Kind { get; }
@@ -82,10 +93,19 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     private int _sortIndex;
 
     [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private string _categoryFilterText = string.Empty;
+
+    [ObservableProperty]
     private bool _isLoading = true;
 
     [ObservableProperty]
     private bool _hasItems = true;
+
+    [ObservableProperty]
+    private string _emptyMessage = Resources.Strings.Vod_NoItems;
 
     public async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
@@ -102,12 +122,8 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
             .Select(f => f.ItemKey)
             .ToHashSet(StringComparer.Ordinal);
 
-        Categories.Clear();
-        Categories.Add(AllCategories);
-        foreach (var category in await _catalog.GetCategoriesAsync(profile.Id, Kind, cancellationToken))
-        {
-            Categories.Add(category);
-        }
+        _allCategories = [AllCategories, .. await _catalog.GetCategoriesAsync(profile.Id, Kind, cancellationToken)];
+        ApplyCategoryFilter();
 
         // Suppress the selection hook: it would kick off a second, concurrent reload racing
         // the awaited one below.
@@ -117,7 +133,11 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         await ReloadAsync();
     }
 
-    public void OnNavigatedFrom() => _loadCts?.Cancel();
+    public void OnNavigatedFrom()
+    {
+        _searchDebounce.Stop();
+        _loadCts?.Cancel();
+    }
 
     private VodSortOrder Sort => SortIndex switch
     {
@@ -128,13 +148,73 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
 
     partial void OnSelectedCategoryChanged(Category? value)
     {
+        if (value is not null)
+        {
+            _lastRealCategory = value;
+        }
+
         if (!_suppressReload)
         {
+            // The reload below already reads the current SearchText; a pending debounce
+            // tick would only repeat it.
+            _searchDebounce.Stop();
             _ = ReloadAsync();
         }
     }
 
-    partial void OnSortIndexChanged(int value) => _ = ReloadAsync();
+    partial void OnSortIndexChanged(int value)
+    {
+        _searchDebounce.Stop();
+        _ = ReloadAsync();
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
+        _searchDebounce.Stop();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            _ = ReloadAsync();
+        }
+        else
+        {
+            _searchDebounce.Start();
+        }
+    }
+
+    partial void OnCategoryFilterTextChanged(string value) => ApplyCategoryFilter();
+
+    private void ApplyCategoryFilter()
+    {
+        var filter = CategoryFilterText.Trim();
+
+        // Removing the selected row makes the ListBox null SelectedCategory synchronously
+        // inside Clear(); a null-triggered reload would cancel _loadCts and strand IsLoading.
+        // Suppress the hook for the whole refill, then restore the selection if it survived.
+        _suppressReload = true;
+        try
+        {
+            Categories.Clear();
+            foreach (var category in _allCategories)
+            {
+                // "All" is pinned: it's the default selection and the escape hatch.
+                if (ReferenceEquals(category, AllCategories)
+                    || filter.Length == 0
+                    || category.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    Categories.Add(category);
+                }
+            }
+
+            if (SelectedCategory is null && _lastRealCategory is { } last && Categories.Contains(last))
+            {
+                SelectedCategory = last;
+            }
+        }
+        finally
+        {
+            _suppressReload = false;
+        }
+    }
 
     private async Task ReloadAsync()
     {
@@ -171,6 +251,9 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
             if (!token.IsCancellationRequested)
             {
                 HasItems = Items.Count > 0;
+                EmptyMessage = string.IsNullOrWhiteSpace(SearchText)
+                    ? Resources.Strings.Vod_NoItems
+                    : Resources.Strings.Filter_NoMatches;
                 IsLoading = false;
             }
         }
@@ -180,7 +263,7 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     {
         var page = await _catalog.GetVodItemsAsync(
             profileId, Kind, SelectedCategory!.Id == 0 ? null : SelectedCategory.Id,
-            Sort, PageSize, _loadedCount, cancellationToken);
+            SearchText, Sort, PageSize, _loadedCount, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         foreach (var item in page)

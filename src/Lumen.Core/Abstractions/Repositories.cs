@@ -57,16 +57,25 @@ public interface ICatalogRepository
 
     Task UpsertVodItemsAsync(long profileId, ContentKind kind, IReadOnlyList<VodItem> items, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Pages VOD items; <paramref name="search"/> optionally narrows by case-insensitive
+    /// name substring.
+    /// </summary>
     Task<IReadOnlyList<VodItem>> GetVodItemsAsync(
         long profileId,
         ContentKind kind,
         long? categoryId,
+        string? search,
         VodSortOrder sort,
         int limit,
         int offset,
         CancellationToken cancellationToken);
 
     Task<VodItem?> GetVodItemAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>Direct lookup by the provider's item id (unique per profile + kind).</summary>
+    Task<VodItem?> GetVodItemByProviderIdAsync(
+        long profileId, ContentKind kind, string providerItemId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<VodItem>> GetRecentVodAsync(long profileId, ContentKind kind, int limit, CancellationToken cancellationToken);
 

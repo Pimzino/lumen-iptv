@@ -144,6 +144,18 @@
                      TextWrapping="Wrap"
                      Margin="{StaticResource Lumen.Margin.B16}"
                      Visibility="{Binding HasUnmappedChannels, Converter={StaticResource Lumen.BoolToVisibility}}" />
+          <TextBox Style="{StaticResource Lumen.SearchField}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Filter_ChannelsPlaceholder}"
+                   Text="{Binding MappingFilterText, UpdateSourceTrigger=PropertyChanged}"
+                   MaxWidth="360"
+                   HorizontalAlignment="Left"
+                   Margin="{StaticResource Lumen.Margin.B12}"
+                   Visibility="{Binding HasUnmappedChannels, Converter={StaticResource Lumen.BoolToVisibility}}"
+                   AutomationProperties.Name="{x:Static res:Strings.Filter_ChannelsPlaceholder}" />
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{x:Static res:Strings.Filter_NoMatches}"
+                     Margin="{StaticResource Lumen.Margin.B8}"
+                     Visibility="{Binding MappingFilterHasNoMatches, Converter={StaticResource Lumen.BoolToVisibility}}" />
           <!-- Virtualized: a large playlist can leave thousands of channels unmatched. Without
                virtualization the ItemsControl realizes a ComboBox per row up front and freezes the
                UI thread. VirtualizingStackPanel + CanContentScroll realizes only the visible rows. -->
@@ -177,10 +189,12 @@
                              TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                   <ComboBox Grid.Column="1"
-                            ItemsSource="{Binding DataContext.EpgChannelOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            ItemsSource="{Binding Options}"
                             SelectedValue="{Binding SelectedXmltvId, Mode=TwoWay}"
                             SelectedValuePath="XmltvId"
                             DisplayMemberPath="Display"
+                            ctl:LumenUi.ShowPopupFilter="True"
+                            ctl:LumenUi.PopupFilterText="{Binding OptionsFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                             AutomationProperties.Name="Guide channel" />
                 </Grid>
               </DataTemplate>

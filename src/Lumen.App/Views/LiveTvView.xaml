@@ -16,6 +16,12 @@
                  Style="{StaticResource Lumen.Text.Title}"
                  Text="{x:Static res:Strings.Nav_LiveTv}"
                  Margin="24,24,16,16" />
+      <TextBox DockPanel.Dock="Top"
+               Style="{StaticResource Lumen.SearchField}"
+               ctl:LumenUi.Label="{x:Static res:Strings.Filter_CategoriesPlaceholder}"
+               Text="{Binding CategoryFilterText, UpdateSourceTrigger=PropertyChanged}"
+               Margin="16,0,16,12"
+               AutomationProperties.Name="{x:Static res:Strings.Filter_CategoriesPlaceholder}" />
       <ListBox Style="{StaticResource Lumen.ListBox}"
                ItemContainerStyle="{StaticResource Lumen.ListRow}"
                ItemsSource="{Binding Categories}"
@@ -37,6 +43,7 @@
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -48,8 +55,15 @@
                      Margin="{StaticResource Lumen.Margin.L8}" />
         </StackPanel>
 
+        <TextBox Grid.Row="1"
+                 Style="{StaticResource Lumen.SearchField}"
+                 ctl:LumenUi.Label="{x:Static res:Strings.Filter_ChannelsPlaceholder}"
+                 Text="{Binding ChannelSearchText, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="16,0,16,12"
+                 AutomationProperties.Name="{x:Static res:Strings.Filter_ChannelsPlaceholder}" />
+
         <!-- loading skeletons -->
-        <StackPanel Grid.Row="1"
+        <StackPanel Grid.Row="2"
                     Margin="{StaticResource Lumen.Pad.16}"
                     Visibility="{Binding IsLoadingChannels, Converter={StaticResource Lumen.BoolToVisibility}}">
           <ctl:SkeletonBlock Height="56" Margin="{StaticResource Lumen.Margin.B8}" />
@@ -60,9 +74,9 @@
         </StackPanel>
 
         <!-- empty state -->
-        <TextBlock Grid.Row="1"
+        <TextBlock Grid.Row="2"
                    Style="{StaticResource Lumen.Text.BodySecondary}"
-                   Text="{x:Static res:Strings.LiveTv_NoChannels}"
+                   Text="{Binding EmptyMessage}"
                    TextWrapping="Wrap"
                    TextAlignment="Center"
                    MaxWidth="260"
@@ -70,7 +84,7 @@
                    VerticalAlignment="Center"
                    Visibility="{Binding HasChannels, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
 
-        <ListBox Grid.Row="1"
+        <ListBox Grid.Row="2"
                  Style="{StaticResource Lumen.ListBox.Channels}"
                  ItemsSource="{Binding Channels}"
                  SelectedItem="{Binding SelectedChannel}"

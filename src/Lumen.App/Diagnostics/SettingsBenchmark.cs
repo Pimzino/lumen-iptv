@@ -29,18 +29,21 @@ public static class SettingsBenchmark
             const int total = 10000;
             var vm = services.GetRequiredService<SettingsViewModel>();
 
+            var options = new List<EpgChannelOption>();
             for (var i = 0; i < 50; i++)
             {
-                vm.EpgChannelOptions.Add(new EpgChannelOption($"id{i}", $"EPG Channel {i}"));
+                options.Add(new EpgChannelOption($"id{i}", $"EPG Channel {i}"));
             }
 
             var populate = Stopwatch.StartNew();
+            var rows = new List<ChannelMappingRow>(total);
             for (var i = 0; i < total; i++)
             {
                 var channel = new Channel { Id = i, Name = $"Channel {i}" };
-                vm.UnmappedChannels.Add(new ChannelMappingRow(channel, null, static (_, _) => { }));
+                rows.Add(new ChannelMappingRow(channel, null, options, static (_, _) => { }));
             }
 
+            vm.UnmappedChannels = rows;
             vm.HasUnmappedChannels = true;
             vm.IsLoading = false; // the page content (and its mapping list) is skeleton-gated during load
             var populateMs = populate.ElapsedMilliseconds;

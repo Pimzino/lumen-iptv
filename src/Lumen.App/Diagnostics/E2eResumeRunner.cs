@@ -35,7 +35,7 @@ public static class E2eResumeRunner
 
             var catalog = services.GetRequiredService<ICatalogRepository>();
             var movies = await catalog.GetVodItemsAsync(
-                xtream.Id, ContentKind.Movie, null, VodSortOrder.Added, 10, 0, CancellationToken.None);
+                xtream.Id, ContentKind.Movie, null, null, VodSortOrder.Added, 10, 0, CancellationToken.None);
             report.AppendLine($"movies={movies.Count}");
             if (movies.Count == 0)
             {

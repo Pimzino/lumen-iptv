@@ -15,6 +15,12 @@
                  Style="{StaticResource Lumen.Text.Title}"
                  Text="{Binding Title}"
                  Margin="24,24,16,16" />
+      <TextBox DockPanel.Dock="Top"
+               Style="{StaticResource Lumen.SearchField}"
+               ctl:LumenUi.Label="{x:Static res:Strings.Filter_CategoriesPlaceholder}"
+               Text="{Binding CategoryFilterText, UpdateSourceTrigger=PropertyChanged}"
+               Margin="16,0,16,12"
+               AutomationProperties.Name="{x:Static res:Strings.Filter_CategoriesPlaceholder}" />
       <ListBox Style="{StaticResource Lumen.ListBox}"
                ItemContainerStyle="{StaticResource Lumen.ListRow}"
                ItemsSource="{Binding Categories}"
@@ -35,17 +41,30 @@
         <RowDefinition Height="*" />
       </Grid.RowDefinitions>
 
-      <!-- Sort bar -->
-      <StackPanel Orientation="Horizontal" Margin="24,24,24,12" HorizontalAlignment="Right">
-        <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                   Text="{x:Static res:Strings.Vod_Sort}"
-                   VerticalAlignment="Center"
-                   Margin="{StaticResource Lumen.Margin.R12}" />
-        <ComboBox Width="180"
-                  ItemsSource="{Binding SortOptions}"
-                  SelectedIndex="{Binding SortIndex}"
-                  AutomationProperties.Name="Sort order" />
-      </StackPanel>
+      <!-- Search + sort bar -->
+      <Grid Margin="24,24,24,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBox Style="{StaticResource Lumen.SearchField}"
+                 MaxWidth="320"
+                 HorizontalAlignment="Left"
+                 MinWidth="220"
+                 ctl:LumenUi.Label="{x:Static res:Strings.Vod_SearchPlaceholder}"
+                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 AutomationProperties.Name="{x:Static res:Strings.Vod_SearchPlaceholder}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Vod_Sort}"
+                     VerticalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.R12}" />
+          <ComboBox Width="180"
+                    ItemsSource="{Binding SortOptions}"
+                    SelectedIndex="{Binding SortIndex}"
+                    AutomationProperties.Name="Sort order" />
+        </StackPanel>
+      </Grid>
 
       <!-- loading -->
       <WrapPanel Grid.Row="1"
@@ -61,7 +80,7 @@
       <!-- empty -->
       <TextBlock Grid.Row="1"
                  Style="{StaticResource Lumen.Text.BodySecondary}"
-                 Text="{x:Static res:Strings.Vod_NoItems}"
+                 Text="{Binding EmptyMessage}"
                  TextWrapping="Wrap"
                  TextAlignment="Center"
                  MaxWidth="320"

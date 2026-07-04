@@ -42,12 +42,19 @@ public sealed record EpgChannelOption(string? XmltvId, string Display);
 public sealed partial class ChannelMappingRow : ObservableObject
 {
     private readonly Action<ChannelMappingRow, string?> _onChanged;
+    private readonly IReadOnlyList<EpgChannelOption> _allOptions;
     private bool _suppress;
 
-    public ChannelMappingRow(Channel channel, string? currentXmltvId, Action<ChannelMappingRow, string?> onChanged)
+    public ChannelMappingRow(
+        Channel channel,
+        string? currentXmltvId,
+        IReadOnlyList<EpgChannelOption> options,
+        Action<ChannelMappingRow, string?> onChanged)
     {
         Channel = channel;
         _onChanged = onChanged;
+        _allOptions = options;
+        _options = options;
         _selectedXmltvId = currentXmltvId;
     }
 
@@ -57,6 +64,13 @@ public sealed partial class ChannelMappingRow : ObservableObject
 
     [ObservableProperty]
     private string? _selectedXmltvId;
+
+    /// <summary>The dropdown's (possibly filtered) guide-channel choices.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<EpgChannelOption> _options;
+
+    [ObservableProperty]
+    private string _optionsFilter = string.Empty;
 
     internal void SetWithoutNotify(string? xmltvId)
     {
@@ -71,6 +85,32 @@ public sealed partial class ChannelMappingRow : ObservableObject
         {
             _onChanged(this, value);
         }
+    }
+
+    partial void OnOptionsFilterChanged(string value)
+    {
+        var filter = value.Trim();
+        if (filter.Length == 0)
+        {
+            Options = _allOptions;
+            return;
+        }
+
+        var matches = new List<EpgChannelOption>();
+        foreach (var option in _allOptions)
+        {
+            // The "(no guide)" sentinel and the current selection are pinned: dropping the
+            // selected option from ItemsSource would clear SelectedValue through the two-way
+            // binding and erase the stored mapping mid-keystroke.
+            if (option.XmltvId is null
+                || option.XmltvId == SelectedXmltvId
+                || option.Display.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            {
+                matches.Add(option);
+            }
+        }
+
+        Options = matches;
     }
 }
 
@@ -91,8 +131,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly IDialogService _dialogs;
     private readonly IToastService _toasts;
     private readonly IMessenger _messenger;
+    private readonly System.Windows.Threading.DispatcherTimer _mappingFilterDebounce;
 
     private bool _loaded;
+    private List<ChannelMappingRow> _allUnmapped = [];
 
     public SettingsViewModel(
         ISessionService session,
@@ -118,13 +160,23 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _dialogs = dialogs;
         _toasts = toasts;
         _messenger = messenger;
+
+        _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200),
+        };
+        _mappingFilterDebounce.Tick += (_, _) =>
+        {
+            _mappingFilterDebounce.Stop();
+            ApplyMappingFilter();
+        };
     }
 
     public ObservableCollection<ProfileEntry> Profiles { get; } = [];
 
-    public ObservableCollection<ChannelMappingRow> UnmappedChannels { get; } = [];
-
-    public ObservableCollection<EpgChannelOption> EpgChannelOptions { get; } = [];
+    /// <summary>Replaced wholesale on filter changes — thousands of rows, one collection reset.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<ChannelMappingRow> _unmappedChannels = [];
 
     /// <summary>True during the initial page load only — manual refreshes keep the page visible.</summary>
     [ObservableProperty]
@@ -135,6 +187,13 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     [ObservableProperty]
     private bool _hasUnmappedChannels;
+
+    [ObservableProperty]
+    private string _mappingFilterText = string.Empty;
+
+    /// <summary>True when a mapping filter is active and hides every row.</summary>
+    [ObservableProperty]
+    private bool _mappingFilterHasNoMatches;
 
     [ObservableProperty]
     private string _epgCounts = string.Empty;
@@ -181,8 +240,29 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         }
     }
 
-    public void OnNavigatedFrom()
+    public void OnNavigatedFrom() => _mappingFilterDebounce.Stop();
+
+    partial void OnMappingFilterTextChanged(string value)
     {
+        _mappingFilterDebounce.Stop();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            ApplyMappingFilter();
+        }
+        else
+        {
+            _mappingFilterDebounce.Start();
+        }
+    }
+
+    private void ApplyMappingFilter()
+    {
+        var filter = MappingFilterText.Trim();
+        UnmappedChannels = filter.Length == 0
+            ? _allUnmapped
+            : _allUnmapped.Where(r => r.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        MappingFilterHasNoMatches = UnmappedChannels.Count == 0 && _allUnmapped.Count > 0;
     }
 
     private async Task ReloadAsync(CancellationToken cancellationToken)
@@ -234,27 +314,28 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         var mappings = (await _epgRepository.GetMappingsAsync(profile.Id, cancellationToken))
             .ToDictionary(m => m.ChannelId, m => m.XmltvId);
 
-        EpgChannelOptions.Clear();
-        EpgChannelOptions.Add(new EpgChannelOption(null, Strings.Settings_MappingNone));
+        // One shared master list; each row filters its own dropdown view over it.
+        var options = new List<EpgChannelOption> { new(null, Strings.Settings_MappingNone) };
         foreach (var epg in epgChannels.OrderBy(e => e.DisplayName ?? e.XmltvId, StringComparer.OrdinalIgnoreCase))
         {
-            EpgChannelOptions.Add(new EpgChannelOption(epg.XmltvId, epg.DisplayName ?? epg.XmltvId));
+            options.Add(new EpgChannelOption(epg.XmltvId, epg.DisplayName ?? epg.XmltvId));
         }
 
         // Surface channels whose guide is unmatched (or unset), the ones worth a manual fix.
-        UnmappedChannels.Clear();
+        _allUnmapped = [];
         foreach (var channel in channels)
         {
             if (!mappings.ContainsKey(channel.Id))
             {
-                UnmappedChannels.Add(new ChannelMappingRow(channel, null, OnMappingChanged));
+                _allUnmapped.Add(new ChannelMappingRow(channel, null, options, OnMappingChanged));
             }
         }
 
-        HasUnmappedChannels = UnmappedChannels.Count > 0;
-        MappingSummary = UnmappedChannels.Count == 0
+        ApplyMappingFilter();
+        HasUnmappedChannels = _allUnmapped.Count > 0;
+        MappingSummary = _allUnmapped.Count == 0
             ? Strings.Settings_MappingAllMatched
-            : Strings.Format(Strings.Settings_MappingUnmatchedFormat, UnmappedChannels.Count);
+            : Strings.Format(Strings.Settings_MappingUnmatchedFormat, _allUnmapped.Count);
     }
 
     private void OnMappingChanged(ChannelMappingRow row, string? xmltvId)

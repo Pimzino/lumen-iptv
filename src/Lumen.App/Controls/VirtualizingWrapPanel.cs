@@ -174,6 +174,12 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
             case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                 // The generator clears its own realized map on reset; drop all containers to match.
                 RemoveInternalChildRange(0, InternalChildren.Count);
+
+                // A reset is a reload (Items.Clear() ahead of a new result set) — jump back to
+                // the top. The stale offset would otherwise survive: the ListBox is collapsed
+                // while loading, so no intermediate measure re-clamps it, and the user lands
+                // mid-grid — possibly inside the infinite-scroll threshold, chain-firing LoadMore.
+                SetVerticalOffset(0);
                 break;
         }
 

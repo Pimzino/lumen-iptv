@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ctl="clr-namespace:Lumen.App.Controls"
+                    xmlns:res="clr-namespace:Lumen.App.Resources"
                     xmlns:theming="clr-namespace:Lumen.App.Theming">
 
   <ResourceDictionary.MergedDictionaries>
@@ -322,6 +323,76 @@
     </Setter>
   </Style>
 
+  <!-- Compact inline search/filter field. Unlike the floating-label fields above, the
+       placeholder (ctl:LumenUi.Label) stays visible while focused-but-empty and only
+       yields to typed text. -->
+  <Style x:Key="Lumen.SearchField" TargetType="TextBox">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+    <Setter Property="CaretBrush" Value="{StaticResource Lumen.Brush.Accent}" />
+    <Setter Property="SelectionBrush" Value="{StaticResource Lumen.Brush.Accent}" />
+    <Setter Property="Background" Value="{StaticResource Lumen.Brush.Field.Bg}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Subtle}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Lumen.Stroke.Border}" />
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Caption}" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Border x:Name="Root"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{StaticResource Lumen.Radius.Control}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="{StaticResource Lumen.Icon.Search}"
+                         FontFamily="{StaticResource Lumen.Font.Icons}"
+                         FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                         Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
+                         VerticalAlignment="Center"
+                         Margin="10,0,0,0" />
+              <TextBlock x:Name="Placeholder"
+                         Grid.Column="1"
+                         Text="{Binding Path=(ctl:LumenUi.Label), RelativeSource={RelativeSource TemplatedParent}}"
+                         Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
+                         FontSize="{TemplateBinding FontSize}"
+                         VerticalAlignment="Center"
+                         Margin="8,0,10,0"
+                         IsHitTestVisible="False"
+                         Visibility="Collapsed" />
+              <ScrollViewer x:Name="PART_ContentHost"
+                            Grid.Column="1"
+                            Margin="8,0,10,0"
+                            VerticalAlignment="Center"
+                            Focusable="False"
+                            HorizontalScrollBarVisibility="Hidden"
+                            VerticalScrollBarVisibility="Hidden" />
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Text" Value="">
+              <Setter TargetName="Placeholder" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Strong}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+              <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Lumen.Brush.Accent}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Root" Property="Opacity" Value="0.4" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <Style x:Key="Lumen.PasswordBox" TargetType="PasswordBox">
     <Setter Property="ctl:LumenUi.EnableFloatingLabel" Value="True" />
     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -621,6 +692,16 @@
     <Setter Property="ItemContainerStyle" Value="{StaticResource Lumen.ComboBoxItem}" />
     <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
     <Setter Property="SnapsToDevicePixels" Value="True" />
+    <!-- Explicit virtualization: an EPG source can put tens of thousands of options in one
+         dropdown, and realizing them all on open freezes the UI thread for seconds. -->
+    <Setter Property="ItemsPanel">
+      <Setter.Value>
+        <ItemsPanelTemplate>
+          <VirtualizingStackPanel VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling" />
+        </ItemsPanelTemplate>
+      </Setter.Value>
+    </Setter>
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ComboBox">
@@ -714,13 +795,29 @@
                       Padding="{StaticResource Lumen.Pad.4}"
                       MinWidth="{Binding ActualWidth, ElementName=ToggleButton}"
                       MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                <ScrollViewer>
-                  <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
-                </ScrollViewer>
+                <DockPanel>
+                  <!-- Opt-in type-to-filter box (ctl:LumenUi.ShowPopupFilter); its text relays
+                       through the PopupFilterText attached property so the consumer can bind a
+                       view-model filter without retemplating. -->
+                  <TextBox x:Name="PopupFilter"
+                           DockPanel.Dock="Top"
+                           Style="{StaticResource Lumen.SearchField}"
+                           ctl:LumenUi.Label="{x:Static res:Strings.Filter_TypeToFilterPlaceholder}"
+                           Text="{Binding Path=(ctl:LumenUi.PopupFilterText), RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                           Margin="4,4,4,8"
+                           Visibility="Collapsed"
+                           AutomationProperties.Name="{x:Static res:Strings.Filter_TypeToFilterPlaceholder}" />
+                  <ScrollViewer CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}">
+                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                  </ScrollViewer>
+                </DockPanel>
               </Border>
             </Popup>
           </Grid>
           <ControlTemplate.Triggers>
+            <Trigger Property="ctl:LumenUi.ShowPopupFilter" Value="True">
+              <Setter TargetName="PopupFilter" Property="Visibility" Value="Visible" />
+            </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.4" />
             </Trigger>

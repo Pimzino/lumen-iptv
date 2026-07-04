@@ -118,9 +118,18 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
             return;
         }
 
-        var items = await _catalog.GetVodItemsAsync(
-            profileId, kind, null, VodSortOrder.Name, 5000, 0, cancellationToken);
-        foreach (var item in items.Where(i => keys.Contains(i.ProviderItemId)))
+        // One indexed point lookup per favorite: unlike a capped scan, this stays correct
+        // however large the library is.
+        var items = new List<VodItem>(keys.Count);
+        foreach (var key in keys)
+        {
+            if (await _catalog.GetVodItemByProviderIdAsync(profileId, kind, key, cancellationToken) is { } resolved)
+            {
+                items.Add(resolved);
+            }
+        }
+
+        foreach (var item in items.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             target.Add(new FavoriteCard
             {

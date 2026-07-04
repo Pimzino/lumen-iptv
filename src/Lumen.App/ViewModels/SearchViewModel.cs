@@ -186,9 +186,8 @@ public sealed partial class SearchViewModel : ObservableObject, INavigationAware
 
             case ContentKind.Movie:
             case ContentKind.Series:
-                var items = await _catalog.GetVodItemsAsync(
-                    profile.Id, hit.Kind, null, VodSortOrder.Name, 1000, 0, CancellationToken.None);
-                var item = items.FirstOrDefault(i => i.ProviderItemId == hit.ItemKey);
+                var item = await _catalog.GetVodItemByProviderIdAsync(
+                    profile.Id, hit.Kind, hit.ItemKey, CancellationToken.None);
                 if (item is not null)
                 {
                     _navigation.NavigateTo<VodDetailViewModel>(item);

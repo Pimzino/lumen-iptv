@@ -272,9 +272,8 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
             ? itemKey[..itemKey.IndexOf(':', StringComparison.Ordinal)]
             : itemKey;
 
-        var items = await _catalog.GetVodItemsAsync(
-            profile.Id, lookupKind, null, VodSortOrder.Name, 5000, 0, CancellationToken.None);
-        var item = items.FirstOrDefault(i => i.ProviderItemId == providerId);
+        var item = await _catalog.GetVodItemByProviderIdAsync(
+            profile.Id, lookupKind, providerId, CancellationToken.None);
         if (item is not null)
         {
             _navigation.NavigateTo<VodDetailViewModel>(item);

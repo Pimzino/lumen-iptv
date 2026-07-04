@@ -144,6 +144,7 @@ public static class Strings
     public static string LiveTv_NowLabel => Get(nameof(LiveTv_NowLabel));
     public static string LiveTv_NextLabel => Get(nameof(LiveTv_NextLabel));
     public static string LiveTv_NoGuideData => Get(nameof(LiveTv_NoGuideData));
+    public static string LiveTv_ChannelCountOfFormat => Get(nameof(LiveTv_ChannelCountOfFormat));
     public static string Player_ReconnectingFormat => Get(nameof(Player_ReconnectingFormat));
     public static string Player_ErrorTitle => Get(nameof(Player_ErrorTitle));
     public static string Player_Audio => Get(nameof(Player_Audio));
@@ -164,6 +165,7 @@ public static class Strings
     public static string Settings_MappingNone => Get(nameof(Settings_MappingNone));
 
     public static string Vod_Sort => Get(nameof(Vod_Sort));
+    public static string Vod_SearchPlaceholder => Get(nameof(Vod_SearchPlaceholder));
     public static string Vod_Play => Get(nameof(Vod_Play));
     public static string Vod_StartOver => Get(nameof(Vod_StartOver));
     public static string Vod_AddFavorite => Get(nameof(Vod_AddFavorite));
@@ -176,6 +178,10 @@ public static class Strings
     public static string Search_GroupProgrammes => Get(nameof(Search_GroupProgrammes));
     public static string Search_Prompt => Get(nameof(Search_Prompt));
     public static string Search_NoResultsFormat => Get(nameof(Search_NoResultsFormat));
+    public static string Filter_CategoriesPlaceholder => Get(nameof(Filter_CategoriesPlaceholder));
+    public static string Filter_ChannelsPlaceholder => Get(nameof(Filter_ChannelsPlaceholder));
+    public static string Filter_NoMatches => Get(nameof(Filter_NoMatches));
+    public static string Filter_TypeToFilterPlaceholder => Get(nameof(Filter_TypeToFilterPlaceholder));
     public static string Favorites_Empty => Get(nameof(Favorites_Empty));
     public static string Favorites_Remove => Get(nameof(Favorites_Remove));
 }

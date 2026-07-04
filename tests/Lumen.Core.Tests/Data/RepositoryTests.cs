@@ -135,11 +135,11 @@ public sealed class RepositoryTests : IAsyncLifetime, IDisposable
         await _catalog.UpsertVodItemsAsync(_profileId, ContentKind.Movie, items, CancellationToken.None);
 
         var byName = await _catalog.GetVodItemsAsync(
-            _profileId, ContentKind.Movie, null, VodSortOrder.Name, 10, 0, CancellationToken.None);
+            _profileId, ContentKind.Movie, null, null, VodSortOrder.Name, 10, 0, CancellationToken.None);
         byName.Select(i => i.Name).Should().ContainInOrder("Alpha", "Bravo", "Charlie");
 
         var byRating = await _catalog.GetVodItemsAsync(
-            _profileId, ContentKind.Movie, null, VodSortOrder.Rating, 10, 0, CancellationToken.None);
+            _profileId, ContentKind.Movie, null, null, VodSortOrder.Rating, 10, 0, CancellationToken.None);
         byRating[0].Name.Should().Be("Bravo");
 
         var recent = await _catalog.GetRecentVodAsync(_profileId, ContentKind.Movie, 2, CancellationToken.None);
@@ -149,8 +149,73 @@ public sealed class RepositoryTests : IAsyncLifetime, IDisposable
         await _catalog.UpsertVodItemsAsync(
             _profileId, ContentKind.Movie, items.Take(2).ToList(), CancellationToken.None);
         var after = await _catalog.GetVodItemsAsync(
-            _profileId, ContentKind.Movie, null, VodSortOrder.Name, 10, 0, CancellationToken.None);
+            _profileId, ContentKind.Movie, null, null, VodSortOrder.Name, 10, 0, CancellationToken.None);
         after.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task VodItems_SearchFiltersByNameSubstring()
+    {
+        var items = new List<VodItem>
+        {
+            new() { ProviderItemId = "1", Name = "The Matrix" },
+            new() { ProviderItemId = "2", Name = "Matrix Reloaded" },
+            new() { ProviderItemId = "3", Name = "Inception" },
+        };
+        await _catalog.UpsertVodItemsAsync(_profileId, ContentKind.Movie, items, CancellationToken.None);
+
+        var hits = await _catalog.GetVodItemsAsync(
+            _profileId, ContentKind.Movie, null, "matrix", VodSortOrder.Name, 10, 0, CancellationToken.None);
+        hits.Select(i => i.Name).Should().ContainInOrder("Matrix Reloaded", "The Matrix");
+
+        var none = await _catalog.GetVodItemsAsync(
+            _profileId, ContentKind.Movie, null, "zzz", VodSortOrder.Name, 10, 0, CancellationToken.None);
+        none.Should().BeEmpty();
+
+        // Blank search means no filter.
+        var blank = await _catalog.GetVodItemsAsync(
+            _profileId, ContentKind.Movie, null, "   ", VodSortOrder.Name, 10, 0, CancellationToken.None);
+        blank.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task VodItems_SearchTreatsLikeWildcardsAsLiterals()
+    {
+        var items = new List<VodItem>
+        {
+            new() { ProviderItemId = "1", Name = "100% Wolf" },
+            new() { ProviderItemId = "2", Name = "100 Wolves" },
+            new() { ProviderItemId = "3", Name = "Snake_Eyes" },
+            new() { ProviderItemId = "4", Name = "SnakeXEyes" },
+        };
+        await _catalog.UpsertVodItemsAsync(_profileId, ContentKind.Movie, items, CancellationToken.None);
+
+        var percent = await _catalog.GetVodItemsAsync(
+            _profileId, ContentKind.Movie, null, "100%", VodSortOrder.Name, 10, 0, CancellationToken.None);
+        percent.Should().ContainSingle().Which.Name.Should().Be("100% Wolf");
+
+        var underscore = await _catalog.GetVodItemsAsync(
+            _profileId, ContentKind.Movie, null, "e_E", VodSortOrder.Name, 10, 0, CancellationToken.None);
+        underscore.Should().ContainSingle().Which.Name.Should().Be("Snake_Eyes");
+    }
+
+    [Fact]
+    public async Task VodItems_LookupByProviderId()
+    {
+        await _catalog.UpsertVodItemsAsync(_profileId, ContentKind.Movie, new List<VodItem>
+        {
+            new() { ProviderItemId = "movie-1", Name = "Alpha" },
+        }, CancellationToken.None);
+
+        var found = await _catalog.GetVodItemByProviderIdAsync(
+            _profileId, ContentKind.Movie, "movie-1", CancellationToken.None);
+        found.Should().NotBeNull();
+        found!.Name.Should().Be("Alpha");
+
+        (await _catalog.GetVodItemByProviderIdAsync(
+            _profileId, ContentKind.Series, "movie-1", CancellationToken.None)).Should().BeNull("kind is part of the key");
+        (await _catalog.GetVodItemByProviderIdAsync(
+            _profileId, ContentKind.Movie, "missing", CancellationToken.None)).Should().BeNull();
     }
 
     [Fact]

@@ -534,3 +534,46 @@ thread was *free* — both problems were ordering, not blocking.
 - **Warm-up starts before shell init** (was after), overlapping native LibVLC init with session
   init + first page load, and `PlayChannelAsync`/`PlayVodAsync` surface an init failure as the
   `Error` state (Back/Retry UI) instead of an eternal Opening spinner.
+
+## Per-view search + capped-scan lookup fixes
+
+Search moved into the views themselves (Movies/Series grid + category sidebar, Live TV
+categories + channels), and global-search result activation was fixed for large libraries.
+
+- **Paged grids filter in SQL; wholesale-loaded lists filter in memory.** The VOD grid pages
+  120 rows at a time, so its search box became a `name LIKE` clause in `GetVodItemsAsync`
+  (300 ms debounce, composing with the existing category/sort/offset SQL). Live TV loads a
+  category's channels wholesale and EPG state lives on the shared `ChannelListItem`s, so the
+  channel box and both category boxes filter in memory; `FillNowNextAsync`/`TickProgress`
+  iterate the master list so filtered-out rows keep their EPG fresh. User input is escaped
+  via the shared `SqlLike` helper (also used by global search) and matched with `ESCAPE '\'`.
+- **Sidebar refills run under a suppress flag** because `ObservableCollection.Clear()` nulls
+  a two-way `SelectedItem` binding synchronously, re-entrantly *inside* the `Clear()` call.
+  In `VodLibraryViewModel` that null would cancel `_loadCts` and strand `IsLoading` (the
+  superseded-reload `finally` deliberately skips cancelled tokens). The previous selection is
+  remembered and re-selected once the filter lets it back in — for Live TV channels under a
+  preview-suppress flag, so the restore doesn't restart the muted preview stream.
+- **The synthetic "All" rows are pinned through the category filter** — they're the default
+  selection and the escape hatch back to everything.
+- **Search-result activation resolves by key, not by scanning a capped page.** Clicking a
+  movie/series hit used to fetch the first 1000 items by name and `FirstOrDefault` — a silent
+  no-op in bigger libraries. `GetVodItemByProviderIdAsync` (indexed unique lookup) replaced
+  that scan in Search, Home continue-watching (cap was 5000), and Favorites.
+- **`VirtualizingWrapPanel` zeroes its offset on collection Reset.** The grid ListBox is
+  collapsed during reloads, so nothing re-clamped a stale deep-scroll offset; after a search
+  the user landed mid-results — at worst inside the infinite-scroll threshold, chain-firing
+  LoadMore.
+- **Settings channel mapping got the same treatment** — a filter box over the (now
+  wholesale-swapped) row list, and a type-to-filter box inside the guide-channel dropdown.
+  The filter box is baked into the shared `Lumen.ComboBox` template behind an opt-in
+  `LumenUi.ShowPopupFilter` attached property, relaying text through `LumenUi.PopupFilterText`
+  so each `ChannelMappingRow` filters its own options view; opening the dropdown clears the
+  previous filter and moves keyboard focus into the box. The "(no guide)" sentinel and the
+  currently selected option are pinned through the filter — dropping the selected item from
+  ItemsSource would push null through the two-way `SelectedValue` binding and erase the stored
+  mapping mid-keystroke.
+- **ComboBox popups now actually virtualize.** The custom template's ScrollViewer never bound
+  `CanContentScroll` and no ItemsPanel was pinned, so a dropdown realized every item on open —
+  a multi-second UI freeze at EPG scale (tens of thousands of options). The template now
+  template-binds `CanContentScroll` and pins a recycling `VirtualizingStackPanel`, and the
+  Settings benchmark exercises the new row/options structure.

@@ -44,11 +44,7 @@ public sealed class SearchRepository : ISearchRepository
         return DbOffload.Run(async () =>
         {
             // Escape LIKE wildcards in user input, then match as a substring.
-            var escaped = query.Trim()
-                .Replace("\\", "\\\\", StringComparison.Ordinal)
-                .Replace("%", "\\%", StringComparison.Ordinal)
-                .Replace("_", "\\_", StringComparison.Ordinal);
-            var pattern = $"%{escaped}%";
+            var pattern = $"%{SqlLike.Escape(query.Trim())}%";
 
             var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
             await using (connection.ConfigureAwait(false))

@@ -50,7 +50,7 @@ public static class VodUiProbe
 
             var catalog = services.GetRequiredService<ICatalogRepository>();
             var movies = await catalog.GetVodItemsAsync(
-                profile.Id, ContentKind.Movie, null, VodSortOrder.Added, 10, 0, CancellationToken.None);
+                profile.Id, ContentKind.Movie, null, null, VodSortOrder.Added, 10, 0, CancellationToken.None);
             var channels = await catalog.GetChannelsAsync(profile.Id, null, CancellationToken.None);
             report.AppendLine($"movies={movies.Count} channels={channels.Count}");
             if (movies.Count == 0 || channels.Count == 0)

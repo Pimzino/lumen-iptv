@@ -67,10 +67,17 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     private readonly PlaybackService _playbackService;
     private readonly IClock _clock;
     private readonly DispatcherTimer _progressTimer;
+    private readonly DispatcherTimer _channelSearchDebounce;
 
     private CancellationTokenSource? _channelsCts;
     private CancellationTokenSource? _previewCts;
     private Dictionary<long, string> _mappings = [];
+    private IReadOnlyList<ChannelListItem> _allChannelItems = [];
+    private List<Category> _allCategories = [];
+    private Category? _lastRealCategory;
+    private ChannelListItem? _lastRealChannel;
+    private bool _suppressCategoryReload;
+    private bool _suppressPreview;
 
     public LiveTvViewModel(
         ISessionService session,
@@ -87,6 +94,13 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _progressTimer.Tick += (_, _) => TickProgress();
+
+        _channelSearchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _channelSearchDebounce.Tick += (_, _) =>
+        {
+            _channelSearchDebounce.Stop();
+            ApplyChannelFilter();
+        };
     }
 
     public PlaybackService Playback => _playbackService;
@@ -104,6 +118,12 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     private ChannelListItem? _selectedChannel;
 
     [ObservableProperty]
+    private string _channelSearchText = string.Empty;
+
+    [ObservableProperty]
+    private string _categoryFilterText = string.Empty;
+
+    [ObservableProperty]
     private bool _isLoadingChannels = true;
 
     [ObservableProperty]
@@ -111,6 +131,9 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
     [ObservableProperty]
     private string? _channelCountLabel;
+
+    [ObservableProperty]
+    private string _emptyMessage = Resources.Strings.LiveTv_NoChannels;
 
     public async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
@@ -125,12 +148,8 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         var mappingRows = await _epg.GetMappingsAsync(profile.Id, cancellationToken);
         _mappings = mappingRows.ToDictionary(m => m.ChannelId, m => m.XmltvId);
 
-        Categories.Clear();
-        Categories.Add(AllChannels);
-        foreach (var category in await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken))
-        {
-            Categories.Add(category);
-        }
+        _allCategories = [AllChannels, .. await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken)];
+        ApplyCategoryFilter();
 
         SelectedCategory = Categories[0];
         _progressTimer.Start();
@@ -139,6 +158,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     public void OnNavigatedFrom()
     {
         _progressTimer.Stop();
+        _channelSearchDebounce.Stop();
         _channelsCts?.Cancel();
         _previewCts?.Cancel();
 
@@ -153,20 +173,112 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     {
         if (value is not null)
         {
-            _ = LoadChannelsAsync(value);
+            _lastRealCategory = value;
+            if (!_suppressCategoryReload)
+            {
+                _ = LoadChannelsAsync(value);
+            }
         }
     }
 
     partial void OnSelectedChannelChanged(ChannelListItem? value)
     {
+        if (value is not null)
+        {
+            _lastRealChannel = value;
+        }
+
         // Don't hijack the shared video with a muted preview while the user is actively watching in
         // the full player or the floating mini player — that would steal the surface and mute it.
         if (value is not null
+            && !_suppressPreview
             && !_playbackService.IsFullPlayerActive
             && !_playbackService.IsMiniPlayerActive)
         {
             _ = StartPreviewAsync(value);
         }
+    }
+
+    partial void OnChannelSearchTextChanged(string value)
+    {
+        _channelSearchDebounce.Stop();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            ApplyChannelFilter();
+        }
+        else
+        {
+            _channelSearchDebounce.Start();
+        }
+    }
+
+    partial void OnCategoryFilterTextChanged(string value) => ApplyCategoryFilter();
+
+    private void ApplyCategoryFilter()
+    {
+        var filter = CategoryFilterText.Trim();
+
+        // Removing the selected row makes the ListBox null SelectedCategory synchronously
+        // inside Clear(); the null itself is ignored, but restoring the selection must not
+        // re-run LoadChannelsAsync — it would reload channels and EPG for nothing.
+        _suppressCategoryReload = true;
+        try
+        {
+            Categories.Clear();
+            foreach (var category in _allCategories)
+            {
+                // "All channels" is pinned: it's the default selection and the escape hatch.
+                if (ReferenceEquals(category, AllChannels)
+                    || filter.Length == 0
+                    || category.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    Categories.Add(category);
+                }
+            }
+
+            if (SelectedCategory is null && _lastRealCategory is { } last && Categories.Contains(last))
+            {
+                SelectedCategory = last;
+            }
+        }
+        finally
+        {
+            _suppressCategoryReload = false;
+        }
+    }
+
+    private void ApplyChannelFilter()
+    {
+        var filter = ChannelSearchText.Trim();
+        var visible = filter.Length == 0
+            ? _allChannelItems
+            : _allChannelItems.Where(c => c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        // An ItemsSource swap keeps the selection when the same instance is still in the new
+        // list and nulls it otherwise; restore the last pick when it reappears — without
+        // restarting the muted preview that is already showing that channel.
+        _suppressPreview = true;
+        try
+        {
+            Channels = visible;
+            if (SelectedChannel is null && _lastRealChannel is { } last && visible.Contains(last))
+            {
+                SelectedChannel = last;
+            }
+        }
+        finally
+        {
+            _suppressPreview = false;
+        }
+
+        HasChannels = visible.Count > 0;
+        ChannelCountLabel = filter.Length == 0
+            ? $"{visible.Count:N0}"
+            : Resources.Strings.Format(
+                Resources.Strings.LiveTv_ChannelCountOfFormat, visible.Count, _allChannelItems.Count);
+        EmptyMessage = filter.Length == 0
+            ? Resources.Strings.LiveTv_NoChannels
+            : Resources.Strings.Filter_NoMatches;
     }
 
     private async Task LoadChannelsAsync(Category category)
@@ -189,10 +301,8 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
                 profile.Id, category.Id == 0 ? null : category.Id, token);
             token.ThrowIfCancellationRequested();
 
-            Channels = channels.Select(channel => new ChannelListItem(channel)).ToList();
-
-            HasChannels = Channels.Count > 0;
-            ChannelCountLabel = $"{Channels.Count:N0}";
+            _allChannelItems = channels.Select(channel => new ChannelListItem(channel)).ToList();
+            ApplyChannelFilter();
             IsLoadingChannels = false;
 
             await FillNowNextAsync(profile.Id, token);
@@ -210,8 +320,10 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
     private async Task FillNowNextAsync(long profileId, CancellationToken cancellationToken)
     {
+        // Master list, not the filtered view: EPG state lives on the shared items, so filtered
+        // rows stay populated however the visible list changes.
         var byXmltv = new Dictionary<string, List<ChannelListItem>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in Channels)
+        foreach (var item in _allChannelItems)
         {
             var xmltvId = _mappings.GetValueOrDefault(item.Channel.Id) ?? item.Channel.EpgChannelId;
             if (string.IsNullOrEmpty(xmltvId))
@@ -262,7 +374,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     {
         var now = _clock.UtcNow;
         var needsRefresh = false;
-        foreach (var item in Channels)
+        foreach (var item in _allChannelItems)
         {
             item.UpdateProgress(now);
             if (item.NowProgramme is { } programme && now.ToUnixTimeSeconds() > programme.StopUtc)

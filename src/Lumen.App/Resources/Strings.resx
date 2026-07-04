@@ -138,6 +138,7 @@
   <data name="LiveTv_NowLabel" xml:space="preserve"><value>NOW</value></data>
   <data name="LiveTv_NextLabel" xml:space="preserve"><value>NEXT</value></data>
   <data name="LiveTv_NoGuideData" xml:space="preserve"><value>No guide data for this channel.</value></data>
+  <data name="LiveTv_ChannelCountOfFormat" xml:space="preserve"><value>{0:N0} of {1:N0}</value></data>
   <data name="Player_ReconnectingFormat" xml:space="preserve"><value>Connection lost — reconnecting (attempt {0} of 5)…</value></data>
   <data name="Player_Opening" xml:space="preserve"><value>Opening stream…</value></data>
   <data name="Player_BufferingFormat" xml:space="preserve"><value>Buffering {0:0}%</value></data>
@@ -158,6 +159,7 @@
   <data name="Settings_MappingNone" xml:space="preserve"><value>(no guide)</value></data>
 
   <data name="Vod_Sort" xml:space="preserve"><value>Sort</value></data>
+  <data name="Vod_SearchPlaceholder" xml:space="preserve"><value>Search…</value></data>
   <data name="Vod_Play" xml:space="preserve"><value>Play</value></data>
   <data name="Vod_StartOver" xml:space="preserve"><value>Start over</value></data>
   <data name="Vod_AddFavorite" xml:space="preserve"><value>Add to favorites</value></data>
@@ -170,6 +172,10 @@
   <data name="Search_GroupProgrammes" xml:space="preserve"><value>On now &amp; next</value></data>
   <data name="Search_Prompt" xml:space="preserve"><value>Start typing to search across your library and guide.</value></data>
   <data name="Search_NoResultsFormat" xml:space="preserve"><value>No results for “{0}”.</value></data>
+  <data name="Filter_CategoriesPlaceholder" xml:space="preserve"><value>Filter categories…</value></data>
+  <data name="Filter_ChannelsPlaceholder" xml:space="preserve"><value>Filter channels…</value></data>
+  <data name="Filter_NoMatches" xml:space="preserve"><value>No matches for your search.</value></data>
+  <data name="Filter_TypeToFilterPlaceholder" xml:space="preserve"><value>Type to filter…</value></data>
   <data name="Favorites_Empty" xml:space="preserve"><value>No favorites yet. Tap the heart on any channel, movie, or series to add it here.</value></data>
   <data name="Favorites_Remove" xml:space="preserve"><value>Remove</value></data>
 </root>

@@ -18,9 +18,18 @@ public partial class PlayerOverlayView : UserControl
 {
     private static readonly TimeSpan HideDelay = TimeSpan.FromSeconds(3);
 
+    /// <summary>Releasing the live thumb this close to the right edge just rejoins live.</summary>
+    private const double LiveEdgeSnapSeconds = 45;
+
+    /// <summary>Live seek window without EPG data: the last two hours.</summary>
+    private static readonly TimeSpan DefaultLiveWindow = TimeSpan.FromHours(2);
+
     private readonly DispatcherTimer _hideTimer;
+    private readonly DispatcherTimer _liveTickTimer;
     private PlaybackService? _observedPlayback;
     private bool _seeking;
+    private bool _liveSeeking;
+    private DateTimeOffset _liveWindowStartUtc;
 
     public PlayerOverlayView()
     {
@@ -29,11 +38,21 @@ public partial class PlayerOverlayView : UserControl
         _hideTimer = new DispatcherTimer { Interval = HideDelay };
         _hideTimer.Tick += (_, _) => TryHideOverlay();
 
+        // The live timeline moves even when nothing about playback "changes" (the window's
+        // right edge is the wall clock), so it ticks rather than reacting to INPC.
+        _liveTickTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _liveTickTimer.Tick += (_, _) => UpdateLiveSeekBar();
+
         MouseMove += (_, _) => ShowOverlay();
         PreviewMouseDown += (_, _) => ShowOverlay();
         PreviewKeyDown += OnPlayerKeyDown;
         MouseDoubleClick += OnDoubleClick;
-        Unloaded += (_, _) => _hideTimer.Stop();
+        Loaded += (_, _) => _liveTickTimer.Start();
+        Unloaded += (_, _) =>
+        {
+            _hideTimer.Stop();
+            _liveTickTimer.Stop();
+        };
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)
@@ -57,6 +76,33 @@ public partial class PlayerOverlayView : UserControl
             if (_seeking)
             {
                 UpdateSeekText(); // scrub feedback: elapsed follows the thumb, not playback
+            }
+        };
+
+        // Live catch-up gesture: the slider maps wall-clock time across the seek window;
+        // committing opens a fresh archive stream (or rejoins live near the right edge).
+        LiveSeekSlider.PreviewMouseLeftButtonDown += (_, _) => _liveSeeking = true;
+        LiveSeekSlider.PreviewMouseLeftButtonUp += (_, _) =>
+        {
+            if (ViewModel is { } vm && vm.Playback.CanSeekLive)
+            {
+                if (LiveSeekSlider.Maximum - LiveSeekSlider.Value <= LiveEdgeSnapSeconds)
+                {
+                    _ = vm.Playback.GoToLiveAsync();
+                }
+                else
+                {
+                    _ = vm.Playback.SeekLiveAsync(_liveWindowStartUtc.AddSeconds(LiveSeekSlider.Value));
+                }
+            }
+
+            _liveSeeking = false;
+        };
+        LiveSeekSlider.ValueChanged += (_, _) =>
+        {
+            if (_liveSeeking)
+            {
+                UpdateLiveSeekText(); // scrub feedback: the clock follows the thumb
             }
         };
 
@@ -89,6 +135,11 @@ public partial class PlayerOverlayView : UserControl
             or nameof(PlaybackService.IsVod))
         {
             UpdateSeekBar();
+        }
+        else if (e.PropertyName is nameof(PlaybackService.CanSeekLive)
+            or nameof(PlaybackService.LiveDelaySeconds))
+        {
+            UpdateLiveSeekBar();
         }
     }
 
@@ -124,6 +175,53 @@ public partial class PlayerOverlayView : UserControl
     {
         var span = TimeSpan.FromSeconds(Math.Max(0, seconds));
         return span.TotalHours >= 1 ? span.ToString(@"h\:mm\:ss") : span.ToString(@"m\:ss");
+    }
+
+    // ---- live catch-up seek bar ----
+
+    /// <summary>
+    /// Rebuilds the live timeline: left edge is the current programme's start (or a rolling
+    /// two-hour window without EPG), right edge is the live moment, thumb is the playhead.
+    /// </summary>
+    private void UpdateLiveSeekBar()
+    {
+        if (ViewModel is not { } vm || !vm.Playback.CanSeekLive || !vm.Playback.IsFullPlayerActive)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var playhead = now.AddSeconds(-vm.Playback.LiveDelaySeconds);
+        var windowStart = vm.NowProgrammeStartUtc ?? now - DefaultLiveWindow;
+        if (playhead < windowStart.AddMinutes(1))
+        {
+            // Rewound past the window's left edge (e.g. into the previous programme after a
+            // broadcast rollover) — slide the window so the playhead stays on the bar.
+            windowStart = playhead.AddMinutes(-5);
+        }
+
+        _liveWindowStartUtc = windowStart;
+        if (!_liveSeeking)
+        {
+            LiveSeekSlider.Maximum = Math.Max(1, (now - windowStart).TotalSeconds);
+            LiveSeekSlider.Value = Math.Clamp(
+                (playhead - windowStart).TotalSeconds, 0, LiveSeekSlider.Maximum);
+        }
+
+        UpdateLiveSeekText();
+    }
+
+    private void UpdateLiveSeekText()
+    {
+        if (ViewModel is not { } vm)
+        {
+            return;
+        }
+
+        var shown = _liveSeeking
+            ? _liveWindowStartUtc.AddSeconds(LiveSeekSlider.Value)
+            : DateTimeOffset.UtcNow.AddSeconds(-vm.Playback.LiveDelaySeconds);
+        LivePositionText.Text = shown.ToLocalTime().ToString("HH:mm:ss");
     }
 
     private void ShowOverlay()

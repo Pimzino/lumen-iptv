@@ -90,6 +90,11 @@ public sealed class XtreamServerInfo
     [JsonPropertyName("timestamp_now")]
     [JsonConverter(typeof(FlexibleLongConverter))]
     public long? TimestampNow { get; set; }
+
+    /// <summary>The panel's current local wall-clock ("yyyy-MM-dd HH:mm:ss").</summary>
+    [JsonPropertyName("time_now")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
+    public string? TimeNow { get; set; }
 }
 
 public sealed class XtreamCategory
@@ -140,6 +145,11 @@ public sealed class XtreamLiveStream
     [JsonPropertyName("tv_archive")]
     [JsonConverter(typeof(FlexibleBoolConverter))]
     public bool? HasArchive { get; set; }
+
+    /// <summary>How many days back the catch-up archive reaches.</summary>
+    [JsonPropertyName("tv_archive_duration")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
+    public int? ArchiveDurationDays { get; set; }
 }
 
 public sealed class XtreamVodStream

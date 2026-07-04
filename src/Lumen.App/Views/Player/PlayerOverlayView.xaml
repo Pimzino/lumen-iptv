@@ -68,11 +68,21 @@
                              Text="{Binding Playback.NowPlayingTitle}"
                              TextTrimming="CharacterEllipsis" />
                   <ContentControl x:Name="LiveBadge"
-                                  Style="{StaticResource Lumen.Badge.Live}"
                                   Content="{x:Static res:Strings.Badge_Live}"
                                   VerticalAlignment="Center"
                                   Margin="{StaticResource Lumen.Margin.L12}"
-                                  Visibility="{Binding Playback.IsVod, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+                                  Visibility="{Binding Playback.IsVod, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+                    <ContentControl.Style>
+                      <!-- Dimmed while time-shifted: the red badge asserts "at the live edge". -->
+                      <Style TargetType="ContentControl" BasedOn="{StaticResource Lumen.Badge.Live}">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Playback.IsBehindLive}" Value="True">
+                            <Setter Property="Opacity" Value="0.45" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </ContentControl.Style>
+                  </ContentControl>
                 </StackPanel>
                 <TextBlock Style="{StaticResource Lumen.Text.Caption}"
                            Text="{Binding NowTitle}"
@@ -112,7 +122,11 @@
                              VerticalAlignment="Bottom"
                              Margin="{StaticResource Lumen.Margin.L12}" />
                 </StackPanel>
-                <ProgressBar Value="{Binding NowProgress, Mode=OneWay}" Maximum="100" />
+                <!-- Read-only broadcast progress; catch-up channels replace it with the
+                     interactive live seek bar below. -->
+                <ProgressBar Value="{Binding NowProgress, Mode=OneWay}"
+                             Maximum="100"
+                             Visibility="{Binding Playback.CanSeekLive, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
               </StackPanel>
               <TextBlock Grid.Column="1"
                          Style="{StaticResource Lumen.Text.Caption}"
@@ -123,7 +137,38 @@
               </TextBlock>
             </Grid>
 
-            <!-- VOD timeline: elapsed / scrubbable seek bar / total. Live has no timeline —
+            <!-- Live catch-up timeline (archive channels only): restart the current programme,
+                 scrub anywhere between its start and the live edge. The window, thumb, and
+                 commit gesture are driven from code-behind — each committed seek opens a fresh
+                 archive stream at the target time. -->
+            <Grid x:Name="LiveSeekBar"
+                  Grid.Row="1"
+                  Margin="{StaticResource Lumen.Margin.B12}"
+                  Visibility="{Binding Playback.CanSeekLive, Converter={StaticResource Lumen.BoolToVisibility}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Button Style="{StaticResource Lumen.Button.Icon}"
+                      Command="{Binding RestartProgrammeCommand}"
+                      Content="{StaticResource Lumen.Icon.Restart}"
+                      ToolTip="{x:Static res:Strings.Player_RestartProgramme}"
+                      AutomationProperties.Name="{x:Static res:Strings.Player_RestartProgramme}" />
+              <Slider x:Name="LiveSeekSlider"
+                      Grid.Column="1"
+                      Style="{StaticResource Lumen.Slider}"
+                      Minimum="0"
+                      VerticalAlignment="Center"
+                      Margin="12,0"
+                      AutomationProperties.Name="{x:Static res:Strings.Player_LiveSeek}" />
+              <TextBlock x:Name="LivePositionText"
+                         Grid.Column="2"
+                         Style="{StaticResource Lumen.Text.TabularCaption}"
+                         VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- VOD timeline: elapsed / scrubbable seek bar / total. Plain live has no timeline —
                  the read-only EPG programme progress above fills that role. Updates and the
                  seek gesture are driven from code-behind, mirroring MiniPlayerWindow. -->
             <Grid x:Name="SeekBar"
@@ -158,9 +203,12 @@
                       Command="{Binding TogglePlayPauseCommand}"
                       AutomationProperties.Name="Play or pause">
                 <Button.Content>
-                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Pause}">
+                  <!-- Default Text lives in the style: a local Text attribute would outrank the
+                       trigger setter and pin the icon to Pause forever. -->
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
                     <TextBlock.Style>
                       <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.Pause}" />
                         <Style.Triggers>
                           <DataTrigger Binding="{Binding Playback.State}" Value="Paused">
                             <Setter Property="Text" Value="{StaticResource Lumen.Icon.Play}" />
@@ -177,9 +225,10 @@
                       Command="{Binding ToggleMuteCommand}"
                       AutomationProperties.Name="Mute">
                 <Button.Content>
-                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Volume}">
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
                     <TextBlock.Style>
                       <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.Volume}" />
                         <Style.Triggers>
                           <DataTrigger Binding="{Binding Playback.IsMuted}" Value="True">
                             <Setter Property="Text" Value="{StaticResource Lumen.Icon.Mute}" />
@@ -200,6 +249,23 @@
                       VerticalAlignment="Center"
                       Margin="{StaticResource Lumen.Margin.R16}"
                       AutomationProperties.Name="Volume" />
+
+              <!-- Pausing live TV resumes behind the broadcast; this re-tunes to the live edge.
+                   Docked after the volume cluster so its appearance doesn't shift the controls. -->
+              <Button DockPanel.Dock="Left"
+                      Style="{StaticResource Lumen.Button.Ghost}"
+                      Command="{Binding GoToLiveCommand}"
+                      Visibility="{Binding Playback.IsBehindLive, Converter={StaticResource Lumen.BoolToVisibility}}"
+                      AutomationProperties.Name="{x:Static res:Strings.Player_GoToLive}">
+                <StackPanel Orientation="Horizontal">
+                  <Ellipse Width="8"
+                           Height="8"
+                           Fill="{StaticResource Lumen.Brush.Live}"
+                           VerticalAlignment="Center"
+                           Margin="{StaticResource Lumen.Margin.R8}" />
+                  <TextBlock Text="{x:Static res:Strings.Player_GoToLive}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
 
               <!-- right cluster -->
               <Button DockPanel.Dock="Right"

@@ -30,6 +30,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     private readonly IWatchHistoryRepository _watchHistory;
     private readonly IClock _clock;
     private readonly IMessenger _messenger;
+    private readonly IXtreamClientFactory _xtreamFactory;
     private readonly ILogger<PlaybackService> _logger;
     private readonly Dispatcher _dispatcher;
     private readonly Dictionary<VideoSurfaceKind, Decorator> _surfaces = [];
@@ -111,12 +112,53 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     [ObservableProperty]
     private double _bufferingProgress;
 
+    /// <summary>
+    /// True when live playback is time-shifted behind the broadcast — pausing live TV resumes
+    /// where it left off, not at the live edge. Drives the "Go to Live" affordance.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isBehindLive;
+
+    /// <summary>Seconds the playhead lags the live broadcast (0 at the live edge, and for VOD).</summary>
+    [ObservableProperty]
+    private double _liveDelaySeconds;
+
+    /// <summary>True when the current live channel supports catch-up seeking (provider archive).</summary>
+    [ObservableProperty]
+    private bool _canSeekLive;
+
+    /// <summary>True while the current channel plays from the provider archive rather than the live feed.</summary>
+    [ObservableProperty]
+    private bool _isTimeshift;
+
+    /// <summary>Accrued shift below this is imperceptible next to normal IPTV latency — don't surface it.</summary>
+    private const double BehindLiveThresholdSeconds = 3;
+
+    /// <summary>Live seeks landing this close to now just rejoin the live stream.</summary>
+    private const double LiveEdgeSnapSeconds = 60;
+
+    // Live time-shift tracking: when the current pause started, and the shift completed pauses
+    // have already banked. Reset whenever a stream (re)opens at the live edge.
+    private DateTimeOffset? _livePausedAtUtc;
+    private double _liveShiftSeconds;
+
+    // Timeshift (catch-up) stream state: the absolute broadcast time the current archive
+    // stream starts at, and how far into it playback has advanced (player.Time cache).
+    private DateTimeOffset? _timeshiftBaseUtc;
+    private double _timeshiftPlayedSeconds;
+    private DateTimeOffset? _lastTimeshiftEndUtc;
+
+    // Panel clock info for timeshift start times, cached per profile.
+    private long _serverInfoProfileId = -1;
+    private XtreamServerInfo? _serverInfo;
+
     public PlaybackService(
         ISessionService session,
         ISettingsRepository settings,
         IWatchHistoryRepository watchHistory,
         IClock clock,
         IMessenger messenger,
+        IXtreamClientFactory xtreamFactory,
         ILogger<PlaybackService> logger)
     {
         _session = session;
@@ -124,6 +166,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         _watchHistory = watchHistory;
         _clock = clock;
         _messenger = messenger;
+        _xtreamFactory = xtreamFactory;
         _logger = logger;
         _dispatcher = System.Windows.Application.Current.Dispatcher;
 
@@ -217,10 +260,15 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         IsVod = false;
         PositionSeconds = 0;
         DurationSeconds = 0;
+        ResetBehindLive();
 
         _currentChannel = channel;
         OnPropertyChanged(nameof(CurrentChannel));
         NotifyNowPlayingChanged();
+        CanSeekLive = channel.HasArchive
+            && channel.ProviderStreamId is not null
+            && _session.CurrentProfile is { } archiveProfile
+            && _session.GetXtreamCredentials(archiveProfile) is not null;
         if (zapList is not null && !ReferenceEquals(zapList, _zapList))
         {
             _zapList = zapList;
@@ -303,6 +351,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
         _currentChannel = null;
         OnPropertyChanged(nameof(CurrentChannel));
+        CanSeekLive = false;
         _currentVod = request;
         NotifyNowPlayingChanged();
         _isPreviewContext = false;
@@ -312,6 +361,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         IsVod = true;
         PositionSeconds = request.ResumeSeconds;
         DurationSeconds = 0;
+        ResetBehindLive();
 
         ApplyMute();
         await StartVodAsync(request, sequence);
@@ -383,6 +433,134 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         });
     }
 
+    /// <summary>
+    /// Re-opens the current live channel at the live edge, discarding the pause time-shift.
+    /// IPTV servers stream from "now" on connect and LibVLC can't seek forward in a live
+    /// HTTP/TS feed, so a fresh open of the same URL is the reliable jump back to live.
+    /// </summary>
+    public async Task GoToLiveAsync()
+    {
+        var channel = _currentChannel;
+        var url = _currentUrl;
+        if (IsVod || channel is null || url is null || _player is null)
+        {
+            return;
+        }
+
+        var sequence = Interlocked.Increment(ref _playRequestSequence);
+        CancelReconnect();
+        _userStopped = false;
+        ErrorMessage = null;
+        ReconnectAttempt = 0;
+        BufferingProgress = 0;
+        ResetBehindLive();
+        ApplyMute();
+        State = PlaybackState.Opening;
+        await StartPlaybackAsync(url, channel, sequence);
+    }
+
+    /// <summary>
+    /// Jumps live playback to an absolute broadcast time by streaming from the provider's
+    /// catch-up archive (<see cref="CanSeekLive"/>). Targets within a minute of now rejoin
+    /// the live stream instead. Scrubbing issues a fresh archive request per seek — the
+    /// archived stream itself is not reliably seekable, but a new start time always is.
+    /// </summary>
+    public async Task SeekLiveAsync(DateTimeOffset targetUtc)
+    {
+        var channel = _currentChannel;
+        var profile = _session.CurrentProfile;
+        if (IsVod || !CanSeekLive || channel?.ProviderStreamId is null || profile is null || _player is null)
+        {
+            return;
+        }
+
+        var now = _clock.UtcNow;
+        if ((now - targetUtc).TotalSeconds < LiveEdgeSnapSeconds)
+        {
+            await GoToLiveAsync();
+            return;
+        }
+
+        // Don't reach past the provider's advertised archive window.
+        if (channel.ArchiveDays > 0 && targetUtc < now.AddDays(-channel.ArchiveDays))
+        {
+            targetUtc = now.AddDays(-channel.ArchiveDays);
+        }
+
+        if (_session.GetXtreamCredentials(profile) is not { } credentials)
+        {
+            return;
+        }
+
+        // Timeshift start times are written in the panel's local clock — resolve it once
+        // per profile. Abort (leaving playback untouched) if the panel can't be reached.
+        var serverInfo = await GetServerInfoAsync(profile.Id, credentials);
+        if (serverInfo is null)
+        {
+            return;
+        }
+
+        var sequence = Interlocked.Increment(ref _playRequestSequence);
+        CancelReconnect();
+        _userStopped = false;
+        ErrorMessage = null;
+        ReconnectAttempt = 0;
+        BufferingProgress = 0;
+
+        _livePausedAtUtc = null;
+        _liveShiftSeconds = 0;
+        _timeshiftBaseUtc = targetUtc;
+        _timeshiftPlayedSeconds = 0;
+        IsTimeshift = true;
+        UpdateBehindLive();
+
+        ApplyMute();
+        State = PlaybackState.Opening;
+        var url = BuildTimeshiftUrl(credentials, channel.ProviderStreamId, targetUtc, now, serverInfo);
+        await StartPlaybackAsync(url, channel, sequence);
+    }
+
+    private static string BuildTimeshiftUrl(
+        XtreamCredentials credentials,
+        string streamId,
+        DateTimeOffset startUtc,
+        DateTimeOffset nowUtc,
+        XtreamServerInfo serverInfo)
+    {
+        // Cover from the seek point up to the live edge, plus slack so the stream keeps
+        // serving as the archive grows underneath it.
+        var durationMinutes = Math.Max(1, (int)Math.Ceiling((nowUtc - startUtc).TotalMinutes) + 60);
+        var serverLocalStart = XtreamServerTime.ToServerLocal(startUtc, serverInfo);
+        return XtreamUrls.Timeshift(
+            credentials.Server, credentials.Username, credentials.Password,
+            streamId, serverLocalStart, durationMinutes).AbsoluteUri;
+    }
+
+    /// <summary>Panel server info (timezone/clock), cached per profile after the first fetch.</summary>
+    private async Task<XtreamServerInfo?> GetServerInfoAsync(long profileId, XtreamCredentials credentials)
+    {
+        if (_serverInfoProfileId == profileId && _serverInfo is not null)
+        {
+            return _serverInfo;
+        }
+
+        try
+        {
+            var response = await _xtreamFactory.Create(credentials).AuthenticateAsync(CancellationToken.None);
+
+            // A panel that reports no server_info still gets timeshift — start times fall
+            // back to UTC, which is also what such panels overwhelmingly run on.
+            _serverInfo = response.ServerInfo ?? new XtreamServerInfo();
+            _serverInfoProfileId = profileId;
+            return _serverInfo;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Live seek aborted: fetching Xtream server info failed");
+            return null;
+        }
+    }
+
     public void Stop()
     {
         _userStopped = true;
@@ -394,10 +572,12 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         _positionTimer.Stop();
         _currentVod = null;
         IsVod = false;
+        ResetBehindLive();
 
         _currentChannel = null;
         OnPropertyChanged(nameof(CurrentChannel));
         NotifyNowPlayingChanged();
+        CanSeekLive = false;
         _currentUrl = null;
         State = PlaybackState.Idle;
         ErrorMessage = null;
@@ -440,8 +620,19 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     private void OnPositionTick()
     {
         var player = _player;
-        if (player is null || !IsVod)
+        if (player is null)
         {
+            return;
+        }
+
+        if (!IsVod)
+        {
+            if (IsTimeshift && State is PlaybackState.Playing or PlaybackState.Buffering)
+            {
+                _timeshiftPlayedSeconds = Math.Max(0, player.Time / 1000.0);
+            }
+
+            UpdateBehindLive(); // the time-shift keeps growing while a live stream sits paused
             return;
         }
 
@@ -454,6 +645,44 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         {
             PositionSeconds = player.Time / 1000.0;
         }
+    }
+
+    /// <summary>
+    /// Recomputes <see cref="LiveDelaySeconds"/> and <see cref="IsBehindLive"/>. Timeshifted
+    /// playback derives its delay from the archive start plus play progress; edge playback
+    /// derives it from banked pauses plus any pause in progress.
+    /// </summary>
+    private void UpdateBehindLive()
+    {
+        double delay;
+        if (IsTimeshift && _timeshiftBaseUtc is { } baseUtc)
+        {
+            delay = Math.Max(0, (_clock.UtcNow - baseUtc).TotalSeconds - _timeshiftPlayedSeconds);
+        }
+        else
+        {
+            delay = _liveShiftSeconds;
+            if (_livePausedAtUtc is { } pausedAt)
+            {
+                delay += (_clock.UtcNow - pausedAt).TotalSeconds;
+            }
+        }
+
+        LiveDelaySeconds = IsVod ? 0 : delay;
+        IsBehindLive = !IsVod
+            && delay >= BehindLiveThresholdSeconds
+            && State is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering;
+    }
+
+    private void ResetBehindLive()
+    {
+        _livePausedAtUtc = null;
+        _liveShiftSeconds = 0;
+        _timeshiftBaseUtc = null;
+        _timeshiftPlayedSeconds = 0;
+        _lastTimeshiftEndUtc = null;
+        IsTimeshift = false;
+        UpdateBehindLive();
     }
 
     /// <summary>Writes the current VOD position to watch history (throttled to meaningful progress).</summary>
@@ -718,7 +947,11 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         }
     }
 
-    partial void OnStateChanged(PlaybackState value) => OnPropertyChanged(nameof(IsColdOpenLoading));
+    partial void OnStateChanged(PlaybackState value)
+    {
+        OnPropertyChanged(nameof(IsColdOpenLoading));
+        UpdateBehindLive(); // behind-live only surfaces in watchable states (not Error/Idle/Opening)
+    }
 
     // ------------------------------------------------------------------ init & events
 
@@ -827,20 +1060,51 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
             _logger.LogDebug("libvlc event: Playing");
             OnUi(() =>
             {
+                if (!IsVod)
+                {
+                    if (!IsTimeshift && State == PlaybackState.Paused && _livePausedAtUtc is { } pausedAt)
+                    {
+                        // Resuming a paused live stream continues time-shifted, not at the edge.
+                        _liveShiftSeconds += (_clock.UtcNow - pausedAt).TotalSeconds;
+                    }
+                    else if (State is PlaybackState.Opening or PlaybackState.Reconnecting)
+                    {
+                        // A fresh open joins the live edge — unless it's an archive (timeshift)
+                        // stream, whose lag is derived from its base time instead.
+                        _liveShiftSeconds = 0;
+                    }
+
+                    _livePausedAtUtc = null;
+                }
+
                 State = PlaybackState.Playing;
                 ErrorMessage = null;
                 ReconnectAttempt = 0;
                 CancelReconnect();
+
+                // LibVLC can bring the audio output back muted or with a stale session after a
+                // pause/underrun cycle — re-assert the user's audio state on every (re)start.
+                // Only the explicit channel-open path did this before, which is why resume,
+                // reconnect, and go-to-live could stay silent until a full channel reopen.
+                ApplyMute();
+                player.Volume = Math.Clamp(Volume, 0, 100);
+
                 RefreshTracks();
                 ApplyPendingResume();
-                if (IsVod)
-                {
-                    _positionTimer.Start();
-                }
+
+                // Ticks drive the VOD position *and* the live behind-the-broadcast counter.
+                _positionTimer.Start();
             });
         };
         player.Paused += (_, _) => OnUi(() =>
         {
+            if (!IsVod && !IsTimeshift)
+            {
+                // Edge playback: the shift starts accruing. (Timeshift lag needs no clock —
+                // player.Time freezes while paused, which grows the derived delay.)
+                _livePausedAtUtc = _clock.UtcNow;
+            }
+
             State = PlaybackState.Paused;
             SaveVodProgress();
         });
@@ -879,6 +1143,10 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 if (IsVod)
                 {
                     HandleVodEnded();
+                }
+                else if (IsTimeshift)
+                {
+                    HandleTimeshiftEnded();
                 }
                 else
                 {
@@ -1005,6 +1273,40 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
     // ------------------------------------------------------------------ reconnect
 
+    /// <summary>
+    /// A timeshift stream ran off the end of its requested window (or the panel closed it).
+    /// Keep the replay going from the current playhead, or rejoin live when close to the
+    /// edge. Back-to-back immediate ends mean the archive isn't actually serving — fail over
+    /// to the normal reconnect path (at the live edge) instead of looping on the archive.
+    /// </summary>
+    private void HandleTimeshiftEnded()
+    {
+        if (_userStopped)
+        {
+            return;
+        }
+
+        var now = _clock.UtcNow;
+        if (_lastTimeshiftEndUtc is { } last && (now - last).TotalSeconds < 15)
+        {
+            _logger.LogWarning("Timeshift stream ended twice in quick succession; falling back to live");
+            ResetBehindLive();
+            HandleStreamFailure();
+            return;
+        }
+
+        _lastTimeshiftEndUtc = now;
+        var playhead = now.AddSeconds(-LiveDelaySeconds);
+        if (LiveDelaySeconds < 180)
+        {
+            _ = GoToLiveAsync();
+        }
+        else
+        {
+            _ = SeekLiveAsync(playhead);
+        }
+    }
+
     /// <summary>Live stream dropped (error or unexpected end). Retry with exponential backoff.</summary>
     private void HandleStreamFailure()
     {
@@ -1031,7 +1333,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         // handler, after which cts.Token would throw ObjectDisposedException.
         var cancelToken = cts.Token;
         var channel = _currentChannel!;
-        var url = _currentUrl!;
+        var url = ResolveReconnectUrl(channel);
         var sequence = Volatile.Read(ref _playRequestSequence);
 
         for (var attempt = 1; attempt <= ReconnectDelays.Length; attempt++)
@@ -1097,6 +1399,34 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
         State = PlaybackState.Error;
         ErrorMessage = $"Lost connection to “{channel.Name}” after {ReconnectDelays.Length} attempts.";
+    }
+
+    /// <summary>
+    /// The URL reconnect attempts should replay. A dropped timeshift stream resumes the
+    /// replay from the playhead where it failed (fresh archive request); anything else —
+    /// including a timeshift whose prerequisites vanished — rejoins the live stream.
+    /// </summary>
+    private string ResolveReconnectUrl(Channel channel)
+    {
+        if (IsTimeshift
+            && channel.ProviderStreamId is { } streamId
+            && _serverInfo is { } serverInfo
+            && _session.CurrentProfile is { } profile
+            && _session.GetXtreamCredentials(profile) is { } credentials)
+        {
+            var now = _clock.UtcNow;
+            var playhead = now.AddSeconds(-LiveDelaySeconds);
+            _timeshiftBaseUtc = playhead;
+            _timeshiftPlayedSeconds = 0;
+            return BuildTimeshiftUrl(credentials, streamId, playhead, now, serverInfo);
+        }
+
+        if (IsTimeshift)
+        {
+            ResetBehindLive();
+        }
+
+        return _currentUrl!;
     }
 
     private void CancelReconnect()

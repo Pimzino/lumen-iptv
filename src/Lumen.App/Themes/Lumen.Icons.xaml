@@ -30,6 +30,7 @@
   <sys:String x:Key="Lumen.Icon.Subtitles">&#xE7F0;</sys:String>
   <sys:String x:Key="Lumen.Icon.AspectRatio">&#xE799;</sys:String>
   <sys:String x:Key="Lumen.Icon.ChannelList">&#xE8FD;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Restart">&#xE892;</sys:String>
 
   <!-- Actions & status -->
   <sys:String x:Key="Lumen.Icon.Add">&#xE710;</sys:String>

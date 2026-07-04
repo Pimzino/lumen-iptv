@@ -115,6 +115,8 @@ public sealed class CatalogRepository : ICatalogRepository
                       tvg_shift_minutes INTEGER NOT NULL,
                       user_agent TEXT NULL,
                       referrer TEXT NULL,
+                      has_archive INTEGER NOT NULL,
+                      archive_days INTEGER NOT NULL,
                       added_utc INTEGER NOT NULL,
                       match_key TEXT NOT NULL
                     );
@@ -124,7 +126,7 @@ public sealed class CatalogRepository : ICatalogRepository
                 {
                     insert.Transaction = transaction;
                     insert.CommandText =
-                        "INSERT INTO staging_channels VALUES ($psid, $cat, $num, $name, $logo, $url, $epg, $shift, $ua, $ref, $added, $key);";
+                        "INSERT INTO staging_channels VALUES ($psid, $cat, $num, $name, $logo, $url, $epg, $shift, $ua, $ref, $archive, $archiveDays, $added, $key);";
                     var pPsid = insert.Parameters.Add("$psid", SqliteType.Text);
                     var pCat = insert.Parameters.Add("$cat", SqliteType.Integer);
                     var pNum = insert.Parameters.Add("$num", SqliteType.Integer);
@@ -135,6 +137,8 @@ public sealed class CatalogRepository : ICatalogRepository
                     var pShift = insert.Parameters.Add("$shift", SqliteType.Integer);
                     var pUa = insert.Parameters.Add("$ua", SqliteType.Text);
                     var pRef = insert.Parameters.Add("$ref", SqliteType.Text);
+                    var pArchive = insert.Parameters.Add("$archive", SqliteType.Integer);
+                    var pArchiveDays = insert.Parameters.Add("$archiveDays", SqliteType.Integer);
                     var pAdded = insert.Parameters.Add("$added", SqliteType.Integer);
                     var pKey = insert.Parameters.Add("$key", SqliteType.Text);
 
@@ -151,6 +155,8 @@ public sealed class CatalogRepository : ICatalogRepository
                         pShift.Value = channel.TvgShiftMinutes;
                         pUa.Value = (object?)channel.UserAgent ?? DBNull.Value;
                         pRef.Value = (object?)channel.Referrer ?? DBNull.Value;
+                        pArchive.Value = channel.HasArchive ? 1 : 0;
+                        pArchiveDays.Value = channel.ArchiveDays;
                         pAdded.Value = channel.AddedUtc;
                         pKey.Value = channel.ProviderStreamId ?? channel.StreamUrl ?? channel.Name;
                         insert.ExecuteNonQuery();
@@ -169,7 +175,9 @@ public sealed class CatalogRepository : ICatalogRepository
                         epg_channel_id = s.epg_channel_id,
                         tvg_shift_minutes = s.tvg_shift_minutes,
                         user_agent = s.user_agent,
-                        referrer = s.referrer
+                        referrer = s.referrer,
+                        has_archive = s.has_archive,
+                        archive_days = s.archive_days
                     FROM staging_channels AS s
                     WHERE channels.profile_id = @profileId
                       AND COALESCE(channels.provider_stream_id, channels.stream_url, channels.name) = s.match_key;
@@ -179,9 +187,11 @@ public sealed class CatalogRepository : ICatalogRepository
                     """
                     INSERT INTO channels
                         (profile_id, category_id, provider_stream_id, number, name, logo_url, stream_url,
-                         epg_channel_id, tvg_shift_minutes, user_agent, referrer, is_hidden, added_utc)
+                         epg_channel_id, tvg_shift_minutes, user_agent, referrer, has_archive, archive_days,
+                         is_hidden, added_utc)
                     SELECT @profileId, s.category_id, s.provider_stream_id, s.number, s.name, s.logo_url, s.stream_url,
-                           s.epg_channel_id, s.tvg_shift_minutes, s.user_agent, s.referrer, 0, s.added_utc
+                           s.epg_channel_id, s.tvg_shift_minutes, s.user_agent, s.referrer, s.has_archive, s.archive_days,
+                           0, s.added_utc
                     FROM staging_channels AS s
                     WHERE NOT EXISTS (
                         SELECT 1 FROM channels c

@@ -46,9 +46,10 @@
                             IsChecked="True"
                             Click="OnPinToggled"
                             ToolTip="{x:Static res:Strings.Player_Pin}">
-                <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}" Text="{StaticResource Lumen.Icon.Pin}">
+                <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
                   <TextBlock.Style>
                     <Style TargetType="TextBlock">
+                      <Setter Property="Text" Value="{StaticResource Lumen.Icon.Pin}" />
                       <Style.Triggers>
                         <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="False">
                           <Setter Property="Text" Value="{StaticResource Lumen.Icon.Unpin}" />
@@ -88,6 +89,21 @@
                     Content="{StaticResource Lumen.Icon.Stop}"
                     Click="OnStop"
                     AutomationProperties.Name="Stop" />
+            <Button x:Name="GoLiveButton"
+                    DockPanel.Dock="Left"
+                    Style="{StaticResource Lumen.Button.Ghost}"
+                    Click="OnGoToLive"
+                    Visibility="Collapsed"
+                    AutomationProperties.Name="{x:Static res:Strings.Player_GoToLive}">
+              <StackPanel Orientation="Horizontal">
+                <Ellipse Width="8"
+                         Height="8"
+                         Fill="{StaticResource Lumen.Brush.Live}"
+                         VerticalAlignment="Center"
+                         Margin="{StaticResource Lumen.Margin.R8}" />
+                <TextBlock Text="{x:Static res:Strings.Player_GoToLive}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
             <TextBlock x:Name="TimeText"
                        DockPanel.Dock="Right"
                        Style="{StaticResource Lumen.Text.TabularCaption}"

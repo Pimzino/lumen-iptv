@@ -90,6 +90,16 @@ public interface IPlaybackService
 
     bool IsMuted { get; set; }
 
+    /// <summary>
+    /// True when live playback is time-shifted behind the broadcast (after a pause, or while
+    /// replaying from the provider archive). <see cref="GoToLiveAsync"/> clears it by
+    /// rejoining the live edge.
+    /// </summary>
+    bool IsBehindLive { get; }
+
+    /// <summary>True when the current live channel supports catch-up seeking (provider archive).</summary>
+    bool CanSeekLive { get; }
+
     AspectMode Aspect { get; }
 
     IReadOnlyList<TrackOption> AudioTracks { get; }
@@ -116,6 +126,15 @@ public interface IPlaybackService
     Task ZapAsync(int direction);
 
     void TogglePause();
+
+    /// <summary>Re-opens the current live channel at the live edge, discarding the pause time-shift.</summary>
+    Task GoToLiveAsync();
+
+    /// <summary>
+    /// Jumps live playback to an absolute broadcast time via the provider's catch-up archive.
+    /// No-op unless <see cref="CanSeekLive"/>; targets within a minute of now rejoin live.
+    /// </summary>
+    Task SeekLiveAsync(DateTimeOffset targetUtc);
 
     void Stop();
 

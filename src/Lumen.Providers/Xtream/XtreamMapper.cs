@@ -41,6 +41,8 @@ public static class XtreamMapper
             Name = dto.Name,
             LogoUrl = NullIfBlank(dto.StreamIcon),
             EpgChannelId = NullIfBlank(dto.EpgChannelId),
+            HasArchive = dto.HasArchive == true,
+            ArchiveDays = dto.HasArchive == true ? Math.Max(0, dto.ArchiveDurationDays ?? 0) : 0,
             AddedUtc = nowUnix,
         };
     }

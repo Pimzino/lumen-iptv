@@ -128,6 +128,7 @@ public sealed partial class MiniPlayerWindow : Window
         var playback = vm.Playback;
         TitleText.Text = playback.NowPlayingTitle ?? string.Empty;
         PlayPauseGlyph.Text = playback.State == PlaybackState.Paused ? _playGlyph : _pauseGlyph;
+        GoLiveButton.Visibility = playback.IsBehindLive ? Visibility.Visible : Visibility.Collapsed;
 
         var isVod = playback.IsVod;
         SeekSlider.Visibility = isVod ? Visibility.Visible : Visibility.Collapsed;
@@ -182,6 +183,8 @@ public sealed partial class MiniPlayerWindow : Window
     private void OnPlayPause(object sender, RoutedEventArgs e) => Vm?.TogglePlayPauseCommand.Execute(null);
 
     private void OnStop(object sender, RoutedEventArgs e) => Vm?.Playback.Stop();
+
+    private void OnGoToLive(object sender, RoutedEventArgs e) => _ = Vm?.Playback.GoToLiveAsync();
 
     private void OnPinToggled(object sender, RoutedEventArgs e)
     {

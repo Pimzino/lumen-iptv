@@ -65,6 +65,10 @@ public sealed partial class PlayerViewModel : ObservableObject,
                 // Now/next is live-EPG data; a VOD start must clear the last channel's leftovers.
                 SetNowNext(null);
             }
+            else if (e.PropertyName is nameof(PlaybackService.CanSeekLive))
+            {
+                RestartProgrammeCommand.NotifyCanExecuteChanged();
+            }
         };
 
         messenger.RegisterAll(this);
@@ -125,6 +129,19 @@ public sealed partial class PlayerViewModel : ObservableObject,
 
     [RelayCommand]
     private void TogglePlayPause() => Playback.TogglePause();
+
+    [RelayCommand]
+    private Task GoToLiveAsync() => Playback.GoToLiveAsync();
+
+    /// <summary>Replays the current broadcast programme from its start (catch-up channels).</summary>
+    [RelayCommand(CanExecute = nameof(CanRestartProgramme))]
+    private Task RestartProgrammeAsync() =>
+        _nowProgramme is { } programme ? Playback.SeekLiveAsync(programme.Start) : Task.CompletedTask;
+
+    private bool CanRestartProgramme => Playback.CanSeekLive && _nowProgramme is not null;
+
+    /// <summary>Start of the programme currently airing — the live seek bar's left edge.</summary>
+    public DateTimeOffset? NowProgrammeStartUtc => _nowProgramme?.Start;
 
     [RelayCommand]
     private void ToggleMute() => Playback.IsMuted = !Playback.IsMuted;
@@ -343,6 +360,15 @@ public sealed partial class PlayerViewModel : ObservableObject,
 
     private void SetNowNext(NowNext? nowNext)
     {
+        // EPG refreshes complete on background threads; command CanExecute (and timers this
+        // may reach) are thread-affine, so land the whole update on the dispatcher.
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(() => SetNowNext(nowNext));
+            return;
+        }
+
         _nowProgramme = nowNext?.Now;
         NowTitle = nowNext?.Now?.Title;
         NowTimeRange = nowNext?.Now is { } now
@@ -351,6 +377,7 @@ public sealed partial class PlayerViewModel : ObservableObject,
         NextTitle = nowNext?.Next?.Title;
         BannerNowTitle = NowTitle;
         BannerNextTitle = NextTitle;
+        RestartProgrammeCommand.NotifyCanExecuteChanged();
         UpdateProgress();
     }
 

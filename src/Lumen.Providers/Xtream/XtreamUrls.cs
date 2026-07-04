@@ -73,6 +73,26 @@ public static class XtreamUrls
         return BuildStreamUri(server, "live", username, password, streamId, extension);
     }
 
+    /// <summary>
+    /// Builds a catch-up (timeshift) stream URL:
+    /// <c>{server}/timeshift/{user}/{pass}/{durationMinutes}/{yyyy-MM-dd:HH-mm}/{id}.ts</c>.
+    /// <paramref name="start"/> must already be in the <b>panel's</b> local time (see
+    /// <see cref="XtreamServerTime.ToServerLocal"/>) — portals interpret it in their own zone.
+    /// </summary>
+    public static Uri Timeshift(
+        string server, string username, string password, string streamId, DateTime start, int durationMinutes)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(streamId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(durationMinutes, 1);
+
+        var stamp = start.ToString("yyyy-MM-dd:HH-mm", System.Globalization.CultureInfo.InvariantCulture);
+        return new Uri(
+            $"{NormalizeServerBase(server)}/timeshift" +
+            $"/{Uri.EscapeDataString(RequireCredential(username))}" +
+            $"/{Uri.EscapeDataString(RequireCredential(password))}" +
+            $"/{durationMinutes}/{stamp}/{Uri.EscapeDataString(streamId)}.ts");
+    }
+
     /// <summary>Builds a movie stream URL using the container extension reported by the API.</summary>
     public static Uri Movie(string server, string username, string password, string streamId, string? containerExtension) =>
         BuildStreamUri(server, "movie", username, password, streamId, NormalizeExtension(containerExtension));

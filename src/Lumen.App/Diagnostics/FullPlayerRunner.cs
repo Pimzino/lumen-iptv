@@ -137,7 +137,7 @@ public static class FullPlayerRunner
                 ? window.Dispatcher.Invoke(pip.OpenControlsForDiagnostics)
                 : "buttons=0 clickButtons=0 vm=False";
             var pipControlsOk = pipControls.Contains("vm=True", StringComparison.Ordinal)
-                && pipControls.Contains("clickButtons=4", StringComparison.Ordinal);
+                && pipControls.Contains("clickButtons=5", StringComparison.Ordinal);
             report.AppendLine($"pipControls {pipControls} ok={pipControlsOk}");
 
             // Re-enter — should hide the PiP window and return to full player.

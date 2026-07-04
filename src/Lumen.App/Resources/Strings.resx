@@ -163,6 +163,9 @@
   <data name="Player_Audio" xml:space="preserve"><value>Audio</value></data>
   <data name="Player_Subtitles" xml:space="preserve"><value>Subtitles</value></data>
   <data name="Player_Channels" xml:space="preserve"><value>Channels</value></data>
+  <data name="Player_GoToLive" xml:space="preserve"><value>Go to Live</value></data>
+  <data name="Player_RestartProgramme" xml:space="preserve"><value>Restart programme</value></data>
+  <data name="Player_LiveSeek" xml:space="preserve"><value>Live seek</value></data>
 
   <data name="Guide_JumpToNow" xml:space="preserve"><value>Jump to now</value></data>
   <data name="Guide_NoData" xml:space="preserve"><value>No guide data yet. Import a programme guide from Settings.</value></data>

@@ -351,6 +351,15 @@ public partial class App : Application
 
             await SnapAsync("livetv.png");
 
+            // Synthetic "Favorites" category (second pinned row) filtered to the seeded channels.
+            if (shell.Navigation.CurrentViewModel is ViewModels.LiveTvViewModel liveTvFavorites
+                && liveTvFavorites.Categories.Count > 1)
+            {
+                liveTvFavorites.SelectedCategory = liveTvFavorites.Categories[1];
+                await Task.Delay(500);
+                await SnapAsync("livetv-favorites.png");
+            }
+
             shell.NavigateToSection("guide");
             await Task.Delay(900);
             await SnapAsync("guide-live.png");

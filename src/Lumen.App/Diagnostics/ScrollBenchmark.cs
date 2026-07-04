@@ -32,6 +32,7 @@ public static class ScrollBenchmark
                     NowTitle = $"Programme {i}",
                     NowTimeRange = "20:00–21:00",
                     NowProgress = i % 100,
+                    IsFavorite = i % 7 == 0,
                 });
             }
 
@@ -119,13 +120,14 @@ public static class ScrollBenchmark
 
     private static DataTemplate BuildRowTemplate()
     {
-        // Mirrors the real channel row: monogram + name + now/next + progress.
+        // Mirrors the real channel row: monogram + name + now/next + progress + favorite heart.
         var xaml = """
             <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto" />
                   <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Border Width="40" Height="40" CornerRadius="8"
                         Background="{StaticResource Lumen.Brush.Accent.Subtle}">
@@ -137,6 +139,22 @@ public static class ScrollBenchmark
                   <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="{Binding NowTitle}" />
                   <ProgressBar Value="{Binding NowProgress}" Maximum="100" />
                 </StackPanel>
+                <Button Grid.Column="2" Style="{StaticResource Lumen.Button.Icon}"
+                        VerticalAlignment="Center" Margin="8,0,0,0">
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                            <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Button>
               </Grid>
             </DataTemplate>
             """;

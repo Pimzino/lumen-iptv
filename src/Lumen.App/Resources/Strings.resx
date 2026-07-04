@@ -151,6 +151,7 @@
   <data name="LiveTv_Watch" xml:space="preserve"><value>Watch</value></data>
   <data name="LiveTv_MutedPreview" xml:space="preserve"><value>Muted preview</value></data>
   <data name="LiveTv_NoChannels" xml:space="preserve"><value>No channels in this category yet. Try refreshing the library in Settings.</value></data>
+  <data name="LiveTv_NoFavorites" xml:space="preserve"><value>No favorite channels yet. Click the heart on a channel to add it here.</value></data>
   <data name="LiveTv_NowLabel" xml:space="preserve"><value>NOW</value></data>
   <data name="LiveTv_NextLabel" xml:space="preserve"><value>NEXT</value></data>
   <data name="LiveTv_NoGuideData" xml:space="preserve"><value>No guide data for this channel.</value></data>

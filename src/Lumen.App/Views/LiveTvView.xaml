@@ -96,6 +96,7 @@
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto" />
                   <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid Width="{StaticResource Lumen.Size.ChannelLogo}" Height="{StaticResource Lumen.Size.ChannelLogo}">
                   <Border CornerRadius="{StaticResource Lumen.Radius.Control}"
@@ -128,6 +129,27 @@
                                Maximum="100"
                                Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
                 </StackPanel>
+                <Button Grid.Column="2"
+                        Style="{StaticResource Lumen.Button.Icon}"
+                        VerticalAlignment="Center"
+                        Margin="{StaticResource Lumen.Margin.L8}"
+                        Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                        CommandParameter="{Binding}"
+                        AutomationProperties.Name="Favorite">
+                  <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                            <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                            <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Button>
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
@@ -180,10 +202,12 @@
                           Content="{x:Static res:Strings.Badge_Live}"
                           Margin="{StaticResource Lumen.Margin.L12}"
                           VerticalAlignment="Center"
-                          Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                          Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}, FallbackValue=Collapsed}" />
         </StackPanel>
 
-        <StackPanel Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+        <!-- FallbackValue: with no channel selected the path breaks at SelectedChannel and the
+             binding would otherwise leave these Visible — stray badge/labels over an empty pane. -->
+        <StackPanel Visibility="{Binding SelectedChannel.NowTitle, Converter={StaticResource Lumen.NullToCollapsed}, FallbackValue=Collapsed}">
           <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B4}">
             <TextBlock Style="{StaticResource Lumen.Text.Micro}"
                        Foreground="{StaticResource Lumen.Brush.Accent}"
@@ -225,6 +249,42 @@
                          VerticalAlignment="Center"
                          Margin="{StaticResource Lumen.Margin.R8}" />
               <TextBlock Text="{x:Static res:Strings.LiveTv_Watch}" />
+            </StackPanel>
+          </Button>
+          <Button Style="{StaticResource Lumen.Button.Ghost}"
+                  Command="{Binding ToggleFavoriteCommand}"
+                  CommandParameter="{Binding SelectedChannel}"
+                  Margin="{StaticResource Lumen.Margin.R12}"
+                  Visibility="{Binding SelectedChannel, Converter={StaticResource Lumen.NullToCollapsed}}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                         FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                         VerticalAlignment="Center"
+                         Margin="{StaticResource Lumen.Margin.R8}">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Text" Value="{StaticResource Lumen.Icon.Favorites}" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding SelectedChannel.IsFavorite}" Value="True">
+                        <Setter Property="Text" Value="{StaticResource Lumen.Icon.FavoritesFilled}" />
+                        <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Live}" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <TextBlock>
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Text" Value="{x:Static res:Strings.Vod_AddFavorite}" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding SelectedChannel.IsFavorite}" Value="True">
+                        <Setter Property="Text" Value="{x:Static res:Strings.Vod_RemoveFavorite}" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
             </StackPanel>
           </Button>
           <TextBlock Style="{StaticResource Lumen.Text.Caption}"

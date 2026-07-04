@@ -43,6 +43,9 @@ public sealed partial class ChannelListItem : ObservableObject
     [ObservableProperty]
     private string? _nextTitle;
 
+    [ObservableProperty]
+    private bool _isFavorite;
+
     internal Programme? NowProgramme { get; set; }
 
     internal string? XmltvId { get; set; }
@@ -65,9 +68,13 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     /// <summary>Synthetic "All channels" category (id 0).</summary>
     private static readonly Category AllChannels = new() { Id = 0, Name = "All channels" };
 
+    /// <summary>Synthetic "Favorites" category (id -1): the profile's favorited channels.</summary>
+    private static readonly Category FavoritesCategory = new() { Id = -1, Name = Resources.Strings.Nav_Favorites };
+
     private readonly ISessionService _session;
     private readonly ICatalogRepository _catalog;
     private readonly IEpgRepository _epg;
+    private readonly IFavoritesRepository _favorites;
     private readonly PlaybackService _playbackService;
     private readonly ArtworkService _artwork;
     private readonly IClock _clock;
@@ -76,6 +83,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
     private CancellationTokenSource? _channelsCts;
     private CancellationTokenSource? _previewCts;
+    private HashSet<long> _favoriteChannelIds = [];
     private Dictionary<long, string> _mappings = [];
     private IReadOnlyDictionary<long, string> _logoFallbacks =
         System.Collections.Immutable.ImmutableDictionary<long, string>.Empty;
@@ -90,6 +98,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         ISessionService session,
         ICatalogRepository catalog,
         IEpgRepository epg,
+        IFavoritesRepository favorites,
         PlaybackService playbackService,
         ArtworkService artwork,
         IClock clock)
@@ -97,6 +106,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         _session = session;
         _catalog = catalog;
         _epg = epg;
+        _favorites = favorites;
         _playbackService = playbackService;
         _artwork = artwork;
         _clock = clock;
@@ -158,7 +168,14 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         _mappings = mappingRows.ToDictionary(m => m.ChannelId, m => m.XmltvId);
         _logoFallbacks = await _artwork.GetChannelLogoFallbacksAsync(profile.Id, cancellationToken);
 
-        _allCategories = [AllChannels, .. await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken)];
+        _favoriteChannelIds = (await _favorites.GetAllAsync(profile.Id, cancellationToken))
+            .Where(f => f.ItemKind == ContentKind.Live)
+            .Select(f => long.TryParse(f.ItemKey, out var id) ? id : -1)
+            .Where(id => id >= 0)
+            .ToHashSet();
+
+        _allCategories =
+            [AllChannels, FavoritesCategory, .. await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken)];
         ApplyCategoryFilter();
 
         SelectedCategory = Categories[0];
@@ -237,8 +254,10 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
             Categories.Clear();
             foreach (var category in _allCategories)
             {
-                // "All channels" is pinned: it's the default selection and the escape hatch.
+                // The synthetic rows are pinned: "All channels" is the default selection and the
+                // escape hatch, "Favorites" the always-reachable shortlist.
                 if (ReferenceEquals(category, AllChannels)
+                    || ReferenceEquals(category, FavoritesCategory)
                     || filter.Length == 0
                     || category.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
                 {
@@ -286,9 +305,11 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
             ? $"{visible.Count:N0}"
             : Resources.Strings.Format(
                 Resources.Strings.LiveTv_ChannelCountOfFormat, visible.Count, _allChannelItems.Count);
-        EmptyMessage = filter.Length == 0
-            ? Resources.Strings.LiveTv_NoChannels
-            : Resources.Strings.Filter_NoMatches;
+        EmptyMessage = filter.Length > 0
+            ? Resources.Strings.Filter_NoMatches
+            : ReferenceEquals(SelectedCategory, FavoritesCategory)
+                ? Resources.Strings.LiveTv_NoFavorites
+                : Resources.Strings.LiveTv_NoChannels;
     }
 
     private async Task LoadChannelsAsync(Category category)
@@ -307,12 +328,21 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         IsLoadingChannels = true;
         try
         {
-            var channels = await _catalog.GetChannelsAsync(
-                profile.Id, category.Id == 0 ? null : category.Id, token);
+            // Synthetic categories (id <= 0) query all channels; "Favorites" then narrows in memory.
+            IReadOnlyList<Channel> channels = await _catalog.GetChannelsAsync(
+                profile.Id, category.Id > 0 ? category.Id : null, token);
             token.ThrowIfCancellationRequested();
 
+            if (ReferenceEquals(category, FavoritesCategory))
+            {
+                channels = channels.Where(c => _favoriteChannelIds.Contains(c.Id)).ToList();
+            }
+
             _allChannelItems = channels
-                .Select(channel => new ChannelListItem(channel, _logoFallbacks.GetValueOrDefault(channel.Id)))
+                .Select(channel => new ChannelListItem(channel, _logoFallbacks.GetValueOrDefault(channel.Id))
+                {
+                    IsFavorite = _favoriteChannelIds.Contains(channel.Id),
+                })
                 .ToList();
             ApplyChannelFilter();
             IsLoadingChannels = false;
@@ -442,5 +472,29 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         }
 
         _playbackService.EnterFullPlayer();
+    }
+
+    [RelayCommand]
+    private async Task ToggleFavoriteAsync(ChannelListItem? item)
+    {
+        if (item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var key = item.Channel.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (item.IsFavorite)
+        {
+            await _favorites.RemoveAsync(profile.Id, ContentKind.Live, key, CancellationToken.None);
+            item.IsFavorite = false;
+            _favoriteChannelIds.Remove(item.Channel.Id);
+        }
+        else
+        {
+            await _favorites.AddAsync(
+                profile.Id, ContentKind.Live, key, _clock.UtcNow.ToUnixTimeSeconds(), CancellationToken.None);
+            item.IsFavorite = true;
+            _favoriteChannelIds.Add(item.Channel.Id);
+        }
     }
 }

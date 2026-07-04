@@ -701,3 +701,31 @@ that the native video HWND hides WPF content behind it once it exists. It does n
   provider streams. `--no-avcodec-corrupted` holds the last clean frame instead of painting gray
   smears/macroblock soup. Startup cost is at most one GOP (typically < 2 s) before first video,
   spent on the loading state rather than on garbage.
+
+## Live TV favorites — parity with VOD
+
+Channels could be *stored* as favorites from day one (the `favorites` table, the Favorites page,
+and the Home rail all handle `ContentKind.Live`), but no surface offered a way to *add* one — the
+heart lived only on VOD cards and detail pages. Closed by bringing Live TV to parity rather than
+inventing a new mechanism:
+
+- **Heart toggle on every channel row and in the preview pane.** Same visual pattern as the VOD
+  poster hearts (`Lumen.Icon.Favorites`/`FavoritesFilled`, `Lumen.Brush.Live` when set), same
+  repository calls, keyed by the channel row id exactly as the Favorites page already reads it —
+  snapshot sync keeps those ids stable across refreshes, so hearts survive a catalog refresh.
+  Clicks land on the row's Button, which swallows them before list selection, so favoriting never
+  restarts the muted preview.
+- **A pinned synthetic "Favorites" category** (id −1) sits under "All channels" (id 0), reusing
+  the existing synthetic-category pattern: query all channels, narrow in memory against the
+  profile's favorite ids, with its own empty-state copy. Unhearting while inside the category
+  keeps the row visible until the next load — forgiving of mis-clicks, matching how the VOD grid
+  treats unhearted cards.
+- **The no-selection preview pane was quietly broken** and the (empty-by-default) Favorites
+  category made it prominent: the LIVE badge and NOW/NEXT labels bind visibility through
+  `SelectedChannel.NowTitle`, and a null `SelectedChannel` breaks the path *before* the converter
+  runs, leaving them Visible over an empty pane. `FallbackValue=Collapsed` on those two bindings;
+  the favorite button itself binds `SelectedChannel` directly so it collapses without help.
+- **`--scroll-bench` row template updated to match** (heart button, 1-in-7 favorited) so the 10k
+  gate measures the row users actually get: PASS — 12 realized containers, median 9.79 ms,
+  p95 13.00 ms. `--shot-shell` now also captures `livetv-favorites.png` (the synthetic category,
+  filtered to the seeded favorites) as the visual gate for this state.

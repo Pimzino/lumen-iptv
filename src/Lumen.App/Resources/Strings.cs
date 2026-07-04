@@ -158,6 +158,7 @@ public static class Strings
     public static string LiveTv_Watch => Get(nameof(LiveTv_Watch));
     public static string LiveTv_MutedPreview => Get(nameof(LiveTv_MutedPreview));
     public static string LiveTv_NoChannels => Get(nameof(LiveTv_NoChannels));
+    public static string LiveTv_NoFavorites => Get(nameof(LiveTv_NoFavorites));
     public static string LiveTv_NowLabel => Get(nameof(LiveTv_NowLabel));
     public static string LiveTv_NextLabel => Get(nameof(LiveTv_NextLabel));
     public static string LiveTv_NoGuideData => Get(nameof(LiveTv_NoGuideData));

@@ -278,6 +278,59 @@
     </Setter>
   </Style>
 
+  <!-- ======================= Tabs (season / segment strips) ======================= -->
+
+  <!-- Horizontal pill strip; pair with Lumen.Tab containers. Wraps when crowded. -->
+  <Style x:Key="Lumen.TabStrip" TargetType="ListBox" BasedOn="{StaticResource Lumen.ListBox}">
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="KeyboardNavigation.DirectionalNavigation" Value="Contained" />
+    <Setter Property="VirtualizingPanel.IsVirtualizing" Value="False" />
+    <Setter Property="ItemsPanel">
+      <Setter.Value>
+        <ItemsPanelTemplate>
+          <WrapPanel />
+        </ItemsPanelTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- A single pill tab: quiet at rest, accent-tinted fill when selected. -->
+  <Style x:Key="Lumen.Tab" TargetType="ListBoxItem">
+    <Setter Property="FocusVisualStyle" Value="{StaticResource Lumen.FocusVisual}" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+    <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Body}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="{StaticResource Lumen.Pad.Control}" />
+    <Setter Property="Margin" Value="0,0,8,8" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBoxItem">
+          <Border x:Name="Root"
+                  Background="Transparent"
+                  CornerRadius="{StaticResource Lumen.Radius.Control}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Overlay.Hover}" />
+              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Accent.Subtle}" />
+              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.4" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ======================= ToolTip ======================= -->
 
   <Style TargetType="ToolTip">

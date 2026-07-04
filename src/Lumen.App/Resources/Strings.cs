@@ -172,6 +172,17 @@ public static class Strings
     public static string Vod_RemoveFavorite => Get(nameof(Vod_RemoveFavorite));
     public static string Vod_NoItems => Get(nameof(Vod_NoItems));
     public static string Vod_Episodes => Get(nameof(Vod_Episodes));
+    public static string Vod_SeasonFormat => Get(nameof(Vod_SeasonFormat));
+    public static string Vod_Specials => Get(nameof(Vod_Specials));
+    public static string Vod_OneSeason => Get(nameof(Vod_OneSeason));
+    public static string Vod_SeasonsCountFormat => Get(nameof(Vod_SeasonsCountFormat));
+    public static string Vod_OneEpisode => Get(nameof(Vod_OneEpisode));
+    public static string Vod_EpisodesCountFormat => Get(nameof(Vod_EpisodesCountFormat));
+    public static string Vod_ResumeEpisodeFormat => Get(nameof(Vod_ResumeEpisodeFormat));
+    public static string Vod_PlayEpisodeFormat => Get(nameof(Vod_PlayEpisodeFormat));
+    public static string Vod_NoEpisodes => Get(nameof(Vod_NoEpisodes));
+    public static string Vod_CastLabel => Get(nameof(Vod_CastLabel));
+    public static string Vod_DirectorLabel => Get(nameof(Vod_DirectorLabel));
     public static string Home_ContinueWatchingResume => Get(nameof(Home_ContinueWatchingResume));
 
     public static string Search_Placeholder => Get(nameof(Search_Placeholder));

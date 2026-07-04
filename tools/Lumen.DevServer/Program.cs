@@ -64,6 +64,10 @@ void Handle(HttpListenerContext context)
                 // A finite ~20-minute WAV so VOD resume/seek can be exercised.
                 StreamMovieWav(context, totalSeconds: 1200);
                 break;
+            case var episode when episode.StartsWith("/series/demo/demo/", StringComparison.Ordinal):
+                // A short finite WAV standing in for a series episode.
+                StreamMovieWav(context, totalSeconds: 300);
+                break;
             default:
                 context.Response.StatusCode = 404;
                 context.Response.Close();
@@ -115,8 +119,7 @@ void HandlePlayerApi(HttpListenerContext context, System.Collections.Specialized
             """[{"category_id":"20","category_name":"Drama","parent_id":0}]""",
         "get_series" =>
             $$"""[{"series_id":501,"name":"Breaking Code","cover":"","category_id":"20","rating":"8.7","last_modified":"{{now - 3600}}","releaseDate":"2023-01-10"}]""",
-        "get_series_info" =>
-            """{"info":{"name":"Breaking Code","plot":"A drama."},"episodes":{"1":[{"id":"70001","episode_num":1,"title":"Pilot","container_extension":"mp4","season":1}]}}""",
+        "get_series_info" => BuildSeriesInfo(),
         "get_vod_info" =>
             """{"info":{"plot":"Space.","duration_secs":8130},"movie_data":{"stream_id":9001,"container_extension":"mp4"}}""",
         "get_short_epg" or "get_simple_data_table" =>
@@ -132,6 +135,64 @@ string BuildLiveStreams()
     var items = channels.Select((c, i) =>
         $$"""{"num":{{i + 1}},"name":"{{c.Name}}","stream_type":"live","stream_id":{{c.Id}},"stream_icon":"","epg_channel_id":"{{c.Epg}}","category_id":"{{c.Cat}}","tv_archive":0}""");
     return "[" + string.Join(",", items) + "]";
+}
+
+string BuildSeriesInfo()
+{
+    // Three seasons with per-episode metadata so the detail page's season tabs, episode
+    // cards, meta lines, and next-up logic all have real material in dev/E2E runs.
+    var titles = new[]
+    {
+        "Pilot", "Zero Day", "Stack Trace", "Fork Bomb", "Root Access", "Kernel Panic",
+        "Cold Boot", "Handshake", "Dead Drop", "Backdoor", "Air Gap",
+        "Checksum", "Sandbox", "Race Condition", "Terminal",
+    };
+    var episodes = new Dictionary<string, List<object>>();
+    var episodeId = 70100;
+    var titleIndex = 0;
+    for (var season = 1; season <= 3; season++)
+    {
+        var count = season switch { 1 => 6, 2 => 5, _ => 4 };
+        var list = new List<object>(count);
+        for (var number = 1; number <= count; number++)
+        {
+            var title = titles[titleIndex++ % titles.Length];
+            var aired = new DateTime(2020 + season, 3, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(7 * (number - 1));
+            list.Add(new
+            {
+                id = (episodeId++).ToString(CultureInfo.InvariantCulture),
+                episode_num = number,
+                season,
+                title,
+                container_extension = "mp4",
+                info = new
+                {
+                    plot = $"S{season}E{number} — {title}: the crew digs deeper into the breach while old loyalties fray.",
+                    duration_secs = 2400 + number * 60,
+                    rating = 7 + number % 3 + number % 10 / 10.0,
+                    releasedate = aired.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                },
+            });
+        }
+
+        episodes[season.ToString(CultureInfo.InvariantCulture)] = list;
+    }
+
+    var payload = new
+    {
+        info = new
+        {
+            name = "Breaking Code",
+            plot = "An underground security team races to contain a leaked exploit before it rewrites the balance of power.",
+            genre = "Drama / Thriller",
+            cast = "Ada Vale, Marcus Chen, Priya Nair",
+            director = "R. Okafor",
+            rating = 8.7,
+            releaseDate = "2021-03-01",
+        },
+        episodes,
+    };
+    return System.Text.Json.JsonSerializer.Serialize(payload);
 }
 
 string GeneratePlaylist()

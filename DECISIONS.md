@@ -577,3 +577,29 @@ categories + channels), and global-search result activation was fixed for large 
   a multi-second UI freeze at EPG scale (tens of thousands of options). The template now
   template-binds `CanContentScroll` and pins a recycling `VirtualizingStackPanel`, and the
   Settings benchmark exercises the new row/options structure.
+
+## Series detail rework — season tabs + episode cards
+
+- **Seasons are tabs, not stacked lists.** The detail page used to render every season's
+  episodes in one long scroll; it now shows a pill tab strip (new `Lumen.TabStrip`/`Lumen.Tab`
+  styles — a `ListBox` with a `WrapPanel`, so 20-season libraries wrap instead of clipping)
+  over a single season's episode cards. Selection reuses the accent-subtle fill vocabulary
+  from `Lumen.ListRow`/`Badge.New`. Only the selected season's episodes are realized, which
+  also removes the old render-everything cost.
+- **Episode rows became cards**: 160×90 thumbnail (`movie_image` when the provider sends one,
+  an episode-number monogram otherwise), title, a "42m · 1 Mar 2021 · ★ 8.1" meta line, a
+  two-line plot clamp, a resume progress bar inside the thumbnail, and a hover play affordance.
+  Season switches animate through the existing `TransitioningContentControl`.
+- **Series get a real primary action.** The hero now resolves "next up" from watch history:
+  resume the most recent episode when it's mid-flight (>30s, <95%), advance to the following
+  episode when it finished, else play S1E1 — and the tab strip lands on that episode's season.
+  Metadata chips gained "{n} seasons · {m} episodes", and cast/director surface on both movie
+  and series heroes (the fields were already mapped, just never shown).
+- **Loading states**: the series section shows tab-pill and episode-card skeletons while
+  `get_series_info` is in flight; an M3U/echo-empty series shows an explicit "no episodes"
+  message instead of silent blankness.
+- **DevServer's series fixture grew to 3 seasons / 15 episodes** with per-episode info blocks
+  (assembled via `JsonSerializer` — the raw-string `$$"""` form can't express JSON's `}}}`
+  brace runs), plus a `/series/…` stream route so episode playback works against the fixture.
+  `--shot-shell` now switches to an Xtream profile (M3U profiles have no series) and captures
+  `series-detail.png`.

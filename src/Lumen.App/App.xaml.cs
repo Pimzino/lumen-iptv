@@ -357,6 +357,33 @@ public partial class App : Application
                 shell.NavigateToSection("movies");
             }
 
+            // Series only exist on Xtream profiles; hop over when another kind is active.
+            if (session.CurrentProfile?.Kind != Core.Models.ProfileKind.Xtream &&
+                session.Profiles.FirstOrDefault(p => p.Kind == Core.Models.ProfileKind.Xtream) is { } xtream)
+            {
+                await session.SwitchProfileAsync(xtream.Id, CancellationToken.None);
+                await Task.Delay(400);
+            }
+
+            shell.NavigateToSection("series");
+            await Task.Delay(900);
+            if (shell.Navigation.CurrentViewModel is ViewModels.SeriesViewModel seriesVm && seriesVm.Items.Count > 0)
+            {
+                seriesVm.OpenDetailCommand.Execute(seriesVm.Items[0]);
+                await Task.Delay(1200);
+                await SnapAsync("series-detail.png");
+
+                // Second season selected, so the tab strip + episode swap is reviewable.
+                if (shell.Navigation.CurrentViewModel is ViewModels.VodDetailViewModel detailVm &&
+                    detailVm.Seasons.Count > 1)
+                {
+                    detailVm.SelectedSeason = detailVm.Seasons[1];
+                    await SnapAsync("series-detail-s2.png");
+                }
+
+                shell.NavigateToSection("series");
+            }
+
             shell.NavigateToSection("favorites");
             await Task.Delay(700);
             await SnapAsync("favorites.png");

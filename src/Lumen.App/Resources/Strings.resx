@@ -166,6 +166,17 @@
   <data name="Vod_RemoveFavorite" xml:space="preserve"><value>In favorites</value></data>
   <data name="Vod_NoItems" xml:space="preserve"><value>Nothing here yet. Refresh your library in Settings.</value></data>
   <data name="Vod_Episodes" xml:space="preserve"><value>Episodes</value></data>
+  <data name="Vod_SeasonFormat" xml:space="preserve"><value>Season {0}</value></data>
+  <data name="Vod_Specials" xml:space="preserve"><value>Specials</value></data>
+  <data name="Vod_OneSeason" xml:space="preserve"><value>1 season</value></data>
+  <data name="Vod_SeasonsCountFormat" xml:space="preserve"><value>{0} seasons</value></data>
+  <data name="Vod_OneEpisode" xml:space="preserve"><value>1 episode</value></data>
+  <data name="Vod_EpisodesCountFormat" xml:space="preserve"><value>{0} episodes</value></data>
+  <data name="Vod_ResumeEpisodeFormat" xml:space="preserve"><value>Resume S{0} E{1}</value></data>
+  <data name="Vod_PlayEpisodeFormat" xml:space="preserve"><value>Play S{0} E{1}</value></data>
+  <data name="Vod_NoEpisodes" xml:space="preserve"><value>No episodes available for this series yet.</value></data>
+  <data name="Vod_CastLabel" xml:space="preserve"><value>Cast</value></data>
+  <data name="Vod_DirectorLabel" xml:space="preserve"><value>Director</value></data>
   <data name="Home_ContinueWatchingResume" xml:space="preserve"><value>Resume</value></data>
 
   <data name="Search_Placeholder" xml:space="preserve"><value>Search channels, movies, series…</value></data>

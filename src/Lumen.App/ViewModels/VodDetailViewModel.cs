@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Lumen.App.Resources;
 using Lumen.App.Services;
 using Lumen.App.Services.Playback;
 using Lumen.Core.Abstractions;
@@ -9,39 +11,86 @@ using Serilog;
 
 namespace Lumen.App.ViewModels;
 
-/// <summary>An episode row on a series detail page.</summary>
+/// <summary>An episode card on a series detail page.</summary>
 public sealed partial class EpisodeRow : ObservableObject
 {
     public required SeriesEpisode Episode { get; init; }
 
     public string Title => $"{Episode.Number}. {Episode.Title}";
 
+    /// <summary>Two-digit episode number, the monogram shown when there is no thumbnail.</summary>
+    public string NumberLabel => Episode.Number.ToString("00", CultureInfo.CurrentCulture);
+
+    public string? ThumbUrl => Episode.PosterUrl;
+
     public string? Plot => Episode.Plot;
 
-    public string? Duration => Episode.DurationSeconds is { } secs and > 0
-        ? TimeSpan.FromSeconds(secs).ToString(secs >= 3600 ? @"h\:mm\:ss" : @"m\:ss")
-        : null;
+    /// <summary>"42m · 12 Mar 2023 · ★ 8.2" — whichever parts the provider supplied.</summary>
+    public string? MetaLine
+    {
+        get
+        {
+            var parts = new List<string>(3);
+            if (Episode.DurationSeconds is { } secs and > 0)
+            {
+                var duration = TimeSpan.FromSeconds(secs);
+                parts.Add(duration.TotalHours >= 1
+                    ? $"{(int)duration.TotalHours}h {duration.Minutes}m"
+                    : $"{(int)duration.TotalMinutes}m");
+            }
+
+            if (!string.IsNullOrWhiteSpace(Episode.AirDate))
+            {
+                parts.Add(DateTime.TryParse(
+                    Episode.AirDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out var aired)
+                    ? aired.ToString("d MMM yyyy", CultureInfo.CurrentCulture)
+                    : Episode.AirDate);
+            }
+
+            if (Episode.Rating is { } rating and > 0)
+            {
+                parts.Add($"★ {rating:0.0}");
+            }
+
+            return parts.Count > 0 ? string.Join(" · ", parts) : null;
+        }
+    }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasResume))]
     private double _resumeProgress;
+
+    /// <summary>True once a resume position exists, so unwatched cards show no progress track.</summary>
+    public bool HasResume => ResumeProgress > 0;
 }
 
-/// <summary>A season grouping of episodes on a series detail page.</summary>
+/// <summary>A season tab on a series detail page.</summary>
 public sealed class SeasonGroup
 {
     public required int Number { get; init; }
 
     public required IReadOnlyList<EpisodeRow> Episodes { get; init; }
 
-    public string Label => $"Season {Number}";
+    /// <summary>Tab caption; season 0 is the conventional Xtream bucket for specials.</summary>
+    public string Label => Number == 0
+        ? Strings.Vod_Specials
+        : Strings.Format(Strings.Vod_SeasonFormat, Number);
+
+    public string EpisodeCountLabel => Episodes.Count == 1
+        ? Strings.Vod_OneEpisode
+        : Strings.Format(Strings.Vod_EpisodesCountFormat, Episodes.Count);
 }
 
 /// <summary>
 /// Movie or series detail page: backdrop, poster, plot, metadata chips, resume support, and
-/// (for series) seasons of episodes. Shows a resume prompt when a saved position exists.
+/// (for series) season tabs over an episode-card list. Series get a smart primary action that
+/// resumes the most recently watched episode or advances to the next one.
 /// </summary>
 public sealed partial class VodDetailViewModel : ObservableObject, INavigationAware
 {
+    /// <summary>Progress beyond which an episode counts as watched and the next one is queued.</summary>
+    private const double CompletedProgress = 0.95;
+
     private readonly VodService _vodService;
     private readonly IWatchHistoryRepository _watchHistory;
     private readonly IFavoritesRepository _favorites;
@@ -52,6 +101,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     private VodItem? _item;
     private MovieDetails? _movieDetails;
     private WatchHistoryEntry? _resumeEntry;
+    private EpisodeRow? _seriesNextUp;
 
     public VodDetailViewModel(
         VodService vodService,
@@ -88,6 +138,12 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     private string? _plot;
 
     [ObservableProperty]
+    private string? _cast;
+
+    [ObservableProperty]
+    private string? _director;
+
+    [ObservableProperty]
     private ObservableCollection<string> _metadataChips = [];
 
     [ObservableProperty]
@@ -99,6 +155,20 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     [ObservableProperty]
     private string? _resumeLabel;
 
+    /// <summary>Season the episode list is showing; bound to the tab strip.</summary>
+    [ObservableProperty]
+    private SeasonGroup? _selectedSeason;
+
+    /// <summary>Caption for the series hero button: "Play", "Resume S2 E4", or "Play S3 E1".</summary>
+    [ObservableProperty]
+    private string? _seriesPlayLabel;
+
+    [ObservableProperty]
+    private bool _hasEpisodes;
+
+    [ObservableProperty]
+    private bool _showEmptyEpisodes;
+
     public ObservableCollection<SeasonGroup> Seasons { get; } = [];
 
     public async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
@@ -109,10 +179,14 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         }
 
         _item = item;
+        _seriesNextUp = null;
         Title = item.Name;
         PosterUrl = item.PosterUrl;
         IsSeries = item.Kind == ContentKind.Series;
         IsLoading = true;
+        HasEpisodes = false;
+        ShowEmptyEpisodes = false;
+        SelectedSeason = null;
         Seasons.Clear();
         MetadataChips = [];
 
@@ -144,6 +218,11 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         }
 
         IsLoading = false;
+        if (IsSeries)
+        {
+            HasEpisodes = Seasons.Count > 0;
+            ShowEmptyEpisodes = !HasEpisodes;
+        }
     }
 
     public void OnNavigatedFrom()
@@ -156,12 +235,14 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         cancellationToken.ThrowIfCancellationRequested();
 
         Plot = _movieDetails?.Plot;
+        Cast = _movieDetails?.Cast;
+        Director = _movieDetails?.Director;
         BackdropUrl = _movieDetails?.BackdropUrl ?? item.PosterUrl;
 
         var chips = new List<string>();
         if (item.Year is { } year)
         {
-            chips.Add(year.ToString(System.Globalization.CultureInfo.CurrentCulture));
+            chips.Add(year.ToString(CultureInfo.CurrentCulture));
         }
 
         if (_movieDetails?.DurationSeconds is { } secs and > 0)
@@ -202,12 +283,31 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         cancellationToken.ThrowIfCancellationRequested();
 
         Plot = details?.Plot;
+        Cast = details?.Cast;
+        Director = details?.Director;
         BackdropUrl = details?.BackdropUrl ?? item.PosterUrl;
+
+        var seasons = details?.Seasons ?? [];
+        var episodeTotal = seasons.Sum(s => s.Episodes.Count);
 
         var chips = new List<string>();
         if (item.Year is { } year)
         {
-            chips.Add(year.ToString(System.Globalization.CultureInfo.CurrentCulture));
+            chips.Add(year.ToString(CultureInfo.CurrentCulture));
+        }
+
+        if (seasons.Count > 0)
+        {
+            chips.Add(seasons.Count == 1
+                ? Strings.Vod_OneSeason
+                : Strings.Format(Strings.Vod_SeasonsCountFormat, seasons.Count));
+        }
+
+        if (episodeTotal > 0)
+        {
+            chips.Add(episodeTotal == 1
+                ? Strings.Vod_OneEpisode
+                : Strings.Format(Strings.Vod_EpisodesCountFormat, episodeTotal));
         }
 
         if ((details?.Rating ?? item.Rating) is { } rating and > 0)
@@ -223,14 +323,17 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         MetadataChips = new ObservableCollection<string>(chips);
 
         var profile = _session.CurrentProfile;
-        var history = profile is null
-            ? new Dictionary<string, WatchHistoryEntry>()
-            : (await _watchHistory.GetRecentAsync(profile.Id, 500, cancellationToken))
-                .Where(h => h.ItemKind == ContentKind.Series)
-                .GroupBy(h => h.ItemKey, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        IReadOnlyList<WatchHistoryEntry> recent = profile is null
+            ? []
+            : await _watchHistory.GetRecentAsync(profile.Id, 500, cancellationToken);
 
-        foreach (var season in details?.Seasons ?? [])
+        // Most recent entry per episode key (the list arrives newest-first).
+        var history = recent
+            .Where(h => h.ItemKind == ContentKind.Series)
+            .GroupBy(h => h.ItemKey, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+
+        foreach (var season in seasons)
         {
             var rows = season.Episodes.Select(episode =>
             {
@@ -245,6 +348,57 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
             Seasons.Add(new SeasonGroup { Number = season.Number, Episodes = rows });
         }
+
+        ResolveSeriesNextUp(item, recent);
+    }
+
+    /// <summary>
+    /// Picks the hero action for a series: resume the most recently watched episode, advance
+    /// to the one after it when it finished, or start from the first episode when unwatched.
+    /// Also lands the tab strip on the season that episode belongs to.
+    /// </summary>
+    private void ResolveSeriesNextUp(VodItem item, IReadOnlyList<WatchHistoryEntry> recent)
+    {
+        var allRows = Seasons.SelectMany(s => s.Episodes).ToList();
+        if (allRows.Count == 0)
+        {
+            return;
+        }
+
+        EpisodeRow? nextUp = null;
+        string? label = null;
+
+        var prefix = item.ProviderItemId + ":";
+        var latest = recent.FirstOrDefault(h =>
+            h.ItemKind == ContentKind.Series && h.ItemKey.StartsWith(prefix, StringComparison.Ordinal));
+        if (latest is not null)
+        {
+            var episodeId = latest.ItemKey[prefix.Length..];
+            var index = allRows.FindIndex(r => r.Episode.ProviderEpisodeId == episodeId);
+            if (index >= 0)
+            {
+                if (latest.Progress < CompletedProgress)
+                {
+                    nextUp = allRows[index];
+                    label = latest.PositionSeconds > 30
+                        ? Strings.Format(
+                            Strings.Vod_ResumeEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number)
+                        : Strings.Format(
+                            Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
+                }
+                else if (index + 1 < allRows.Count)
+                {
+                    nextUp = allRows[index + 1];
+                    label = Strings.Format(
+                        Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
+                }
+            }
+        }
+
+        nextUp ??= allRows[0];
+        _seriesNextUp = nextUp;
+        SeriesPlayLabel = label ?? Strings.Vod_Play;
+        SelectedSeason = Seasons.FirstOrDefault(s => s.Episodes.Contains(nextUp)) ?? Seasons[0];
     }
 
     private static string EpisodeKey(VodItem series, SeriesEpisode episode) =>
@@ -290,6 +444,10 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
             url, ContentKind.Movie, _item.ProviderItemId, _item.Name, _item.PosterUrl,
             _resumeEntry.PositionSeconds), CancellationToken.None);
     }
+
+    /// <summary>Hero action for series: plays the resolved next-up episode.</summary>
+    [RelayCommand]
+    private Task PlaySeriesAsync() => PlayEpisodeAsync(_seriesNextUp);
 
     [RelayCommand]
     private async Task PlayEpisodeAsync(EpisodeRow? row)

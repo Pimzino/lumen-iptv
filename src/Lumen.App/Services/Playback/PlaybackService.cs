@@ -1133,8 +1133,10 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 // pause/underrun cycle — re-assert the user's audio state on every (re)start.
                 // Only the explicit channel-open path did this before, which is why resume,
                 // reconnect, and go-to-live could stay silent until a full channel reopen.
-                ApplyMute();
+                // Order matters: setting Volume implicitly unmutes some audio outputs, so the
+                // mute state (which keeps browse previews silent) must be asserted LAST.
                 player.Volume = Math.Clamp(Volume, 0, 100);
+                ApplyMute();
 
                 RefreshTracks();
                 ApplyPendingResume();

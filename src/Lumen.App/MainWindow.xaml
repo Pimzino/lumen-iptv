@@ -200,13 +200,14 @@
             Background="{StaticResource Lumen.Brush.VideoBackground}"
             Visibility="{Binding Playback.IsFullPlayerActive, Converter={StaticResource Lumen.BoolToVisibility}}">
       <Grid>
-        <!-- Fallback loading state. The native video HWND covers all WPF drawing in this area,
-             so this only shows in the gaps the in-video overlay cannot cover: before LibVLC
-             cold init finishes, and for the beat while the surface swap rebuilds the HWND.
-             Those gaps are exactly when the click would otherwise show a dead black pane. -->
+        <!-- Fallback loading state for the gaps the in-video overlay cannot cover: before LibVLC
+             cold init finishes and until a surface hosts the shared view — exactly when the click
+             would otherwise land on a dead pane. Gated on IsColdOpenLoading, NOT playback state:
+             the video HWND is transparent to WPF behind it, so a state-only binding kept this
+             visible under the overlay's own spinner — two stacked loading indicators. -->
         <StackPanel HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}">
+                    Visibility="{Binding Playback.IsColdOpenLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
           <ContentControl Style="{StaticResource Lumen.Spinner}" HorizontalAlignment="Center" />
           <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                      Text="{Binding Playback.NowPlayingTitle}"

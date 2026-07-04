@@ -657,6 +657,8 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 host.Child = null;
             }
         }
+
+        UpdateVideoAttachment();
     }
 
     /// <summary>Moves the shared video view to the named surface slot.</summary>
@@ -685,7 +687,38 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         {
             host.Child = _videoView;
         }
+
+        UpdateVideoAttachment();
     }
+
+    /// <summary>
+    /// True while the shared video view is parented to a surface slot — from then on the
+    /// in-video overlay (LibVLCSharp's foreground window, always above the native HWND) owns
+    /// all loading feedback. False only before LibVLC cold init or when no slot hosts the view.
+    /// </summary>
+    private bool _videoViewAttached;
+
+    /// <summary>
+    /// True when a stream is opening/buffering and the in-video overlay is <b>not</b> on
+    /// screen to say so. Pages bind their fallback loading blocks to exactly this, so the
+    /// user never sees two stacked loading indicators — the video host window is a
+    /// transparent Win32 child that does not hide WPF content behind it, so a state-only
+    /// check would show the fallback *through* the video pane while the overlay is also up.
+    /// </summary>
+    public bool IsColdOpenLoading =>
+        State is PlaybackState.Opening or PlaybackState.Buffering && !_videoViewAttached;
+
+    private void UpdateVideoAttachment()
+    {
+        var attached = _videoView?.Parent is not null;
+        if (attached != _videoViewAttached)
+        {
+            _videoViewAttached = attached;
+            OnPropertyChanged(nameof(IsColdOpenLoading));
+        }
+    }
+
+    partial void OnStateChanged(PlaybackState value) => OnPropertyChanged(nameof(IsColdOpenLoading));
 
     // ------------------------------------------------------------------ init & events
 
@@ -763,7 +796,11 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
             LibVLCSharp.Shared.Core.Initialize();
             _libVlc = new LibVLC(
                 enableDebugLogs: false,
-                hardware ? "--avcodec-hw=any" : "--avcodec-hw=none");
+                hardware ? "--avcodec-hw=any" : "--avcodec-hw=none",
+                // IPTV joins streams mid-GOP and TS discontinuities are routine; libvlc's
+                // default is to *render* frames the decoder knows are broken (gray smears,
+                // macroblock soup) rather than drop them. Hold the last clean frame instead.
+                "--no-avcodec-corrupted");
 
             // Forward LibVLC's own warnings/errors (HTTP status, TLS, demux) into the log so stream
             // failures are diagnosable instead of a silent EncounteredError.
@@ -863,10 +900,25 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 _videoView.Content = _overlayContent;
             }
 
+            // Loaded fires after every (re)attach, once layout has built the native host
+            // window — the earliest reliable moment to blacken it (idempotent thereafter).
+            _videoView.Loaded += (_, _) =>
+            {
+                if (_videoView is not null)
+                {
+                    var applied = VideoHostBlackout.Apply(_videoView);
+                    _logger.LogDebug(
+                        "Video surface loaded; host blackout {Status}",
+                        applied ? "active" : "pending (host window not built yet)");
+                }
+            };
+
             if (_surfaces.TryGetValue(_activeSurface, out var host))
             {
                 AttachViewTo(host);
             }
+
+            UpdateVideoAttachment();
         });
         _logger.LogInformation(
             "LibVLC initialized (hardware={Hardware}, caching={CachingMs}ms)", hardware, _networkCachingMs);

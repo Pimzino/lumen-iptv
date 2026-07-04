@@ -77,6 +77,18 @@ layer that composites above LibVLC's native video airspace. The shell installs i
 `PlaybackService.SetOverlay`. Because that airspace is invisible to `RenderTargetBitmap`, the
 player is validated by an automated headless driver (`--e2e-play`) rather than screenshots.
 
+Two quirks of that native airspace are handled explicitly. The host window LibVLCSharp creates
+is a bare Win32 "static" child that never paints — until VLC's vout renders a frame it shows
+white/stale pixels (and WPF drawn *behind* it shines through). `VideoHostBlackout` subclasses it
+to erase/paint black, so opens, buffering, reconnects, and resizes present a clean black pane on
+every surface. And because the un-painted host does not hide WPF content, page-level fallback
+loading blocks (Live TV preview, full-player layer) gate on `IsColdOpenLoading` — "opening or
+buffering *and* no surface hosts the shared view" — rather than raw playback state, so the
+in-video overlay's spinner is the only loading indicator once the view is attached. Decoder-side,
+LibVLC starts with `--no-avcodec-corrupted`: IPTV joins land mid-GOP and TS discontinuities are
+routine, and rendering those known-broken frames (the libvlc default) reads as glitching; holding
+the last clean frame does not.
+
 Live playback resolves its URL from the M3U `stream_url` or, for Xtream, from credentials +
 container preference (`.ts`/`.m3u8`). Stream drops trigger reconnect with 1/2/4/8/8s backoff
 (max 5 attempts). VOD playback (`PlayVodAsync`) additionally seeks to a resume position on the

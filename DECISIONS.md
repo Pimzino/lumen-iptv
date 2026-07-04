@@ -670,3 +670,34 @@ caption region is pure client, so the DWM draws no buttons there. The system bac
 frame was extended — 21H2 now gets the solid dark palette like Windows 10. Screenshot gates could
 never have caught this: they run with the backdrop disabled and `RenderTargetBitmap` cannot see
 DWM-composed layers — translucent-chrome changes need a live-window check.
+
+## Playback visuals hardening — glitch frames + doubled loading states
+
+Hands-on testing against a real provider surfaced two "not production ready" visuals: white/garbage
+flashes in the video pane (muted preview, full player, and PiP alike), and *two* loading states
+stacked during a channel open — the page fallback's "Opening stream…" under the overlay's
+"Buffering 0%". Both trace to the same wrong assumption, recorded in the loading-states pass above:
+that the native video HWND hides WPF content behind it once it exists. It does not.
+
+- **LibVLCSharp's host window never paints.** `VideoHwndHost.BuildWindowCore` creates a bare Win32
+  `"static"` child with `WS_EX_TRANSPARENT` and no drawing at all; VLC renders into its *own* vout
+  child inside it. Until a frame arrives (open, buffer, reconnect) and on every newly exposed
+  region (resize, surface swap), the pane shows the static control's default white erase or stale
+  pixels — the screenshotted "white pane with a black box" is the un-painted host plus the vout
+  child at its previous size. `VideoHostBlackout` (comctl32 subclass, applied on every
+  `VideoView.Loaded`) answers `WM_ERASEBKGND`/`WM_PAINT` with a black fill: glitch canvas gone on
+  all three surfaces, and live video is untouched because the host has `WS_CLIPCHILDREN`.
+- **Fallback loading blocks now gate on `IsColdOpenLoading`, not raw state.** Because the
+  un-painted host is see-through, the state-keyed WPF fallbacks were visible *through* the video
+  pane at the same time as the overlay's spinner (the overlay lives in LibVLCSharp's foreground
+  window, which floats above the HWND whenever the view is loaded) — hence "Opening stream…" and
+  "Buffering 0%" at once. `PlaybackService.IsColdOpenLoading` = Opening/Buffering **and** the
+  shared view is parented to no surface slot — true only before cold init finishes or when no
+  slot hosts the view, i.e. exactly when the overlay cannot show. One loading indicator at a
+  time, and the instant-feedback property of the fallbacks is preserved.
+- **Corrupted decoder output is dropped, not rendered.** libvlc defaults to *showing* frames the
+  decoder knows are broken (`avcodec-corrupted`), and IPTV guarantees a supply of them: joins land
+  mid-GOP, TS discontinuities are routine, and the logs show d3d11va surface/slice mismatches on
+  provider streams. `--no-avcodec-corrupted` holds the last clean frame instead of painting gray
+  smears/macroblock soup. Startup cost is at most one GOP (typically < 2 s) before first video,
+  spent on the loading state rather than on garbage.

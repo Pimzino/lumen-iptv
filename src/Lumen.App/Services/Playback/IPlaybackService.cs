@@ -65,6 +65,14 @@ public interface IPlaybackService
 {
     PlaybackState State { get; }
 
+    /// <summary>
+    /// True when a stream is opening/buffering and the in-video overlay is not on screen to
+    /// show it (LibVLC cold init, or no surface hosts the shared view). Pages gate their
+    /// fallback loading blocks on this — never on <see cref="State"/> alone — so exactly one
+    /// loading indicator is visible at a time.
+    /// </summary>
+    bool IsColdOpenLoading { get; }
+
     Channel? CurrentChannel { get; }
 
     /// <summary>Display title of whatever is playing: the VOD title, else the live channel name.</summary>

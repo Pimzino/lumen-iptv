@@ -150,10 +150,14 @@
               Height="320">
         <Grid>
           <!-- Fallback loading state for the gaps the in-video overlay can't cover (LibVLC cold
-               init, HWND rebuild). Hidden behind the video HWND once it exists. -->
+               init, no attached surface). NOT keyed on playback state alone: the video HWND is a
+               transparent Win32 child that does not hide WPF drawn behind it, so a state-only
+               binding shows this *through* the video pane while the overlay's own spinner is up —
+               two stacked loading indicators. IsColdOpenLoading is true only when the overlay
+               isn't there to cover. -->
           <StackPanel HorizontalAlignment="Center"
                       VerticalAlignment="Center"
-                      Visibility="{Binding Playback.State, Converter={StaticResource Lumen.PlaybackStateVisibility}, ConverterParameter=Opening|Buffering}">
+                      Visibility="{Binding Playback.IsColdOpenLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
             <ContentControl Style="{StaticResource Lumen.Spinner}"
                             Width="28"
                             Height="28"

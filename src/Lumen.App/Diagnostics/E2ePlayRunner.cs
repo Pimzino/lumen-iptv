@@ -42,6 +42,24 @@ public static class E2ePlayRunner
             var played = await WaitForAsync(() => playback.State == PlaybackState.Playing, TimeSpan.FromSeconds(15));
             report.AppendLine($"play state={playback.State} channel={playback.CurrentChannel?.Name}");
 
+            // 1b) Dwelling on a channel (past the zap filter) must record it into watch
+            //     history — the Home page's "Recently watched" source.
+            var history = services.GetRequiredService<IWatchHistoryRepository>();
+            var historyKey = channels[0].Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var recorded = false;
+            var dwell = Stopwatch.StartNew();
+            while (dwell.Elapsed < TimeSpan.FromSeconds(25) && !recorded)
+            {
+                recorded = await history.GetAsync(
+                    m3uProfile.Id, ContentKind.Live, historyKey, CancellationToken.None) is not null;
+                if (!recorded)
+                {
+                    await Task.Delay(500);
+                }
+            }
+
+            report.AppendLine($"watch-history recorded={recorded}");
+
             // 2) Zap to the next channel.
             var before = playback.CurrentChannel?.Id;
             await playback.ZapAsync(+1);
@@ -67,7 +85,7 @@ public static class E2ePlayRunner
             var stopped = await WaitForAsync(() => playback.State == PlaybackState.Idle, TimeSpan.FromSeconds(5));
             report.AppendLine($"stop state={playback.State}");
 
-            var pass = played && zapped && sawReconnect && attemptSeen >= 1 && recovered && stopped;
+            var pass = played && recorded && zapped && sawReconnect && attemptSeen >= 1 && recovered && stopped;
             report.AppendLine(pass ? "PLAY-RESULT=PASS" : "PLAY-RESULT=FAIL");
             return pass ? 0 : 1;
         }

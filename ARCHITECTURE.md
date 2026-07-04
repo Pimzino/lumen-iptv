@@ -93,7 +93,9 @@ Live playback resolves its URL from the M3U `stream_url` or, for Xtream, from cr
 container preference (`.ts`/`.m3u8`). Stream drops trigger reconnect with 1/2/4/8/8s backoff
 (max 5 attempts). VOD playback (`PlayVodAsync`) additionally seeks to a resume position on the
 first Playing event and tracks position into `watch_history` on a 1s timer, saving on pause,
-stop, and navigation.
+stop, and navigation. Live channels land in `watch_history` too — once per channel play, after
+10s of real (non-preview) playback so zapping through channels leaves no trace — which feeds
+the Home page's "Recently watched" rail.
 
 ## Window chrome (Windows 11)
 
@@ -159,13 +161,16 @@ Ctrl+Shift+G opens the design-system gallery (debug).
 ## Diagnostics & gates
 
 Headless modes on the app exe drive the phase gates without a human:
-`--e2e`/`--e2e-verify` (onboarding + restart persistence), `--e2e-play` (play/zap/reconnect),
+`--e2e`/`--e2e-verify` (onboarding + restart persistence), `--e2e-play` (play/zap/reconnect,
+plus the live watch-history write behind "Recently watched"),
 `--e2e-fullscreen` (enter/exit/re-enter full player through the live window chrome — guards the
 frozen-`WindowChrome` class of crash), `--e2e-resume` (VOD resume), `--scroll-bench` (10k-channel
 list), `--guide-bench` (500×7-day guide + timezone), `--search-bench` (search latency), `--soak`
 (memory), `--glow-probe` (ambient color), and `--shot-shell`/`--gallery-shot` (screenshots).
 `tools/Lumen.DevServer` emulates an Xtream portal + M3U playlist + XMLTV feed + seekable media for
-these runs. Gates that show a window (`--e2e-fullscreen`, `--shot-shell`) exercise the real Style
+these runs. The `LUMEN_DATA_ROOT` environment variable points any run at an alternate data root, so
+gates stay hermetic on a machine whose `%LocalAppData%\Lumen` holds a real library; window-showing
+capture runs accept `--shot-size WxH` to lay out long scrolling pages in full for design review. Gates that show a window (`--e2e-fullscreen`, `--shot-shell`) exercise the real Style
 and triggers — the layer a ViewModel-only test can't reach — so window-chrome regressions are caught
 headlessly. `--settings-bench` loads the real Settings page with 10k channel-mapping rows and
 asserts the list virtualizes (only a handful of realized containers) so a large playlist can't freeze

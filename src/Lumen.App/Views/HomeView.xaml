@@ -3,22 +3,230 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:Lumen.App.Controls"
              xmlns:res="clr-namespace:Lumen.App.Resources">
+  <UserControl.Resources>
+
+    <!-- The featured "Jump back in" card: a glass surface whose stroke wakes up on
+         hover/focus. The ambient halo behind it lives in the page markup so it can
+         bleed past the card bounds. -->
+    <Style x:Key="Home.HeroCard" TargetType="Button">
+      <Setter Property="FocusVisualStyle" Value="{StaticResource Lumen.FocusVisual}" />
+      <Setter Property="SnapsToDevicePixels" Value="True" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Surface"
+                    Background="{StaticResource Lumen.Brush.Glass}"
+                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
+                    BorderThickness="{StaticResource Lumen.Stroke.Border}"
+                    CornerRadius="{StaticResource Lumen.Radius.Card}"
+                    Padding="{StaticResource Lumen.Pad.24}">
+              <ContentPresenter />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Strong}" />
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Strong}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Resume pill inside the hero card; brightens with the owning card. -->
+    <Style x:Key="Home.ResumePill" TargetType="Border">
+      <Setter Property="Background" Value="{StaticResource Lumen.Brush.Accent}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Lumen.Radius.Control}" />
+      <Setter Property="Padding" Value="{StaticResource Lumen.Pad.Control}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+          <Setter Property="Background" Value="{StaticResource Lumen.Brush.Accent.Hover}" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- Section marker: the 3px accent bar in front of every rail title. -->
+    <Style x:Key="Home.SectionBar" TargetType="Border">
+      <Setter Property="Width" Value="3" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="CornerRadius" Value="1.5" />
+      <Setter Property="Background" Value="{StaticResource Lumen.Brush.Accent}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="Home.SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Heading}">
+      <Setter Property="Margin" Value="{StaticResource Lumen.Margin.L12}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Horizontal rail: never traps the page's vertical wheel scroll; small vertical
+         headroom so the card hover scale isn't clipped by the viewport. -->
+    <Style x:Key="Home.Rail" TargetType="ScrollViewer">
+      <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+      <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+      <Setter Property="ctl:LumenUi.BubbleWheelToParent" Value="True" />
+    </Style>
+
+  </UserControl.Resources>
+
   <Grid>
+
+    <!-- Page atmosphere: the hero poster's dominant color washes the top of the page
+         (accent fallback before anything is watched). Fixed behind the scroll. -->
+    <Border Height="420"
+            VerticalAlignment="Top"
+            IsHitTestVisible="False"
+            ctl:AmbientGlow.SourceUrl="{Binding Hero.ImageUrl}"
+            ctl:AmbientGlow.Intensity="0.09" />
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="{StaticResource Lumen.Pad.Page}">
 
-        <TextBlock Style="{StaticResource Lumen.Text.Display}"
-                   Text="{Binding ProfileName}"
-                   Margin="{StaticResource Lumen.Margin.B24}" />
+        <!-- ============ Hero: greeting + Jump back in ============ -->
+        <Grid Margin="{StaticResource Lumen.Margin.B32}">
+          <Grid.ColumnDefinitions>
+            <!-- The feature card takes up to 560px and yields proportionally below the
+                 window's minimum width, so the greeting never gets crushed. -->
+            <ColumnDefinition Width="2*" MinWidth="300" />
+            <ColumnDefinition Width="3*" MaxWidth="560" />
+          </Grid.ColumnDefinitions>
 
-        <!-- Loading skeletons -->
+          <StackPanel VerticalAlignment="Center" Margin="0,0,48,0">
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Margin="{StaticResource Lumen.Margin.B8}">
+              <Run Text="{Binding ProfileName, Mode=OneWay}"
+                   FontWeight="SemiBold" /><Run Text="  ·  "
+                   Foreground="{StaticResource Lumen.Brush.Text.Tertiary}" /><Run Text="{Binding DateLine, Mode=OneWay}"
+                   Foreground="{StaticResource Lumen.Brush.Text.Tertiary}" />
+            </TextBlock>
+            <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                       Text="{Binding Greeting}" />
+          </StackPanel>
+
+          <!-- Right slot: skeleton while loading, then the featured resume card. -->
+          <Grid Grid.Column="1">
+            <ctl:SkeletonBlock Height="318"
+                               CornerRadius="12"
+                               Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+            <Grid Visibility="{Binding HasHero, Converter={StaticResource Lumen.BoolToVisibility}}"
+                  ctl:Reveal.When="{Binding IsReady}">
+              <!-- Ambient halo: the poster's mood bleeding out from under the glass. -->
+              <Border Margin="-20"
+                      CornerRadius="24"
+                      IsHitTestVisible="False"
+                      ctl:AmbientGlow.SourceUrl="{Binding Hero.ImageUrl}"
+                      ctl:AmbientGlow.Intensity="0.35" />
+              <Button Style="{StaticResource Home.HeroCard}"
+                      Command="{Binding PlayContinueCommand}"
+                      CommandParameter="{Binding Hero}"
+                      AutomationProperties.Name="{Binding Hero.Title}">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+
+                  <Grid Width="180" Height="270">
+                    <Border CornerRadius="{StaticResource Lumen.Radius.Card}"
+                            Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                      <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                                 Text="{Binding Hero.Monogram}"
+                                 Foreground="{StaticResource Lumen.Brush.Accent}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <Border CornerRadius="{StaticResource Lumen.Radius.Card}" ClipToBounds="True">
+                      <Border.Clip>
+                        <RectangleGeometry Rect="0,0,180,270" RadiusX="12" RadiusY="12" />
+                      </Border.Clip>
+                      <Image ctl:ImageLoader.Url="{Binding Hero.ImageUrl}"
+                             ctl:ImageLoader.DecodeWidth="360"
+                             Stretch="UniformToFill"
+                             RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Border>
+                  </Grid>
+
+                  <Grid Grid.Column="1" Margin="24,2,0,2">
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="*" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B12}">
+                      <TextBlock Style="{StaticResource Lumen.Text.Icon}"
+                                 Text="{StaticResource Lumen.Icon.Play}"
+                                 FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                                 Foreground="{StaticResource Lumen.Brush.Accent}" />
+                      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                 Text="{x:Static res:Strings.Home_JumpBackIn}"
+                                 Margin="{StaticResource Lumen.Margin.L8}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="1"
+                               Style="{StaticResource Lumen.Text.Title}"
+                               Text="{Binding Hero.Title}"
+                               TextTrimming="CharacterEllipsis" />
+
+                    <TextBlock Grid.Row="2"
+                               Style="{StaticResource Lumen.Text.Micro}"
+                               Text="{Binding Hero.MetaLine}"
+                               Margin="{StaticResource Lumen.Margin.T8}" />
+
+                    <TextBlock Grid.Row="4"
+                               Style="{StaticResource Lumen.Text.Caption}"
+                               Text="{Binding Hero.RemainingLabel}"
+                               Margin="{StaticResource Lumen.Margin.B8}"
+                               Visibility="{Binding Hero.RemainingLabel, Converter={StaticResource Lumen.NullToCollapsed}}" />
+
+                    <ProgressBar Grid.Row="5"
+                                 Value="{Binding Hero.Progress, Mode=OneWay}"
+                                 Maximum="100"
+                                 Margin="{StaticResource Lumen.Margin.B16}" />
+
+                    <Border Grid.Row="6" Style="{StaticResource Home.ResumePill}">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Lumen.Text.Icon}"
+                                   Text="{StaticResource Lumen.Icon.Play}"
+                                   FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                                   Foreground="{StaticResource Lumen.Brush.Text.OnAccent}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                   Text="{x:Static res:Strings.Home_ContinueWatchingResume}"
+                                   Foreground="{StaticResource Lumen.Brush.Text.OnAccent}"
+                                   Margin="{StaticResource Lumen.Margin.L8}" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+                </Grid>
+              </Button>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        <!-- Loading skeletons for the rails -->
         <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <ctl:SkeletonBlock Width="220" Height="20" HorizontalAlignment="Left" Margin="{StaticResource Lumen.Margin.B16}" />
+          <ctl:SkeletonBlock Width="200" Height="18" HorizontalAlignment="Left" Margin="{StaticResource Lumen.Margin.B16}" />
           <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B32}">
-            <ctl:SkeletonBlock Width="150" Height="260" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
-            <ctl:SkeletonBlock Width="150" Height="260" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
-            <ctl:SkeletonBlock Width="150" Height="260" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
-            <ctl:SkeletonBlock Width="150" Height="260" CornerRadius="12" />
+            <ctl:SkeletonBlock Width="280" Height="158" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="280" Height="158" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="280" Height="158" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="280" Height="158" CornerRadius="12" />
+          </StackPanel>
+          <ctl:SkeletonBlock Width="160" Height="18" HorizontalAlignment="Left" Margin="{StaticResource Lumen.Margin.B16}" />
+          <StackPanel Orientation="Horizontal">
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" Margin="{StaticResource Lumen.Margin.R16}" />
+            <ctl:SkeletonBlock Width="150" Height="225" CornerRadius="12" />
           </StackPanel>
         </StackPanel>
 
@@ -26,26 +234,36 @@
         <ContentControl Style="{StaticResource Lumen.EmptyState}"
                         ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.LiveTv}"
                         HorizontalAlignment="Center"
-                        Margin="0,96,0,0"
+                        Margin="0,72,0,0"
                         Visibility="{Binding IsEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                     Text="{x:Static res:Strings.Home_EmptyBody}"
-                     TextWrapping="Wrap"
-                     TextAlignment="Center"
-                     MaxWidth="420" />
+          <StackPanel>
+            <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                       Text="{x:Static res:Strings.Home_EmptyTitle}"
+                       TextAlignment="Center"
+                       Margin="{StaticResource Lumen.Margin.B8}" />
+            <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                       Text="{x:Static res:Strings.Home_EmptyBody}"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       MaxWidth="420" />
+          </StackPanel>
         </ContentControl>
 
         <!-- ============ Continue watching ============ -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"
+                    ctl:Reveal.When="{Binding IsReady}"
+                    ctl:Reveal.Delay="60"
                     Visibility="{Binding HasContinueWatching, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <TextBlock Style="{StaticResource Lumen.Text.Title}"
-                     Text="{x:Static res:Strings.Home_ContinueWatching}"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <Border Style="{StaticResource Home.SectionBar}" />
+            <TextBlock Style="{StaticResource Home.SectionTitle}"
+                       Text="{x:Static res:Strings.Home_ContinueWatching}" />
+          </StackPanel>
+          <ScrollViewer Style="{StaticResource Home.Rail}">
             <ItemsControl ItemsSource="{Binding ContinueWatching}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
@@ -67,21 +285,136 @@
                                      VerticalAlignment="Center" />
                         </Border>
                         <Border CornerRadius="{StaticResource Lumen.Radius.Card}" ClipToBounds="True">
-                          <Image ctl:ImageLoader.Url="{Binding ImageUrl}"
-                                 ctl:ImageLoader.DecodeWidth="560"
-                                 Stretch="UniformToFill"
-                                 RenderOptions.BitmapScalingMode="HighQuality" />
+                          <Border.Clip>
+                            <RectangleGeometry Rect="0,0,280,158" RadiusX="12" RadiusY="12" />
+                          </Border.Clip>
+                          <Grid>
+                            <Image ctl:ImageLoader.Url="{Binding ImageUrl}"
+                                   ctl:ImageLoader.DecodeWidth="560"
+                                   Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <!-- Legibility scrim under the remaining-time label -->
+                            <Border Height="64"
+                                    VerticalAlignment="Bottom"
+                                    Background="{StaticResource Lumen.Brush.Scrim.Bottom}" />
+                            <!-- Resume position hugging the media's bottom edge (clipped
+                                 with the media so it follows the rounded corners) -->
+                            <ProgressBar Value="{Binding Progress, Mode=OneWay}"
+                                         Maximum="100"
+                                         VerticalAlignment="Bottom" />
+                          </Grid>
                         </Border>
-                        <ProgressBar Value="{Binding Progress, Mode=OneWay}"
-                                     Maximum="100"
-                                     VerticalAlignment="Bottom"
-                                     Margin="8,0,8,8" />
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Foreground="{StaticResource Lumen.Brush.Text.Primary}"
+                                   Text="{Binding RemainingLabel}"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Bottom"
+                                   Margin="12,0,12,10" />
+                        <ContentControl Style="{StaticResource Lumen.PlayChip}" />
                       </Grid>
                       <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
                                  Text="{Binding Title}"
                                  TextTrimming="CharacterEllipsis"
                                  Margin="4,8,4,0" />
+                      <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                 Text="{Binding MetaLine}"
+                                 TextTrimming="CharacterEllipsis"
+                                 Margin="4,2,4,0" />
                     </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+
+        <!-- ============ Recently watched ============ -->
+        <StackPanel Margin="{StaticResource Lumen.Margin.B32}"
+                    ctl:Reveal.When="{Binding IsReady}"
+                    ctl:Reveal.Delay="110"
+                    Visibility="{Binding HasRecentlyWatched, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <Border Style="{StaticResource Home.SectionBar}" />
+            <TextBlock Style="{StaticResource Home.SectionTitle}"
+                       Text="{x:Static res:Strings.Home_RecentlyWatched}" />
+          </StackPanel>
+          <ScrollViewer Style="{StaticResource Home.Rail}">
+            <ItemsControl ItemsSource="{Binding RecentlyWatched}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Style="{StaticResource Lumen.PosterCard}"
+                          Width="300"
+                          Margin="0,0,16,0"
+                          Command="{Binding DataContext.PlayRecentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                          CommandParameter="{Binding}"
+                          AutomationProperties.Name="{Binding Title}">
+                    <!-- The PosterCard button already paints the raised surface + stroke. -->
+                    <Border Padding="{StaticResource Lumen.Pad.12}" MinHeight="80">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Width="48" Height="48" VerticalAlignment="Center">
+                          <Border CornerRadius="{StaticResource Lumen.Radius.Control}"
+                                  Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                            <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                       Text="{Binding Monogram}"
+                                       Foreground="{StaticResource Lumen.Brush.Accent}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                          </Border>
+                          <Border CornerRadius="{StaticResource Lumen.Radius.Control}" ClipToBounds="True">
+                            <Border.Clip>
+                              <RectangleGeometry Rect="0,0,48,48" RadiusX="8" RadiusY="8" />
+                            </Border.Clip>
+                            <Grid>
+                              <!-- Live: channel logo, letterboxed. VOD: poster art, filled. -->
+                              <Image ctl:ImageLoader.Url="{Binding ImageUrl}"
+                                     ctl:ImageLoader.DecodeWidth="96"
+                                     Stretch="Uniform"
+                                     Margin="6"
+                                     Visibility="{Binding IsLive, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                              <Image ctl:ImageLoader.Url="{Binding ImageUrl}"
+                                     ctl:ImageLoader.DecodeWidth="96"
+                                     Stretch="UniformToFill"
+                                     RenderOptions.BitmapScalingMode="HighQuality"
+                                     Visibility="{Binding IsLive, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+                            </Grid>
+                          </Border>
+                        </Grid>
+
+                        <StackPanel Grid.Column="1"
+                                    Margin="{StaticResource Lumen.Margin.L12}"
+                                    VerticalAlignment="Center">
+                          <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                                     Text="{Binding Title}"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                     Text="{Binding NowTitle}"
+                                     TextTrimming="CharacterEllipsis"
+                                     Margin="{StaticResource Lumen.Margin.T4}"
+                                     Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                          <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                     Text="{Binding MetaLine}"
+                                     TextTrimming="CharacterEllipsis"
+                                     Margin="{StaticResource Lumen.Margin.T4}" />
+                        </StackPanel>
+
+                        <ContentControl Grid.Column="2"
+                                        Style="{StaticResource Lumen.PlayChip}"
+                                        Width="32"
+                                        Height="32"
+                                        Margin="{StaticResource Lumen.Margin.L8}" />
+                      </Grid>
+                    </Border>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
@@ -91,29 +424,34 @@
 
         <!-- ============ Favorite channels ============ -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"
+                    ctl:Reveal.When="{Binding IsReady}"
+                    ctl:Reveal.Delay="160"
                     Visibility="{Binding HasFavoriteChannels, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <TextBlock Style="{StaticResource Lumen.Text.Title}"
-                     Text="{x:Static res:Strings.Home_FavoriteChannels}"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <Border Style="{StaticResource Home.SectionBar}" />
+            <TextBlock Style="{StaticResource Home.SectionTitle}"
+                       Text="{x:Static res:Strings.Home_FavoriteChannels}" />
+          </StackPanel>
+          <ScrollViewer Style="{StaticResource Home.Rail}">
             <ItemsControl ItemsSource="{Binding FavoriteChannels}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Button Style="{StaticResource Lumen.PosterCard}"
-                          Width="260"
+                          Width="280"
                           Margin="0,0,16,0"
                           Command="{Binding DataContext.PlayChannelCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                           CommandParameter="{Binding}"
                           AutomationProperties.Name="{Binding Name}">
-                    <Border Style="{StaticResource Lumen.Card}">
+                    <!-- The PosterCard button already paints the raised surface + stroke. -->
+                    <Border Padding="{StaticResource Lumen.Pad.16}">
                       <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B8}">
-                          <Grid Width="40" Height="40">
+                        <DockPanel Margin="{StaticResource Lumen.Margin.B12}">
+                          <Grid Width="40" Height="40" DockPanel.Dock="Left">
                             <Border CornerRadius="{StaticResource Lumen.Radius.Control}"
                                     Background="{StaticResource Lumen.Brush.Accent.Subtle}">
                               <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
@@ -132,15 +470,33 @@
                                      TextTrimming="CharacterEllipsis"
                                      VerticalAlignment="Center"
                                      Margin="{StaticResource Lumen.Margin.L12}" />
+                        </DockPanel>
+                        <StackPanel Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+                          <DockPanel Margin="{StaticResource Lumen.Margin.B8}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Style="{StaticResource Lumen.Text.Micro}"
+                                       Foreground="{StaticResource Lumen.Brush.Accent}"
+                                       Text="{x:Static res:Strings.LiveTv_NowLabel}"
+                                       Width="42"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                                       Text="{Binding NowTitle}"
+                                       TextTrimming="CharacterEllipsis" />
+                          </DockPanel>
+                          <ProgressBar Value="{Binding NowProgress, Mode=OneWay}"
+                                       Maximum="100" />
+                          <DockPanel Margin="{StaticResource Lumen.Margin.T8}"
+                                     Visibility="{Binding NextTitle, Converter={StaticResource Lumen.NullToCollapsed}}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Style="{StaticResource Lumen.Text.Micro}"
+                                       Text="{x:Static res:Strings.LiveTv_NextLabel}"
+                                       Width="42"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                       Text="{Binding NextTitle}"
+                                       TextTrimming="CharacterEllipsis" />
+                          </DockPanel>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                                   Text="{Binding NowTitle}"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
-                        <ProgressBar Value="{Binding NowProgress, Mode=OneWay}"
-                                     Maximum="100"
-                                     Margin="{StaticResource Lumen.Margin.T8}"
-                                     Visibility="{Binding NowTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
                       </StackPanel>
                     </Border>
                   </Button>
@@ -152,16 +508,20 @@
 
         <!-- ============ Recently added movies ============ -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"
+                    ctl:Reveal.When="{Binding IsReady}"
+                    ctl:Reveal.Delay="210"
                     Visibility="{Binding HasRecentMovies, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <TextBlock Style="{StaticResource Lumen.Text.Title}"
-                     Text="{x:Static res:Strings.Home_RecentlyAddedMovies}"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <Border Style="{StaticResource Home.SectionBar}" />
+            <TextBlock Style="{StaticResource Home.SectionTitle}"
+                       Text="{x:Static res:Strings.Home_RecentlyAddedMovies}" />
+          </StackPanel>
+          <ScrollViewer Style="{StaticResource Home.Rail}">
             <ItemsControl ItemsSource="{Binding RecentMovies}"
                           ItemTemplate="{StaticResource Lumen.Template.PosterTile}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
             </ItemsControl>
@@ -170,16 +530,20 @@
 
         <!-- ============ New series ============ -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"
+                    ctl:Reveal.When="{Binding IsReady}"
+                    ctl:Reveal.Delay="260"
                     Visibility="{Binding HasRecentSeries, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <TextBlock Style="{StaticResource Lumen.Text.Title}"
-                     Text="{x:Static res:Strings.Home_RecentlyAddedSeries}"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <Border Style="{StaticResource Home.SectionBar}" />
+            <TextBlock Style="{StaticResource Home.SectionTitle}"
+                       Text="{x:Static res:Strings.Home_RecentlyAddedSeries}" />
+          </StackPanel>
+          <ScrollViewer Style="{StaticResource Home.Rail}">
             <ItemsControl ItemsSource="{Binding RecentSeries}"
                           ItemTemplate="{StaticResource Lumen.Template.PosterTile}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,8" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
             </ItemsControl>

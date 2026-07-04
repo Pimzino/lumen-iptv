@@ -23,8 +23,9 @@ interface built to sit next to Netflix or Apple TV without feeling out of place.
   info banner, quick channel list, audio/subtitle track pickers, aspect cycling, mini-player, and
   automatic reconnect with exponential backoff on stream drops.
 - **Search** — global, debounced, across channels, VOD, and guide titles (Ctrl+K from anywhere).
-- **Favorites & Home** — heart anything; Home surfaces continue-watching, favorite channels with
-  live now/next, and recently added content.
+- **Favorites & Home** — heart anything; Home greets you with a featured "Jump back in" resume
+  card, then continue-watching, recently watched (live channels and titles you actually played),
+  favorite channels with live now/next, and recently added content.
 - **Artwork that fills itself in** — when the provider ships no posters or backdrops, Lumen
   resolves them online (The Movie Database with your free key, keyless iTunes/TVMaze otherwise),
   caches every lookup in SQLite, and falls back to the guide's channel icons for logo-less

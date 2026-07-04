@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Lumen.App.Resources;
 using Lumen.App.Services;
 using Lumen.Core.Abstractions;
 using Lumen.Core.Models;
@@ -21,6 +23,28 @@ public sealed partial class ContinueCard : ObservableObject
     public double Progress => Entry.Progress * 100;
 
     public string Monogram => Entry.Title.Length > 0 ? Entry.Title[..1].ToUpperInvariant() : "?";
+
+    /// <summary>"Movie · 2 h ago" — what it is and when it was left off.</summary>
+    public required string MetaLine { get; init; }
+
+    /// <summary>"1h 12m left" / "41m left" — from the stored resume position.</summary>
+    public string? RemainingLabel
+    {
+        get
+        {
+            var remaining = Entry.DurationSeconds - Entry.PositionSeconds;
+            if (Entry.DurationSeconds <= 0 || remaining <= 0)
+            {
+                return null;
+            }
+
+            var span = TimeSpan.FromSeconds(remaining);
+            var duration = span.TotalHours >= 1
+                ? $"{(int)span.TotalHours}h {span.Minutes}m"
+                : $"{Math.Max(1, (int)span.TotalMinutes)}m";
+            return Strings.Format(Strings.Home_TimeLeftFormat, duration);
+        }
+    }
 }
 
 /// <summary>A favorite-channel tile with its live now/next.</summary>
@@ -47,14 +71,47 @@ public sealed partial class FavoriteChannelCard : ObservableObject
 }
 
 /// <summary>
-/// Home page: Continue watching (from watch history), Favorite channels with live now/next,
-/// and Recently added movies/series. Each row loads its own data; the page shows a designed
-/// empty state until the library is populated.
+/// A watch-history tile: a live channel or VOD title the profile actually played,
+/// newest first. Live entries resolve their channel so a click replays instantly.
+/// </summary>
+public sealed partial class RecentWatchCard : ObservableObject
+{
+    public required WatchHistoryEntry Entry { get; init; }
+
+    /// <summary>The live channel behind this entry; null for VOD (or a since-removed channel).</summary>
+    public Channel? Channel { get; init; }
+
+    public string Title => Entry.Title;
+
+    public bool IsLive => Entry.ItemKind == ContentKind.Live;
+
+    [ObservableProperty]
+    private string? _imageUrl;
+
+    public string Monogram => Entry.Title.Length > 0 ? Entry.Title[..1].ToUpperInvariant() : "?";
+
+    /// <summary>"Live · 2 h ago" / "Movie · Yesterday".</summary>
+    public required string MetaLine { get; init; }
+
+    /// <summary>What the channel is airing right now (live entries with EPG only).</summary>
+    [ObservableProperty]
+    private string? _nowTitle;
+
+    [ObservableProperty]
+    private double _nowProgress;
+}
+
+/// <summary>
+/// Home page: a time-aware greeting hero with the most recent resumable title ("Jump back
+/// in"), then Continue watching, Recently watched (live + VOD history), Favorite channels
+/// with live now/next, and Recently added movies/series. Rows load in parallel; the page
+/// shows a designed empty state until the library is populated.
 /// </summary>
 public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     IRecipient<CatalogRefreshedMessage>
 {
     private const int RowLimit = 20;
+    private const int RecentWatchLimit = 12;
 
     private readonly ISessionService _session;
     private readonly ICatalogRepository _catalog;
@@ -93,13 +150,34 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     [ObservableProperty]
     private bool _isLoading = true;
 
+    /// <summary>Flips true when all rows have landed; drives the staggered section reveal.</summary>
+    [ObservableProperty]
+    private bool _isReady;
+
     [ObservableProperty]
     private string _profileName = string.Empty;
+
+    /// <summary>Time-of-day salutation ("Good evening").</summary>
+    [ObservableProperty]
+    private string _greeting = string.Empty;
+
+    /// <summary>Today, spelled out ("Friday 4 July").</summary>
+    [ObservableProperty]
+    private string _dateLine = string.Empty;
 
     [ObservableProperty]
     private bool _isEmpty;
 
+    /// <summary>The most recent resumable title, featured in the hero. Not repeated in the rail.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHero))]
+    private ContinueCard? _hero;
+
+    public bool HasHero => Hero is not null;
+
     public ObservableCollection<ContinueCard> ContinueWatching { get; } = [];
+
+    public ObservableCollection<RecentWatchCard> RecentlyWatched { get; } = [];
 
     public ObservableCollection<FavoriteChannelCard> FavoriteChannels { get; } = [];
 
@@ -108,6 +186,8 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     public ObservableCollection<VodCard> RecentSeries { get; } = [];
 
     public bool HasContinueWatching => ContinueWatching.Count > 0;
+
+    public bool HasRecentlyWatched => RecentlyWatched.Count > 0;
 
     public bool HasFavoriteChannels => FavoriteChannels.Count > 0;
 
@@ -118,6 +198,17 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     public async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
         IsLoading = true;
+        IsReady = false;
+        var now = _clock.UtcNow.ToLocalTime();
+        Greeting = now.Hour switch
+        {
+            >= 5 and < 12 => Strings.Home_GreetingMorning,
+            >= 12 and < 18 => Strings.Home_GreetingAfternoon,
+            >= 18 and < 23 => Strings.Home_GreetingEvening,
+            _ => Strings.Home_GreetingNight,
+        };
+        DateLine = now.ToString("dddd d MMMM", CultureInfo.CurrentCulture);
+
         var profile = _session.CurrentProfile;
         if (profile is null)
         {
@@ -127,17 +218,22 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         }
 
         ProfileName = profile.Name;
+        Hero = null;
         ContinueWatching.Clear();
+        RecentlyWatched.Clear();
         FavoriteChannels.Clear();
         RecentMovies.Clear();
         RecentSeries.Clear();
 
         try
         {
-            await LoadContinueWatchingAsync(profile.Id, cancellationToken);
-            await LoadFavoriteChannelsAsync(profile.Id, cancellationToken);
-            await LoadRecentAsync(profile.Id, ContentKind.Movie, RecentMovies, cancellationToken);
-            await LoadRecentAsync(profile.Id, ContentKind.Series, RecentSeries, cancellationToken);
+            // Independent local queries — let the rows race; the page appears with the slowest.
+            await Task.WhenAll(
+                LoadContinueWatchingAsync(profile.Id, cancellationToken),
+                LoadRecentlyWatchedAsync(profile.Id, cancellationToken),
+                LoadFavoriteChannelsAsync(profile.Id, cancellationToken),
+                LoadRecentAsync(profile.Id, ContentKind.Movie, RecentMovies, cancellationToken),
+                LoadRecentAsync(profile.Id, ContentKind.Series, RecentSeries, cancellationToken));
         }
         catch (OperationCanceledException)
         {
@@ -149,8 +245,10 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         }
 
         NotifyRowFlags();
-        IsEmpty = !HasContinueWatching && !HasFavoriteChannels && !HasRecentMovies && !HasRecentSeries;
+        IsEmpty = Hero is null && !HasContinueWatching && !HasRecentlyWatched
+            && !HasFavoriteChannels && !HasRecentMovies && !HasRecentSeries;
         IsLoading = false;
+        IsReady = !IsEmpty;
     }
 
     public void OnNavigatedFrom()
@@ -160,10 +258,116 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     private async Task LoadContinueWatchingAsync(long profileId, CancellationToken cancellationToken)
     {
         var recent = await _watchHistory.GetRecentAsync(profileId, RowLimit, cancellationToken);
-        foreach (var entry in recent.Where(e => e.PositionSeconds > 30 && e.Progress is > 0.01 and < 0.95))
+        var resumable = recent
+            .Where(e => e.ItemKind != ContentKind.Live
+                && e.PositionSeconds > 30 && e.Progress is > 0.01 and < 0.95)
+            .ToList();
+        if (resumable.Count == 0)
         {
-            ContinueWatching.Add(new ContinueCard { Entry = entry });
+            return;
         }
+
+        Hero = new ContinueCard { Entry = resumable[0], MetaLine = ContinueMeta(resumable[0]) };
+        foreach (var entry in resumable.Skip(1))
+        {
+            ContinueWatching.Add(new ContinueCard { Entry = entry, MetaLine = ContinueMeta(entry) });
+        }
+    }
+
+    private async Task LoadRecentlyWatchedAsync(long profileId, CancellationToken cancellationToken)
+    {
+        var recent = await _watchHistory.GetRecentAsync(profileId, RecentWatchLimit, cancellationToken);
+        if (recent.Count == 0)
+        {
+            return;
+        }
+
+        var anyLive = recent.Any(e => e.ItemKind == ContentKind.Live);
+        var logoFallbacks = anyLive
+            ? await _artwork.GetChannelLogoFallbacksAsync(profileId, cancellationToken)
+            : System.Collections.Immutable.ImmutableDictionary<long, string>.Empty;
+        var mappings = anyLive
+            ? (await _epg.GetMappingsAsync(profileId, cancellationToken)).ToDictionary(m => m.ChannelId, m => m.XmltvId)
+            : new Dictionary<long, string>();
+
+        var cards = new List<RecentWatchCard>(recent.Count);
+        var xmltvByChannel = new Dictionary<long, string>();
+        foreach (var entry in recent)
+        {
+            Channel? channel = null;
+            if (entry.ItemKind == ContentKind.Live)
+            {
+                if (!long.TryParse(entry.ItemKey, out var channelId)
+                    || await _catalog.GetChannelAsync(channelId, cancellationToken) is not { } resolved
+                    || resolved.ProfileId != profileId)
+                {
+                    continue; // channel no longer exists — a dead card would be a broken promise
+                }
+
+                channel = resolved;
+                var xmltvId = mappings.GetValueOrDefault(channel.Id) ?? channel.EpgChannelId;
+                if (!string.IsNullOrEmpty(xmltvId))
+                {
+                    xmltvByChannel[channel.Id] = xmltvId;
+                }
+            }
+
+            var card = new RecentWatchCard
+            {
+                Entry = entry,
+                Channel = channel,
+                MetaLine = $"{KindLabel(entry.ItemKind)} · {RelativeAge(entry.WatchedUtc)}",
+                ImageUrl = channel is null
+                    ? entry.PosterUrl
+                    : string.IsNullOrWhiteSpace(channel.LogoUrl)
+                        ? logoFallbacks.GetValueOrDefault(channel.Id)
+                        : channel.LogoUrl,
+            };
+            cards.Add(card);
+        }
+
+        var nowNext = xmltvByChannel.Count == 0
+            ? new Dictionary<string, NowNext>()
+            : (IReadOnlyDictionary<string, NowNext>)await _epg.GetNowNextAsync(
+                profileId, xmltvByChannel.Values.Distinct().ToList(),
+                _clock.UtcNow.ToUnixTimeSeconds(), cancellationToken);
+
+        foreach (var card in cards)
+        {
+            if (card.Channel is { } channel
+                && xmltvByChannel.TryGetValue(channel.Id, out var xmltvId)
+                && nowNext.TryGetValue(xmltvId, out var entry))
+            {
+                card.NowTitle = entry.Now?.Title;
+                card.NowProgress = entry.Now?.ProgressAt(_clock.UtcNow) * 100 ?? 0;
+            }
+
+            RecentlyWatched.Add(card);
+        }
+    }
+
+    private string ContinueMeta(WatchHistoryEntry entry) =>
+        $"{KindLabel(entry.ItemKind)} · {RelativeAge(entry.WatchedUtc)}";
+
+    private static string KindLabel(ContentKind kind) => kind switch
+    {
+        ContentKind.Live => Strings.Home_KindLive,
+        ContentKind.Series => Strings.Home_KindSeries,
+        _ => Strings.Home_KindMovie,
+    };
+
+    /// <summary>"Just now" / "12 min ago" / "5 h ago" / "Yesterday" / "3 days ago".</summary>
+    private string RelativeAge(long watchedUtc)
+    {
+        var age = _clock.UtcNow - DateTimeOffset.FromUnixTimeSeconds(watchedUtc);
+        return age switch
+        {
+            { TotalMinutes: < 1 } => Strings.Home_AgoJustNow,
+            { TotalHours: < 1 } => Strings.Format(Strings.Home_AgoMinutesFormat, (int)age.TotalMinutes),
+            { TotalHours: < 24 } => Strings.Format(Strings.Home_AgoHoursFormat, (int)age.TotalHours),
+            { TotalHours: < 48 } => Strings.Home_AgoYesterday,
+            _ => Strings.Format(Strings.Home_AgoDaysFormat, (int)age.TotalDays),
+        };
     }
 
     private async Task LoadFavoriteChannelsAsync(long profileId, CancellationToken cancellationToken)
@@ -267,6 +471,7 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     private void NotifyRowFlags()
     {
         OnPropertyChanged(nameof(HasContinueWatching));
+        OnPropertyChanged(nameof(HasRecentlyWatched));
         OnPropertyChanged(nameof(HasFavoriteChannels));
         OnPropertyChanged(nameof(HasRecentMovies));
         OnPropertyChanged(nameof(HasRecentSeries));
@@ -283,6 +488,24 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         }
 
         _ = OpenVodByKeyAsync(card.Entry.ItemKind, card.Entry.ItemKey);
+    }
+
+    [RelayCommand]
+    private void PlayRecent(RecentWatchCard? card)
+    {
+        if (card is null)
+        {
+            return;
+        }
+
+        if (card.Channel is { } channel)
+        {
+            _playback.PlayChannel(channel);
+        }
+        else if (!card.IsLive)
+        {
+            _ = OpenVodByKeyAsync(card.Entry.ItemKind, card.Entry.ItemKey);
+        }
     }
 
     [RelayCommand]

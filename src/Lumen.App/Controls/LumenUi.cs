@@ -89,6 +89,45 @@ public static class LumenUi
     }
 
     /// <summary>
+    /// Re-raises vertical mouse-wheel input on the parent, for horizontal rails whose
+    /// ScrollViewer would otherwise swallow the wheel and stall the page scroll under it.
+    /// </summary>
+    public static readonly DependencyProperty BubbleWheelToParentProperty = DependencyProperty.RegisterAttached(
+        "BubbleWheelToParent", typeof(bool), typeof(LumenUi), new PropertyMetadata(false, OnBubbleWheelToParentChanged));
+
+    public static bool GetBubbleWheelToParent(DependencyObject element) =>
+        (bool)element.GetValue(BubbleWheelToParentProperty);
+
+    public static void SetBubbleWheelToParent(DependencyObject element, bool value) =>
+        element.SetValue(BubbleWheelToParentProperty, value);
+
+    private static void OnBubbleWheelToParentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not UIElement element || e.NewValue is not true)
+        {
+            return;
+        }
+
+        element.PreviewMouseWheel += (sender, args) =>
+        {
+            // Raise on the parent: a route started here would run through this very
+            // ScrollViewer again, which is exactly the handler that eats the wheel.
+            if (args.Handled || sender is not DependencyObject source
+                || System.Windows.Media.VisualTreeHelper.GetParent(source) is not UIElement parent)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            parent.RaiseEvent(new MouseWheelEventArgs(args.MouseDevice, args.Timestamp, args.Delta)
+            {
+                RoutedEvent = UIElement.MouseWheelEvent,
+                Source = sender,
+            });
+        };
+    }
+
+    /// <summary>
     /// Shows the type-to-filter box inside a Lumen.ComboBox dropdown. Opening the dropdown
     /// clears the previous filter and moves keyboard focus into the box.
     /// </summary>

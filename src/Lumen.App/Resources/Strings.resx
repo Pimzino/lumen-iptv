@@ -98,6 +98,22 @@
   <data name="Home_RecentlyAddedSeries" xml:space="preserve"><value>New series</value></data>
   <data name="Home_EmptyBody" xml:space="preserve"><value>Your library is warming up — favorites and history will appear here.</value></data>
   <data name="Home_RecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+  <data name="Home_RecentlyWatched" xml:space="preserve"><value>Recently watched</value></data>
+  <data name="Home_JumpBackIn" xml:space="preserve"><value>Jump back in</value></data>
+  <data name="Home_EmptyTitle" xml:space="preserve"><value>Nothing here yet</value></data>
+  <data name="Home_GreetingMorning" xml:space="preserve"><value>Good morning</value></data>
+  <data name="Home_GreetingAfternoon" xml:space="preserve"><value>Good afternoon</value></data>
+  <data name="Home_GreetingEvening" xml:space="preserve"><value>Good evening</value></data>
+  <data name="Home_GreetingNight" xml:space="preserve"><value>Up late?</value></data>
+  <data name="Home_TimeLeftFormat" xml:space="preserve"><value>{0} left</value></data>
+  <data name="Home_KindLive" xml:space="preserve"><value>Live</value></data>
+  <data name="Home_KindMovie" xml:space="preserve"><value>Movie</value></data>
+  <data name="Home_KindSeries" xml:space="preserve"><value>Series</value></data>
+  <data name="Home_AgoJustNow" xml:space="preserve"><value>Just now</value></data>
+  <data name="Home_AgoMinutesFormat" xml:space="preserve"><value>{0} min ago</value></data>
+  <data name="Home_AgoHoursFormat" xml:space="preserve"><value>{0} h ago</value></data>
+  <data name="Home_AgoYesterday" xml:space="preserve"><value>Yesterday</value></data>
+  <data name="Home_AgoDaysFormat" xml:space="preserve"><value>{0} days ago</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
   <data name="Settings_Profiles" xml:space="preserve"><value>Profiles</value></data>

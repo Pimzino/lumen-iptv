@@ -3,9 +3,15 @@ namespace Lumen.Core;
 /// <summary>Well-known on-disk locations for application state.</summary>
 public static class AppPaths
 {
-    /// <summary>Root data directory (%LocalAppData%\Lumen).</summary>
-    public static string DataRoot { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lumen");
+    /// <summary>
+    /// Root data directory (%LocalAppData%\Lumen). The LUMEN_DATA_ROOT environment variable
+    /// overrides it so diagnostic gates can run hermetically on a machine whose default root
+    /// holds a real library.
+    /// </summary>
+    public static string DataRoot { get; } =
+        Environment.GetEnvironmentVariable("LUMEN_DATA_ROOT") is { Length: > 0 } root
+            ? root
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lumen");
 
     /// <summary>Path of the SQLite database file.</summary>
     public static string DatabasePath => Path.Combine(DataRoot, "lumen.db");

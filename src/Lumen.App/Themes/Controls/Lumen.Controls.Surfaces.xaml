@@ -121,6 +121,71 @@
     </Setter>
   </Style>
 
+  <!--
+    Hover play affordance for card media: an accent disc that fades in while the pointer
+    (or keyboard focus) is on the owning card button. Place inside a card's media Grid;
+    it is decorative — the card button itself is the click target.
+  -->
+  <Style x:Key="Lumen.PlayChip" TargetType="ContentControl">
+    <Setter Property="ctl:LumenUi.Glyph" Value="{StaticResource Lumen.Icon.Play}" />
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContentControl">
+          <Border Background="{StaticResource Lumen.Brush.Accent}" CornerRadius="999">
+            <TextBlock Text="{Binding Path=(ctl:LumenUi.Glyph), RelativeSource={RelativeSource TemplatedParent}}"
+                       FontFamily="{StaticResource Lumen.Font.Icons}"
+                       FontSize="{StaticResource Lumen.FontSize.Icon}"
+                       Foreground="{StaticResource Lumen.Brush.Text.OnAccent}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+        <DataTrigger.EnterActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="{theming:Dur Fast}" />
+            </Storyboard>
+          </BeginStoryboard>
+        </DataTrigger.EnterActions>
+        <DataTrigger.ExitActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="{theming:Dur Fast}" />
+            </Storyboard>
+          </BeginStoryboard>
+        </DataTrigger.ExitActions>
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+        <DataTrigger.EnterActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="{theming:Dur Fast}" />
+            </Storyboard>
+          </BeginStoryboard>
+        </DataTrigger.EnterActions>
+        <DataTrigger.ExitActions>
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="{theming:Dur Fast}" />
+            </Storyboard>
+          </BeginStoryboard>
+        </DataTrigger.ExitActions>
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+
   <!-- ======================= Badges ======================= -->
 
   <Style x:Key="Lumen.Badge" TargetType="ContentControl">

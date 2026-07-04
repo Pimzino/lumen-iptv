@@ -257,6 +257,15 @@ public partial class App : Application
                 window.Top = -32000;
                 window.ShowActivated = false;
                 window.ShowInTaskbar = false;
+
+                // Optional capture size ("1280x2200") so long scrolling pages can be reviewed
+                // in full — the offscreen window has no monitor to clamp it.
+                if (ArgValue(args, "--shot-size")?.Split('x') is [{ } w, { } h]
+                    && double.TryParse(w, out var shotWidth) && double.TryParse(h, out var shotHeight))
+                {
+                    window.Width = shotWidth;
+                    window.Height = shotHeight;
+                }
             }
 
             MainWindow = window;

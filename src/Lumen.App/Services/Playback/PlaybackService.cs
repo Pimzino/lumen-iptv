@@ -63,6 +63,12 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     // so a pause-then-quit doesn't lose the resume position.
     private Task _lastProgressSave = Task.CompletedTask;
 
+    // Live watch tracking: a channel lands in watch history only after this much real
+    // (non-preview) playback, so zapping through channels doesn't pollute "Recently watched".
+    private const int LiveWatchThresholdSeconds = 10;
+    private int _liveWatchSeconds;
+    private long _liveWatchRecordedChannelId = -1;
+
     [ObservableProperty]
     private PlaybackState _state = PlaybackState.Idle;
 
@@ -262,6 +268,9 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         DurationSeconds = 0;
         ResetBehindLive();
 
+        _liveWatchSeconds = 0;
+        _liveWatchRecordedChannelId = -1;
+
         _currentChannel = channel;
         OnPropertyChanged(nameof(CurrentChannel));
         NotifyNowPlayingChanged();
@@ -352,6 +361,8 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         _currentChannel = null;
         OnPropertyChanged(nameof(CurrentChannel));
         CanSeekLive = false;
+        _liveWatchSeconds = 0;
+        _liveWatchRecordedChannelId = -1;
         _currentVod = request;
         NotifyNowPlayingChanged();
         _isPreviewContext = false;
@@ -578,6 +589,8 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         OnPropertyChanged(nameof(CurrentChannel));
         NotifyNowPlayingChanged();
         CanSeekLive = false;
+        _liveWatchSeconds = 0;
+        _liveWatchRecordedChannelId = -1;
         _currentUrl = null;
         State = PlaybackState.Idle;
         ErrorMessage = null;
@@ -632,6 +645,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 _timeshiftPlayedSeconds = Math.Max(0, player.Time / 1000.0);
             }
 
+            TrackLiveWatch();
             UpdateBehindLive(); // the time-shift keeps growing while a live stream sits paused
             return;
         }
@@ -683,6 +697,39 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         _lastTimeshiftEndUtc = null;
         IsTimeshift = false;
         UpdateBehindLive();
+    }
+
+    /// <summary>
+    /// Counts real live viewing (playing, not the muted browse preview) and records the channel
+    /// into watch history once it crosses <see cref="LiveWatchThresholdSeconds"/> — at most once
+    /// per channel play, so reconnects and pause cycles don't rewrite the entry.
+    /// </summary>
+    private void TrackLiveWatch()
+    {
+        if (State != PlaybackState.Playing || _isPreviewContext
+            || _currentChannel is not { } channel || channel.Id == _liveWatchRecordedChannelId)
+        {
+            return;
+        }
+
+        if (++_liveWatchSeconds < LiveWatchThresholdSeconds || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        _liveWatchRecordedChannelId = channel.Id;
+        var entry = new WatchHistoryEntry
+        {
+            ProfileId = profile.Id,
+            ItemKind = ContentKind.Live,
+            ItemKey = channel.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Title = channel.Name,
+            PosterUrl = channel.LogoUrl,
+            PositionSeconds = 0,
+            DurationSeconds = 0,
+            WatchedUtc = _clock.UtcNow.ToUnixTimeSeconds(),
+        };
+        _lastProgressSave = _watchHistory.UpsertAsync(entry, CancellationToken.None);
     }
 
     /// <summary>Writes the current VOD position to watch history (throttled to meaningful progress).</summary>

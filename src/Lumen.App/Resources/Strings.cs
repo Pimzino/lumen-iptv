@@ -110,6 +110,22 @@ public static class Strings
     public static string Home_RecentlyAddedSeries => Get(nameof(Home_RecentlyAddedSeries));
     public static string Home_EmptyBody => Get(nameof(Home_EmptyBody));
     public static string Home_RecentlyAdded => Get(nameof(Home_RecentlyAdded));
+    public static string Home_RecentlyWatched => Get(nameof(Home_RecentlyWatched));
+    public static string Home_JumpBackIn => Get(nameof(Home_JumpBackIn));
+    public static string Home_EmptyTitle => Get(nameof(Home_EmptyTitle));
+    public static string Home_GreetingMorning => Get(nameof(Home_GreetingMorning));
+    public static string Home_GreetingAfternoon => Get(nameof(Home_GreetingAfternoon));
+    public static string Home_GreetingEvening => Get(nameof(Home_GreetingEvening));
+    public static string Home_GreetingNight => Get(nameof(Home_GreetingNight));
+    public static string Home_TimeLeftFormat => Get(nameof(Home_TimeLeftFormat));
+    public static string Home_KindLive => Get(nameof(Home_KindLive));
+    public static string Home_KindMovie => Get(nameof(Home_KindMovie));
+    public static string Home_KindSeries => Get(nameof(Home_KindSeries));
+    public static string Home_AgoJustNow => Get(nameof(Home_AgoJustNow));
+    public static string Home_AgoMinutesFormat => Get(nameof(Home_AgoMinutesFormat));
+    public static string Home_AgoHoursFormat => Get(nameof(Home_AgoHoursFormat));
+    public static string Home_AgoYesterday => Get(nameof(Home_AgoYesterday));
+    public static string Home_AgoDaysFormat => Get(nameof(Home_AgoDaysFormat));
 
     public static string Settings_Title => Get(nameof(Settings_Title));
     public static string Settings_Profiles => Get(nameof(Settings_Profiles));

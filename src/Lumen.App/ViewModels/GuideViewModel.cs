@@ -48,6 +48,7 @@ public sealed partial class GuideViewModel : ObservableObject, INavigationAware,
     private readonly IClock _clock;
 
     private Dictionary<long, string> _mappings = [];
+    private List<Category> _allCategories = [];
     private DateTimeOffset _dayStart;
 
     public GuideViewModel(
@@ -66,7 +67,12 @@ public sealed partial class GuideViewModel : ObservableObject, INavigationAware,
         messenger.RegisterAll(this);
     }
 
-    public ObservableCollection<Category> Categories { get; } = [];
+    /// <summary>The dropdown's (possibly filtered) category choices.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<Category> _categories = [];
+
+    [ObservableProperty]
+    private string _categoryFilter = string.Empty;
 
     public ObservableCollection<GuideDay> Days { get; } = [];
 
@@ -125,12 +131,9 @@ public sealed partial class GuideViewModel : ObservableObject, INavigationAware,
             Days.Add(new GuideDay(label, new DateTimeOffset(date, TimeZoneInfo.Local.GetUtcOffset(date))));
         }
 
-        Categories.Clear();
-        Categories.Add(AllCategories);
-        foreach (var category in await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken))
-        {
-            Categories.Add(category);
-        }
+        _allCategories = [AllCategories, .. await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken)];
+        CategoryFilter = string.Empty;
+        Categories = _allCategories;
 
         var mappings = await _epg.GetMappingsAsync(profile.Id, cancellationToken);
         _mappings = mappings.ToDictionary(m => m.ChannelId, m => m.XmltvId);
@@ -145,6 +148,32 @@ public sealed partial class GuideViewModel : ObservableObject, INavigationAware,
     }
 
     partial void OnSelectedCategoryChanged(Category? value) => _ = LoadAsync(CancellationToken.None);
+
+    partial void OnCategoryFilterChanged(string value)
+    {
+        var filter = value.Trim();
+        if (filter.Length == 0)
+        {
+            Categories = _allCategories;
+            return;
+        }
+
+        var matches = new List<Category>();
+        foreach (var category in _allCategories)
+        {
+            // "All channels" and the current selection are pinned: dropping the selected
+            // category from ItemsSource would clear SelectedItem through the two-way binding
+            // and reload the guide mid-keystroke.
+            if (ReferenceEquals(category, AllCategories)
+                || ReferenceEquals(category, SelectedCategory)
+                || category.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            {
+                matches.Add(category);
+            }
+        }
+
+        Categories = matches;
+    }
 
     partial void OnSelectedDayChanged(GuideDay? value)
     {

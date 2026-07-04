@@ -45,6 +45,8 @@
                 VerticalAlignment="Center"
                 ItemsSource="{Binding Categories}"
                 SelectedItem="{Binding SelectedCategory}"
+                ctl:LumenUi.ShowPopupFilter="True"
+                ctl:LumenUi.PopupFilterText="{Binding CategoryFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 AutomationProperties.Name="Category filter">
         <ComboBox.ItemTemplate>
           <DataTemplate>

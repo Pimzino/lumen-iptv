@@ -22,6 +22,12 @@ public interface ISessionService
     /// <summary>Inserts the profile (protecting the password) and makes it active.</summary>
     Task<long> AddProfileAsync(Profile profile, string? plainPassword, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Persists edits to an existing profile. A non-empty <paramref name="newPlainPassword"/>
+    /// replaces the stored password; null keeps it.
+    /// </summary>
+    Task UpdateProfileAsync(Profile profile, string? newPlainPassword, CancellationToken cancellationToken);
+
     Task RemoveProfileAsync(long profileId, CancellationToken cancellationToken);
 
     /// <summary>Decrypts stored Xtream credentials. Null for M3U profiles.</summary>
@@ -32,7 +38,9 @@ public interface ISessionService
 public sealed partial class SessionService : ObservableObject, ISessionService
 {
     private const string ActiveProfileKey = "active_profile_id";
-    private static readonly string[] AvatarPalette =
+
+    /// <summary>Colors offered for profile avatars (shared with the profile edit page).</summary>
+    internal static readonly string[] AvatarPalette =
         ["#4C8DFF", "#47CD89", "#F97066", "#B692F6", "#F7B27A", "#5FD4D6"];
 
     private readonly IProfileRepository _profiles;
@@ -109,6 +117,26 @@ public sealed partial class SessionService : ObservableObject, ISessionService
         var id = await _profiles.InsertAsync(profile, cancellationToken);
         await SwitchProfileAsync(id, cancellationToken);
         return id;
+    }
+
+    public async Task UpdateProfileAsync(
+        Profile profile, string? newPlainPassword, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        if (!string.IsNullOrEmpty(newPlainPassword))
+        {
+            profile.PasswordProtected = _protector.Protect(newPlainPassword);
+        }
+
+        await _profiles.UpdateAsync(profile, cancellationToken);
+        ProfilesList = await _profiles.GetAllAsync(cancellationToken);
+
+        // Profile is a plain POCO, so bindings only see edits to the current profile when the
+        // instance itself is replaced.
+        if (CurrentProfile?.Id == profile.Id)
+        {
+            CurrentProfile = ProfilesList.First(p => p.Id == profile.Id);
+        }
     }
 
     public async Task RemoveProfileAsync(long profileId, CancellationToken cancellationToken)

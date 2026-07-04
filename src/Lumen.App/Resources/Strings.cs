@@ -46,6 +46,7 @@ public static class Strings
 
     public static string Common_Cancel => Get(nameof(Common_Cancel));
     public static string Common_Back => Get(nameof(Common_Back));
+    public static string Common_Edit => Get(nameof(Common_Edit));
     public static string Common_Continue => Get(nameof(Common_Continue));
     public static string Common_Done => Get(nameof(Common_Done));
     public static string Common_Remove => Get(nameof(Common_Remove));
@@ -94,6 +95,15 @@ public static class Strings
     public static string Onboarding_StepEpg => Get(nameof(Onboarding_StepEpg));
     public static string Onboarding_SyncSummaryFormat => Get(nameof(Onboarding_SyncSummaryFormat));
 
+    public static string ProfileEdit_Title => Get(nameof(ProfileEdit_Title));
+    public static string ProfileEdit_AvatarColor => Get(nameof(ProfileEdit_AvatarColor));
+    public static string ProfileEdit_PasswordHint => Get(nameof(ProfileEdit_PasswordHint));
+    public static string ProfileEdit_PasswordRequired => Get(nameof(ProfileEdit_PasswordRequired));
+    public static string ProfileEdit_EpgHintXtream => Get(nameof(ProfileEdit_EpgHintXtream));
+    public static string ProfileEdit_Save => Get(nameof(ProfileEdit_Save));
+    public static string ProfileEdit_RefreshingChannels => Get(nameof(ProfileEdit_RefreshingChannels));
+    public static string ProfileEdit_RefreshingGuide => Get(nameof(ProfileEdit_RefreshingGuide));
+
     public static string Home_ContinueWatching => Get(nameof(Home_ContinueWatching));
     public static string Home_FavoriteChannels => Get(nameof(Home_FavoriteChannels));
     public static string Home_RecentlyAddedMovies => Get(nameof(Home_RecentlyAddedMovies));
@@ -134,6 +144,7 @@ public static class Strings
     public static string Settings_Licenses => Get(nameof(Settings_Licenses));
 
     public static string Toast_ProfileConnectedFormat => Get(nameof(Toast_ProfileConnectedFormat));
+    public static string Toast_ProfileUpdatedFormat => Get(nameof(Toast_ProfileUpdatedFormat));
     public static string Toast_ProfileSwitchedFormat => Get(nameof(Toast_ProfileSwitchedFormat));
     public static string Toast_EpgRefreshedFormat => Get(nameof(Toast_EpgRefreshedFormat));
     public static string Toast_EpgFailed => Get(nameof(Toast_EpgFailed));

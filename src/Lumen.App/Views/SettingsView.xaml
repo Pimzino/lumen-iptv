@@ -43,6 +43,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <Border Width="36" Height="36" CornerRadius="18"
                           Background="{Binding AvatarColor}"
@@ -74,6 +75,12 @@
                           Margin="{StaticResource Lumen.Margin.R8}"
                           Visibility="{Binding IsActive, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
                   <Button Grid.Column="4"
+                          Style="{StaticResource Lumen.Button.Ghost}"
+                          Content="{x:Static res:Strings.Common_Edit}"
+                          Command="{Binding DataContext.EditProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          CommandParameter="{Binding}"
+                          Margin="{StaticResource Lumen.Margin.R8}" />
+                  <Button Grid.Column="5"
                           Style="{StaticResource Lumen.Button.Ghost}"
                           Content="{x:Static res:Strings.Common_Remove}"
                           Command="{Binding DataContext.RemoveProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

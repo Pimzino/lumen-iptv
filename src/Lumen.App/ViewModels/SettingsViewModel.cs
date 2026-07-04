@@ -399,6 +399,20 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     }
 
     [RelayCommand]
+    private async Task EditProfileAsync(ProfileEntry? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        if (await _dialogs.EditProfileAsync(entry.Profile.Id))
+        {
+            await ReloadAsync(CancellationToken.None);
+        }
+    }
+
+    [RelayCommand]
     private void AddProfile() => _messenger.Send(new AddProfileRequestedMessage());
 
     [RelayCommand]

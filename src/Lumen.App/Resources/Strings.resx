@@ -35,6 +35,7 @@
 
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Common_Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Common_Done" xml:space="preserve"><value>Done</value></data>
   <data name="Common_Remove" xml:space="preserve"><value>Remove</value></data>
@@ -82,6 +83,15 @@
   <data name="Onboarding_StepEpg" xml:space="preserve"><value>Importing programme guide…</value></data>
   <data name="Onboarding_SyncSummaryFormat" xml:space="preserve"><value>{0:N0} channels · {1:N0} movies · {2:N0} series</value></data>
 
+  <data name="ProfileEdit_Title" xml:space="preserve"><value>Edit profile</value></data>
+  <data name="ProfileEdit_AvatarColor" xml:space="preserve"><value>Avatar color</value></data>
+  <data name="ProfileEdit_PasswordHint" xml:space="preserve"><value>Leave blank to keep the current password.</value></data>
+  <data name="ProfileEdit_PasswordRequired" xml:space="preserve"><value>Enter the password to test this connection.</value></data>
+  <data name="ProfileEdit_EpgHintXtream" xml:space="preserve"><value>Optional — leave blank to use the guide your provider publishes.</value></data>
+  <data name="ProfileEdit_Save" xml:space="preserve"><value>Save changes</value></data>
+  <data name="ProfileEdit_RefreshingChannels" xml:space="preserve"><value>Saved — refreshing channels…</value></data>
+  <data name="ProfileEdit_RefreshingGuide" xml:space="preserve"><value>Saved — refreshing programme guide…</value></data>
+
   <data name="Home_ContinueWatching" xml:space="preserve"><value>Continue watching</value></data>
   <data name="Home_FavoriteChannels" xml:space="preserve"><value>Favorite channels</value></data>
   <data name="Home_RecentlyAddedMovies" xml:space="preserve"><value>Recently added movies</value></data>
@@ -127,6 +137,7 @@
   <data name="Settings_Licenses" xml:space="preserve"><value>Built with LibVLC (LGPL-2.1), CommunityToolkit.Mvvm (MIT), Serilog (Apache-2.0), Dapper (Apache-2.0), Microsoft.Data.Sqlite (MIT).</value></data>
 
   <data name="Toast_ProfileConnectedFormat" xml:space="preserve"><value>Profile “{0}” connected.</value></data>
+  <data name="Toast_ProfileUpdatedFormat" xml:space="preserve"><value>Profile “{0}” updated.</value></data>
   <data name="Toast_ProfileSwitchedFormat" xml:space="preserve"><value>Switched to “{0}”.</value></data>
   <data name="Toast_EpgRefreshedFormat" xml:space="preserve"><value>Guide updated — {0:N0} programmes.</value></data>
   <data name="Toast_EpgFailed" xml:space="preserve"><value>Guide refresh failed.</value></data>

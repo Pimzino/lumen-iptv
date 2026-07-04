@@ -410,6 +410,25 @@ public partial class App : Application
             shell.NavigateToSection("settings");
             await SnapAsync("settings.png");
 
+            if (session.CurrentProfile is { } editProfile)
+            {
+                // Shown non-modally so the capture flow keeps running; offscreen via Owner.
+                var editVm = _host!.Services.GetRequiredService<ViewModels.ProfileEditViewModel>();
+                if (await editVm.InitializeAsync(editProfile.Id, CancellationToken.None))
+                {
+                    var editDialog = new Views.Dialogs.ProfileEditDialog(editVm)
+                    {
+                        Owner = window,
+                        ShowActivated = false,
+                    };
+                    editDialog.Show();
+                    await Task.Delay(900);
+                    Diagnostics.VisualCapture.SaveWindow(
+                        editDialog, Path.Combine(directory, "profile-edit.png"));
+                    editDialog.Close();
+                }
+            }
+
             shell.IsRailExpanded = true;
             await SnapAsync("rail-expanded.png");
             shell.IsRailExpanded = false;
@@ -475,6 +494,7 @@ public partial class App : Application
         services.AddSingleton<MainWindow>();
         services.AddTransient<HomeViewModel>();
         services.AddTransient<OnboardingViewModel>();
+        services.AddTransient<ProfileEditViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<LiveTvViewModel>();
         services.AddTransient<GuideViewModel>();

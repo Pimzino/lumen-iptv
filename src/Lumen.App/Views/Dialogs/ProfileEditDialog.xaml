@@ -1,0 +1,203 @@
+<ctl:LumenDialogWindow x:Class="Lumen.App.Views.Dialogs.ProfileEditDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ctl="clr-namespace:Lumen.App.Controls"
+                       xmlns:res="clr-namespace:Lumen.App.Resources">
+  <ctl:LumenDialogWindow.Resources>
+    <!-- Circular color swatch; the selected one gets a ring. -->
+    <Style x:Key="ProfileEdit.AvatarSwatch" TargetType="Button">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Margin" Value="{StaticResource Lumen.Margin.R12}" />
+      <Setter Property="Background" Value="{Binding Color}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <!-- The ring sits inset within the circle: anything drawn outside the swatch
+                 bounds would be clipped by the surrounding ScrollViewer. -->
+            <Grid>
+              <Ellipse Fill="{TemplateBinding Background}" />
+              <Ellipse x:Name="Ring"
+                       Stroke="Transparent"
+                       StrokeThickness="2"
+                       Margin="3" />
+            </Grid>
+            <ControlTemplate.Triggers>
+              <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                <Setter TargetName="Ring" Property="Stroke"
+                        Value="{StaticResource Lumen.Brush.Text.Primary}" />
+              </DataTrigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </ctl:LumenDialogWindow.Resources>
+
+  <DockPanel Width="500" Margin="{StaticResource Lumen.Pad.24}">
+
+    <!-- Header -->
+    <StackPanel DockPanel.Dock="Top">
+      <Grid Margin="{StaticResource Lumen.Margin.B4}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                   Text="{x:Static res:Strings.ProfileEdit_Title}" />
+        <TextBlock Grid.Column="1"
+                   Style="{StaticResource Lumen.Text.Caption}"
+                   Text="{Binding KindLabel}"
+                   VerticalAlignment="Center" />
+      </Grid>
+      <Border Height="16" />
+    </StackPanel>
+
+    <!-- Footer: result messages + actions, always visible -->
+    <StackPanel DockPanel.Dock="Bottom">
+      <TextBlock TextWrapping="Wrap"
+                 Margin="{StaticResource Lumen.Margin.T8}"
+                 Visibility="{Binding TestMessage, Converter={StaticResource Lumen.NullToCollapsed}}"
+                 Text="{Binding TestMessage}">
+        <TextBlock.Style>
+          <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.Caption}">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding TestFailed}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Error}" />
+              </DataTrigger>
+              <DataTrigger Binding="{Binding TestSucceeded}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Success}" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </TextBlock.Style>
+      </TextBlock>
+      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                 Foreground="{StaticResource Lumen.Brush.Error}"
+                 TextWrapping="Wrap"
+                 Text="{Binding SaveError}"
+                 Margin="{StaticResource Lumen.Margin.T8}"
+                 Visibility="{Binding SaveError, Converter={StaticResource Lumen.NullToCollapsed}}" />
+      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                 Foreground="{StaticResource Lumen.Brush.Accent}"
+                 Text="{Binding SaveStatus}"
+                 Margin="{StaticResource Lumen.Margin.T8}"
+                 Visibility="{Binding SaveStatus, Converter={StaticResource Lumen.NullToCollapsed}}" />
+      <Grid Margin="{StaticResource Lumen.Margin.T16}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Button Style="{StaticResource Lumen.Button.Secondary}"
+                Content="{x:Static res:Strings.Onboarding_TestConnection}"
+                Command="{Binding TestConnectionCommand}"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource Lumen.InverseBool}}" />
+        <Button Grid.Column="2"
+                Style="{StaticResource Lumen.Button.Ghost}"
+                Content="{x:Static res:Strings.Common_Cancel}"
+                IsCancel="True"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource Lumen.InverseBool}}"
+                Margin="{StaticResource Lumen.Margin.R8}" />
+        <Button Grid.Column="3"
+                Style="{StaticResource Lumen.Button.Primary}"
+                Content="{x:Static res:Strings.ProfileEdit_Save}"
+                Command="{Binding SaveCommand}"
+                IsDefault="True" />
+      </Grid>
+    </StackPanel>
+
+    <!-- Form (scrolls when the dialog hits its height cap) -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <TextBox Style="{StaticResource Lumen.TextBox}"
+                 ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_ProfileName}"
+                 Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="{StaticResource Lumen.Margin.B16}" />
+
+        <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                   Text="{x:Static res:Strings.ProfileEdit_AvatarColor}"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+        <ItemsControl ItemsSource="{Binding AvatarOptions}"
+                      Margin="{StaticResource Lumen.Margin.B16}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Style="{StaticResource ProfileEdit.AvatarSwatch}"
+                      Command="{Binding DataContext.SelectAvatarCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                      CommandParameter="{Binding}"
+                      AutomationProperties.Name="{Binding Color}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Xtream connection -->
+        <StackPanel Visibility="{Binding IsXtream, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_Server}"
+                   Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
+                   Margin="{StaticResource Lumen.Margin.B12}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_Username}"
+                   Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                   Margin="{StaticResource Lumen.Margin.B12}" />
+          <PasswordBox Style="{StaticResource Lumen.PasswordBox}"
+                       ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_Password}"
+                       ctl:LumenUi.BindPassword="True"
+                       ctl:LumenUi.Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.ProfileEdit_PasswordHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+        </StackPanel>
+
+        <!-- M3U connection -->
+        <Grid Margin="{StaticResource Lumen.Margin.B16}"
+              Visibility="{Binding IsM3u, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_PlaylistSource}"
+                   Text="{Binding PlaylistSource, UpdateSourceTrigger=PropertyChanged}" />
+          <Button Grid.Column="1"
+                  Style="{StaticResource Lumen.Button.Ghost}"
+                  Content="{x:Static res:Strings.Common_Browse}"
+                  Command="{Binding BrowsePlaylistCommand}"
+                  VerticalAlignment="Center"
+                  Margin="{StaticResource Lumen.Margin.L8}" />
+        </Grid>
+
+        <!-- EPG source (optional override for Xtream, the guide source for M3U) -->
+        <Grid Margin="{StaticResource Lumen.Margin.B8}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Onboarding_EpgSource}"
+                   Text="{Binding EpgSource, UpdateSourceTrigger=PropertyChanged}" />
+          <Button Grid.Column="1"
+                  Style="{StaticResource Lumen.Button.Ghost}"
+                  Content="{x:Static res:Strings.Common_Browse}"
+                  Command="{Binding BrowseEpgCommand}"
+                  VerticalAlignment="Center"
+                  Margin="{StaticResource Lumen.Margin.L8}" />
+        </Grid>
+        <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                   Text="{x:Static res:Strings.ProfileEdit_EpgHintXtream}"
+                   TextWrapping="Wrap"
+                   Visibility="{Binding IsXtream, Converter={StaticResource Lumen.BoolToVisibility}}" />
+      </StackPanel>
+    </ScrollViewer>
+
+  </DockPanel>
+</ctl:LumenDialogWindow>

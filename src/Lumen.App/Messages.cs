@@ -22,3 +22,14 @@ public sealed record OnboardingRequiredMessage;
 
 /// <summary>Sent when a page asks for the add-profile flow (shell owns navigation).</summary>
 public sealed record AddProfileRequestedMessage;
+
+/// <summary>Sent after a Trakt sync completes; open pages refresh their watched indicators.</summary>
+public sealed record TraktSyncCompletedMessage;
+
+/// <summary>
+/// Sent whenever playback persists VOD progress (pause, stop, natural end, switching titles).
+/// The player is an overlay, not a navigation — pages underneath listen and update the
+/// affected row/card instead of waiting for a reload. The entry is the write payload:
+/// its Completed flag can set a watched tick but never clears one (the store merges).
+/// </summary>
+public sealed record WatchProgressSavedMessage(WatchHistoryEntry Entry);

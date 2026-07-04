@@ -32,4 +32,10 @@ public sealed class VodItem
 
     /// <summary>Direct stream URL for M3U-sourced VOD; null for Xtream items.</summary>
     public string? StreamUrl { get; set; }
+
+    /// <summary>
+    /// Total episodes across all seasons, cached when the series' details load; null until
+    /// then (and always null for movies). Drives the grid's series watched-fraction bar.
+    /// </summary>
+    public int? EpisodeTotal { get; set; }
 }

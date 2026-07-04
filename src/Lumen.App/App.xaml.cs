@@ -506,6 +506,15 @@ public partial class App : Application
         services.AddSingleton<Services.VodService>();
         services.AddHostedService<Services.EpgRefreshScheduler>();
 
+        // Trakt: connection + matching + two-way sync; the scrobbler and scheduler are hosted
+        // so they run without being injected anywhere.
+        services.AddSingleton<Services.Trakt.TraktAuthStore>();
+        services.AddSingleton<Services.Trakt.TraktService>();
+        services.AddSingleton<Services.Trakt.TraktMatchService>();
+        services.AddSingleton<Services.Trakt.TraktSyncService>();
+        services.AddHostedService<Services.Trakt.TraktScrobbler>();
+        services.AddHostedService<Services.Trakt.TraktSyncScheduler>();
+
         // Shell + pages (pages are transient: fresh state per navigation)
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<PlayerViewModel>();

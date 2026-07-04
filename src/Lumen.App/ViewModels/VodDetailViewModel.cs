@@ -2,9 +2,11 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Lumen.App.Resources;
 using Lumen.App.Services;
 using Lumen.App.Services.Playback;
+using Lumen.App.Services.Trakt;
 using Lumen.Core.Abstractions;
 using Lumen.Core.Models;
 using Serilog;
@@ -62,10 +64,19 @@ public sealed partial class EpisodeRow : ObservableObject
 
     /// <summary>True once a resume position exists, so unwatched cards show no progress track.</summary>
     public bool HasResume => ResumeProgress > 0;
+
+    /// <summary>True once the episode was watched to completion (auto, manual, or Trakt).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WatchedToggleTooltip))]
+    private bool _isWatched;
+
+    public string WatchedToggleTooltip => IsWatched
+        ? Strings.Vod_MarkEpisodeUnwatched
+        : Strings.Vod_MarkEpisodeWatched;
 }
 
 /// <summary>A season tab on a series detail page.</summary>
-public sealed class SeasonGroup
+public sealed partial class SeasonGroup : ObservableObject
 {
     public required int Number { get; init; }
 
@@ -79,6 +90,21 @@ public sealed class SeasonGroup
     public string EpisodeCountLabel => Episodes.Count == 1
         ? Strings.Vod_OneEpisode
         : Strings.Format(Strings.Vod_EpisodesCountFormat, Episodes.Count);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWatched))]
+    [NotifyPropertyChangedFor(nameof(AllWatched))]
+    [NotifyPropertyChangedFor(nameof(WatchedCountLabel))]
+    private int _watchedCount;
+
+    public bool HasWatched => WatchedCount > 0;
+
+    public bool AllWatched => Episodes.Count > 0 && WatchedCount == Episodes.Count;
+
+    /// <summary>"3/10 watched" under the season tab.</summary>
+    public string WatchedCountLabel => Strings.Format(Strings.Vod_WatchedCountFormat, WatchedCount, Episodes.Count);
+
+    public void RefreshWatchedCount() => WatchedCount = Episodes.Count(e => e.IsWatched);
 }
 
 /// <summary>
@@ -86,7 +112,8 @@ public sealed class SeasonGroup
 /// (for series) season tabs over an episode-card list. Series get a smart primary action that
 /// resumes the most recently watched episode or advances to the next one.
 /// </summary>
-public sealed partial class VodDetailViewModel : ObservableObject, INavigationAware
+public sealed partial class VodDetailViewModel : ObservableObject, INavigationAware,
+    IRecipient<TraktSyncCompletedMessage>, IRecipient<WatchProgressSavedMessage>
 {
     /// <summary>Progress beyond which an episode counts as watched and the next one is queued.</summary>
     private const double CompletedProgress = 0.95;
@@ -94,33 +121,45 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     private readonly VodService _vodService;
     private readonly IWatchHistoryRepository _watchHistory;
     private readonly IFavoritesRepository _favorites;
+    private readonly ICatalogRepository _catalog;
     private readonly ISessionService _session;
     private readonly PlaybackService _playback;
     private readonly INavigationService _navigation;
     private readonly ArtworkService _artwork;
+    private readonly TraktSyncService _traktSync;
 
     private VodItem? _item;
     private MovieDetails? _movieDetails;
+    private SeriesDetails? _seriesDetails;
     private WatchHistoryEntry? _resumeEntry;
     private EpisodeRow? _seriesNextUp;
     private bool _hasProviderBackdrop;
+
+    /// <summary>Episode rows by watch-history key, for O(1) live progress updates.</summary>
+    private Dictionary<string, EpisodeRow> _rowsByKey = new(StringComparer.Ordinal);
 
     public VodDetailViewModel(
         VodService vodService,
         IWatchHistoryRepository watchHistory,
         IFavoritesRepository favorites,
+        ICatalogRepository catalog,
         ISessionService session,
         PlaybackService playback,
         INavigationService navigation,
-        ArtworkService artwork)
+        ArtworkService artwork,
+        TraktSyncService traktSync,
+        IMessenger messenger)
     {
         _vodService = vodService;
         _watchHistory = watchHistory;
         _favorites = favorites;
+        _catalog = catalog;
         _session = session;
         _playback = playback;
         _navigation = navigation;
         _artwork = artwork;
+        _traktSync = traktSync;
+        messenger.RegisterAll(this);
     }
 
     [ObservableProperty]
@@ -159,6 +198,24 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     [ObservableProperty]
     private string? _resumeLabel;
 
+    /// <summary>Movie watched state (series watched state lives on the episode rows).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MarkWatchedLabel))]
+    private bool _isWatched;
+
+    /// <summary>"Watched · 12 Mar 2026" chip text; null when unwatched.</summary>
+    [ObservableProperty]
+    private string? _watchedLabel;
+
+    public string MarkWatchedLabel => IsWatched ? Strings.Vod_MarkUnwatched : Strings.Vod_MarkWatched;
+
+    /// <summary>Whole-series watched fraction 0–100 for the hero poster bar (0 for movies).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSeriesProgress))]
+    private double _seriesProgress;
+
+    public bool HasSeriesProgress => SeriesProgress > 0;
+
     /// <summary>Season the episode list is showing; bound to the tab strip.</summary>
     [ObservableProperty]
     private SeasonGroup? _selectedSeason;
@@ -184,6 +241,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         _item = item;
         _seriesNextUp = null;
+        _seriesDetails = null;
         Title = item.Name;
         PosterUrl = item.PosterUrl;
         IsSeries = item.Kind == ContentKind.Series;
@@ -193,6 +251,15 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         SelectedSeason = null;
         Seasons.Clear();
         MetadataChips = [];
+        IsWatched = false;
+        WatchedLabel = null;
+        SeriesProgress = 0;
+        _rowsByKey = new Dictionary<string, EpisodeRow>(StringComparer.Ordinal);
+
+        // The full player is an overlay — this page stays alive underneath it, so the row of
+        // whatever is playing ticks its bar from live playback instead of waiting for a reload.
+        _playback.PropertyChanged -= OnPlaybackPropertyChanged;
+        _playback.PropertyChanged += OnPlaybackPropertyChanged;
 
         var profile = _session.CurrentProfile;
         if (profile is not null)
@@ -267,8 +334,25 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         }
     }
 
-    public void OnNavigatedFrom()
+    public void OnNavigatedFrom() => _playback.PropertyChanged -= OnPlaybackPropertyChanged;
+
+    /// <summary>Ticks the playing episode's bar (and the hero fraction) once a second.</summary>
+    private void OnPlaybackPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName != nameof(PlaybackService.PositionSeconds)
+            || !_playback.IsVod
+            || _playback.DurationSeconds <= 0
+            || _playback.CurrentVod is not { } vod)
+        {
+            return;
+        }
+
+        var progress = Math.Clamp(_playback.PositionSeconds / _playback.DurationSeconds * 100, 0, 100);
+        if (IsSeries && _rowsByKey.TryGetValue(vod.ItemKey, out var row))
+        {
+            row.ResumeProgress = progress;
+            RefreshSeriesProgress();
+        }
     }
 
     private async Task LoadMovieAsync(VodItem item, CancellationToken cancellationToken)
@@ -307,7 +391,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         MetadataChips = new ObservableCollection<string>(chips);
 
-        // Resume prompt.
+        // Resume prompt + watched state.
         if (_session.CurrentProfile is { } profile)
         {
             _resumeEntry = await _watchHistory.GetAsync(
@@ -317,13 +401,36 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
                 CanResume = true;
                 ResumeLabel = $"Resume from {TimeSpan.FromSeconds(_resumeEntry.PositionSeconds):h\\:mm\\:ss}";
             }
+
+            IsWatched = _resumeEntry?.Completed == true;
+            WatchedLabel = BuildWatchedLabel(_resumeEntry);
         }
+
+        // Trakt may know this movie was watched elsewhere; check quietly after the page shows.
+        _ = ReconcileMovieWithTraktAsync(item, cancellationToken);
+    }
+
+    /// <summary>"Watched · 12 Mar 2026" (or plain "Watched" without a completion date).</summary>
+    private static string? BuildWatchedLabel(WatchHistoryEntry? entry)
+    {
+        if (entry is not { Completed: true })
+        {
+            return null;
+        }
+
+        return entry.CompletedUtc is { } completedUtc
+            ? Strings.Format(
+                Strings.Vod_WatchedOnFormat,
+                DateTimeOffset.FromUnixTimeSeconds(completedUtc).ToLocalTime().ToString(
+                    "d MMM yyyy", CultureInfo.CurrentCulture))
+            : Strings.Vod_Watched;
     }
 
     private async Task LoadSeriesAsync(VodItem item, CancellationToken cancellationToken)
     {
         var details = await _vodService.GetSeriesDetailsAsync(item, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
+        _seriesDetails = details;
 
         Plot = details?.Plot;
         Cast = details?.Cast;
@@ -333,6 +440,13 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         var seasons = details?.Seasons ?? [];
         var episodeTotal = seasons.Sum(s => s.Episodes.Count);
+
+        // Cache the total so the library grid can draw this series' watched-fraction bar.
+        if (episodeTotal > 0 && item.EpisodeTotal != episodeTotal)
+        {
+            item.EpisodeTotal = episodeTotal;
+            _ = _catalog.SetSeriesEpisodeTotalAsync(item.Id, episodeTotal, CancellationToken.None);
+        }
 
         var chips = new List<string>();
         if (item.Year is { } year)
@@ -367,41 +481,246 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         MetadataChips = new ObservableCollection<string>(chips);
 
         var profile = _session.CurrentProfile;
-        IReadOnlyList<WatchHistoryEntry> recent = profile is null
+        IReadOnlyList<WatchHistoryEntry> seriesHistory = profile is null
             ? []
-            : await _watchHistory.GetRecentAsync(profile.Id, 500, cancellationToken);
+            : await _watchHistory.GetForSeriesAsync(profile.Id, item.ProviderItemId, cancellationToken);
 
-        // Most recent entry per episode key (the list arrives newest-first).
-        var history = recent
-            .Where(h => h.ItemKind == ContentKind.Series)
-            .GroupBy(h => h.ItemKey, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        // One row per episode key (unique constraint).
+        var history = seriesHistory.ToDictionary(h => h.ItemKey, StringComparer.Ordinal);
 
         foreach (var season in seasons)
         {
             var rows = season.Episodes.Select(episode =>
             {
                 var row = new EpisodeRow { Episode = episode };
-                if (history.TryGetValue(EpisodeKey(item, episode), out var entry))
+                var key = EpisodeKey(item, episode);
+                if (history.TryGetValue(key, out var entry))
                 {
-                    row.ResumeProgress = entry.Progress * 100;
+                    // Finished episodes show a full bar (their stored position is 0).
+                    row.ResumeProgress = entry.Completed ? 100 : entry.Progress * 100;
+                    row.IsWatched = entry.Completed;
                 }
 
+                _rowsByKey[key] = row;
                 return row;
             }).ToList();
 
-            Seasons.Add(new SeasonGroup { Number = season.Number, Episodes = rows });
+            var group = new SeasonGroup { Number = season.Number, Episodes = rows };
+            group.RefreshWatchedCount();
+            Seasons.Add(group);
         }
 
-        ResolveSeriesNextUp(item, recent);
+        ResolveSeriesNextUp(item, seriesHistory, moveSelection: true);
+        RefreshSeriesProgress();
+
+        // Episodes watched elsewhere land here: this is the only moment season/episode numbers
+        // meet provider episode ids, so Trakt episode reconciliation runs off the loaded details.
+        if (details is not null)
+        {
+            _ = ReconcileSeriesWithTraktAsync(item, details, cancellationToken);
+        }
+    }
+
+    /// <summary>Whole-series fraction: watched episodes count 1, in-progress ones their fraction.</summary>
+    private void RefreshSeriesProgress()
+    {
+        var rows = Seasons.SelectMany(s => s.Episodes).ToList();
+        if (rows.Count == 0)
+        {
+            SeriesProgress = 0;
+            return;
+        }
+
+        var units = rows.Sum(r => Math.Clamp(r.ResumeProgress, 0, 100) / 100);
+        SeriesProgress = units / rows.Count * 100;
+    }
+
+    /// <summary>Marks the open movie watched when the Trakt snapshot says so, then updates the chip.</summary>
+    private async Task ReconcileMovieWithTraktAsync(VodItem item, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_session.CurrentProfile is not { } profile)
+            {
+                return;
+            }
+
+            var changed = await _traktSync.ReconcileMovieAsync(profile.Id, item, _movieDetails, cancellationToken);
+            if (!changed || !ReferenceEquals(_item, item))
+            {
+                return;
+            }
+
+            _resumeEntry = await _watchHistory.GetAsync(
+                profile.Id, ContentKind.Movie, item.ProviderItemId, cancellationToken);
+            IsWatched = _resumeEntry?.Completed == true;
+            WatchedLabel = BuildWatchedLabel(_resumeEntry);
+            CanResume = _resumeEntry is { PositionSeconds: > 30 };
+            if (!CanResume)
+            {
+                ResumeLabel = null;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Trakt movie reconcile failed");
+        }
+    }
+
+    /// <summary>Pulls Trakt-watched episodes into the open series page.</summary>
+    private async Task ReconcileSeriesWithTraktAsync(
+        VodItem item, SeriesDetails details, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_session.CurrentProfile is not { } profile)
+            {
+                return;
+            }
+
+            var changed = await _traktSync.ReconcileSeriesAsync(profile.Id, item, details, cancellationToken);
+            if (changed > 0 && ReferenceEquals(_item, item))
+            {
+                await ApplySeriesHistoryAsync(item, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Trakt series reconcile failed");
+        }
+    }
+
+    /// <summary>Re-reads the series' history and refreshes rows, season counts, and next-up.</summary>
+    private async Task ApplySeriesHistoryAsync(VodItem item, CancellationToken cancellationToken)
+    {
+        if (_session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var history = await _watchHistory.GetForSeriesAsync(profile.Id, item.ProviderItemId, cancellationToken);
+        var map = history.ToDictionary(h => h.ItemKey, StringComparer.Ordinal);
+        foreach (var row in Seasons.SelectMany(s => s.Episodes))
+        {
+            if (map.TryGetValue(EpisodeKey(item, row.Episode), out var entry))
+            {
+                row.IsWatched = entry.Completed;
+                row.ResumeProgress = entry.Completed ? 100 : entry.Progress * 100;
+            }
+        }
+
+        foreach (var season in Seasons)
+        {
+            season.RefreshWatchedCount();
+        }
+
+        RefreshSeriesProgress();
+        ResolveSeriesNextUp(item, history, moveSelection: false);
+    }
+
+    /// <summary>A background sync finished — refresh whatever page is open.</summary>
+    public void Receive(TraktSyncCompletedMessage message)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.BeginInvoke(() => _ = RefreshAfterTraktSyncAsync());
     }
 
     /// <summary>
-    /// Picks the hero action for a series: resume the most recently watched episode, advance
-    /// to the one after it when it finished, or start from the first episode when unwatched.
-    /// Also lands the tab strip on the season that episode belongs to.
+    /// Playback banked progress (pause, stop, finish, or switching titles) — reflect it on the
+    /// open page immediately; the player overlay never re-navigates this page.
     /// </summary>
-    private void ResolveSeriesNextUp(VodItem item, IReadOnlyList<WatchHistoryEntry> recent)
+    public void Receive(WatchProgressSavedMessage message)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.BeginInvoke(() => ApplySavedProgress(message.Entry));
+    }
+
+    private void ApplySavedProgress(WatchHistoryEntry entry)
+    {
+        if (_item is not { } item || entry.ProfileId != _session.CurrentProfile?.Id)
+        {
+            return;
+        }
+
+        if (!IsSeries && entry.ItemKind == ContentKind.Movie && entry.ItemKey == item.ProviderItemId)
+        {
+            _resumeEntry = entry;
+            CanResume = entry.PositionSeconds > 30;
+            ResumeLabel = CanResume
+                ? $"Resume from {TimeSpan.FromSeconds(entry.PositionSeconds):h\\:mm\\:ss}"
+                : null;
+
+            // The entry is a write payload: it can set the watched chip but never clears it
+            // (the store merges, so a mid-rewatch save leaves the flag alone).
+            if (entry.Completed)
+            {
+                IsWatched = true;
+                WatchedLabel = BuildWatchedLabel(entry);
+            }
+
+            return;
+        }
+
+        if (IsSeries && entry.ItemKind == ContentKind.Series && _rowsByKey.TryGetValue(entry.ItemKey, out var row))
+        {
+            row.ResumeProgress = entry.Completed ? 100 : entry.Progress * 100;
+            if (entry.Completed && !row.IsWatched)
+            {
+                row.IsWatched = true;
+            }
+
+            // Counts, the hero fraction, and next-up all shift when an episode completes.
+            _ = RefreshSeriesWatchedStateAsync();
+        }
+    }
+
+    private async Task RefreshAfterTraktSyncAsync()
+    {
+        try
+        {
+            if (_item is not { } item || _session.CurrentProfile is not { } profile)
+            {
+                return;
+            }
+
+            if (IsSeries)
+            {
+                await ApplySeriesHistoryAsync(item, CancellationToken.None);
+                if (_seriesDetails is { } details)
+                {
+                    await ReconcileSeriesWithTraktAsync(item, details, CancellationToken.None);
+                }
+            }
+            else
+            {
+                _resumeEntry = await _watchHistory.GetAsync(
+                    profile.Id, ContentKind.Movie, item.ProviderItemId, CancellationToken.None);
+                IsWatched = _resumeEntry?.Completed == true;
+                WatchedLabel = BuildWatchedLabel(_resumeEntry);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Refreshing watched state after a Trakt sync failed");
+        }
+    }
+
+    /// <summary>
+    /// Picks the hero action for a series: resume the most recently touched episode when it's
+    /// mid-play, otherwise advance to the first unwatched episode after it. Falls back to the
+    /// first episode when nothing was watched (or everything was). Optionally lands the tab
+    /// strip on that episode's season — skipped on in-page refreshes after a manual toggle so
+    /// the user's tab doesn't jump.
+    /// </summary>
+    private void ResolveSeriesNextUp(VodItem item, IReadOnlyList<WatchHistoryEntry> seriesHistory, bool moveSelection)
     {
         var allRows = Seasons.SelectMany(s => s.Episodes).ToList();
         if (allRows.Count == 0)
@@ -413,15 +732,14 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         string? label = null;
 
         var prefix = item.ProviderItemId + ":";
-        var latest = recent.FirstOrDefault(h =>
-            h.ItemKind == ContentKind.Series && h.ItemKey.StartsWith(prefix, StringComparison.Ordinal));
+        var latest = seriesHistory.OrderByDescending(h => h.WatchedUtc).FirstOrDefault();
         if (latest is not null)
         {
             var episodeId = latest.ItemKey[prefix.Length..];
             var index = allRows.FindIndex(r => r.Episode.ProviderEpisodeId == episodeId);
             if (index >= 0)
             {
-                if (latest.Progress < CompletedProgress)
+                if (!latest.Completed && latest.Progress < CompletedProgress)
                 {
                     nextUp = allRows[index];
                     label = latest.PositionSeconds > 30
@@ -430,19 +748,36 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
                         : Strings.Format(
                             Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
                 }
-                else if (index + 1 < allRows.Count)
+                else
                 {
-                    nextUp = allRows[index + 1];
-                    label = Strings.Format(
-                        Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
+                    // Finished the latest episode: queue the next unwatched one after it.
+                    var candidate = allRows.Skip(index + 1).FirstOrDefault(r => !r.IsWatched);
+                    if (candidate is not null)
+                    {
+                        nextUp = candidate;
+                        label = Strings.Format(
+                            Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
+                    }
                 }
             }
         }
 
-        nextUp ??= allRows[0];
+        // Nothing in flight: start at the first unwatched episode (first overall on a rewatch).
+        if (nextUp is null)
+        {
+            nextUp = allRows.FirstOrDefault(r => !r.IsWatched) ?? allRows[0];
+            if (!ReferenceEquals(nextUp, allRows[0]))
+            {
+                label = Strings.Format(Strings.Vod_PlayEpisodeFormat, nextUp.Episode.Season, nextUp.Episode.Number);
+            }
+        }
+
         _seriesNextUp = nextUp;
         SeriesPlayLabel = label ?? Strings.Vod_Play;
-        SelectedSeason = Seasons.FirstOrDefault(s => s.Episodes.Contains(nextUp)) ?? Seasons[0];
+        if (moveSelection)
+        {
+            SelectedSeason = Seasons.FirstOrDefault(s => s.Episodes.Contains(nextUp)) ?? Seasons[0];
+        }
     }
 
     private static string EpisodeKey(VodItem series, SeriesEpisode episode) =>
@@ -513,8 +848,140 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         await _playback.PlayVodAsync(new VodPlayRequest(
             url, ContentKind.Series, key,
-            $"{_item.Name} · S{row.Episode.Season}E{row.Episode.Number}", _item.PosterUrl, resume),
+            $"{_item.Name} · S{row.Episode.Season}E{row.Episode.Number}", _item.PosterUrl, resume,
+            row.Episode.Season, row.Episode.Number),
             CancellationToken.None);
+    }
+
+    /// <summary>Movie-page "Mark watched"/"Mark unwatched" toggle. Watched marks clear the resume point.</summary>
+    [RelayCommand]
+    private async Task ToggleWatchedAsync()
+    {
+        if (_item is null || IsSeries || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var target = !IsWatched;
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var entry = new WatchHistoryEntry
+        {
+            ProfileId = profile.Id,
+            ItemKind = ContentKind.Movie,
+            ItemKey = _item.ProviderItemId,
+            Title = _item.Name,
+            PosterUrl = _item.PosterUrl,
+            DurationSeconds = _resumeEntry?.DurationSeconds ?? _movieDetails?.DurationSeconds ?? 0,
+            WatchedUtc = now,
+            Completed = target,
+            PlayCount = 1,
+            CompletedUtc = now,
+        };
+        await _watchHistory.SetCompletedAsync(entry, target, CancellationToken.None);
+
+        // Both directions zero the stored position, so the resume prompt goes away either way.
+        _resumeEntry = target ? entry : null;
+        CanResume = false;
+        ResumeLabel = null;
+        IsWatched = target;
+        WatchedLabel = BuildWatchedLabel(target ? entry : null);
+
+        _ = PushToggleToTraktAsync(_item, entry, target, _movieDetails?.TmdbId, _movieDetails?.ImdbId);
+    }
+
+    /// <summary>Per-episode watched toggle (the small check button on an episode card).</summary>
+    [RelayCommand]
+    private async Task ToggleEpisodeWatchedAsync(EpisodeRow? row)
+    {
+        if (row is null || _item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var target = !row.IsWatched;
+        var entry = BuildEpisodeEntry(profile.Id, _item, row);
+        await _watchHistory.SetCompletedAsync(entry, target, CancellationToken.None);
+        row.IsWatched = target;
+        row.ResumeProgress = target ? 100 : 0;
+
+        _ = PushToggleToTraktAsync(_item, entry, target, _seriesDetails?.TmdbId, _seriesDetails?.ImdbId);
+        await RefreshSeriesWatchedStateAsync();
+    }
+
+    /// <summary>Marks every remaining episode of a season watched.</summary>
+    [RelayCommand]
+    private async Task MarkSeasonWatchedAsync(SeasonGroup? season)
+    {
+        if (season is null || _item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        foreach (var row in season.Episodes.Where(r => !r.IsWatched))
+        {
+            var entry = BuildEpisodeEntry(profile.Id, _item, row);
+            await _watchHistory.SetCompletedAsync(entry, true, CancellationToken.None);
+            row.IsWatched = true;
+            row.ResumeProgress = 100;
+            _ = PushToggleToTraktAsync(_item, entry, true, _seriesDetails?.TmdbId, _seriesDetails?.ImdbId);
+        }
+
+        await RefreshSeriesWatchedStateAsync();
+    }
+
+    /// <summary>Best-effort Trakt history add/remove for a manual toggle (local state already saved).</summary>
+    private async Task PushToggleToTraktAsync(
+        VodItem item, WatchHistoryEntry entry, bool watched, long? tmdbId, string? imdbId)
+    {
+        try
+        {
+            if (_session.CurrentProfile is { } profile)
+            {
+                await _traktSync.PushManualToggleAsync(
+                    profile.Id, item, entry, watched, tmdbId, imdbId, CancellationToken.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Trakt history push for a manual toggle failed");
+        }
+    }
+
+    private static WatchHistoryEntry BuildEpisodeEntry(long profileId, VodItem series, EpisodeRow row)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        return new WatchHistoryEntry
+        {
+            ProfileId = profileId,
+            ItemKind = ContentKind.Series,
+            ItemKey = EpisodeKey(series, row.Episode),
+            Title = $"{series.Name} · S{row.Episode.Season}E{row.Episode.Number}",
+            PosterUrl = series.PosterUrl,
+            DurationSeconds = row.Episode.DurationSeconds ?? 0,
+            WatchedUtc = now,
+            PlayCount = 1,
+            CompletedUtc = now,
+            Season = row.Episode.Season,
+            EpisodeNumber = row.Episode.Number,
+        };
+    }
+
+    /// <summary>Recomputes season tab counts, the series bar, and the hero next-up after toggles.</summary>
+    private async Task RefreshSeriesWatchedStateAsync()
+    {
+        foreach (var season in Seasons)
+        {
+            season.RefreshWatchedCount();
+        }
+
+        RefreshSeriesProgress();
+        if (_item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var history = await _watchHistory.GetForSeriesAsync(profile.Id, _item.ProviderItemId, CancellationToken.None);
+        ResolveSeriesNextUp(_item, history, moveSelection: false);
     }
 
     [RelayCommand]

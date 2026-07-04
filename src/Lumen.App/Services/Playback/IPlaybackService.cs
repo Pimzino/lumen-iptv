@@ -39,14 +39,20 @@ public enum PlayerExitMode
 /// <summary>An audio or subtitle track choice.</summary>
 public sealed record TrackOption(int Id, string Name);
 
-/// <summary>A VOD play request carrying resume + identity metadata for watch history.</summary>
+/// <summary>
+/// A VOD play request carrying resume + identity metadata for watch history. Season and
+/// episode number are set for series episodes so completion tracking and Trakt scrobbling
+/// can address the episode without refetching series details.
+/// </summary>
 public sealed record VodPlayRequest(
     string Url,
     ContentKind Kind,
     string ItemKey,
     string Title,
     string? PosterUrl,
-    double ResumeSeconds);
+    double ResumeSeconds,
+    int? Season = null,
+    int? EpisodeNumber = null);
 
 /// <summary>Video aspect handling modes cycled by the player overlay.</summary>
 public enum AspectMode
@@ -74,6 +80,9 @@ public interface IPlaybackService
     bool IsColdOpenLoading { get; }
 
     Channel? CurrentChannel { get; }
+
+    /// <summary>The VOD request currently loaded (movie or episode); null during live playback.</summary>
+    VodPlayRequest? CurrentVod { get; }
 
     /// <summary>Display title of whatever is playing: the VOD title, else the live channel name.</summary>
     string? NowPlayingTitle { get; }

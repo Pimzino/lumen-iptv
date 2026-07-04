@@ -22,6 +22,11 @@ public sealed class MovieDetails
     public string? ReleaseDate { get; set; }
 
     public string? ContainerExtension { get; set; }
+
+    /// <summary>TMDB movie id when the provider supplies one (drives exact Trakt matching).</summary>
+    public long? TmdbId { get; set; }
+
+    public string? ImdbId { get; set; }
 }
 
 /// <summary>Extended metadata for a series, including its episode tree.</summary>
@@ -40,6 +45,11 @@ public sealed class SeriesDetails
     public string? ReleaseDate { get; set; }
 
     public string? BackdropUrl { get; set; }
+
+    /// <summary>TMDB show id when the provider supplies one (drives exact Trakt matching).</summary>
+    public long? TmdbId { get; set; }
+
+    public string? ImdbId { get; set; }
 
     public IReadOnlyList<SeriesSeason> Seasons { get; set; } = [];
 }

@@ -296,6 +296,19 @@ public sealed class XtreamVodInfoDetails
     [JsonPropertyName("youtube_trailer")]
     [JsonConverter(typeof(FlexibleStringConverter))]
     public string? YoutubeTrailer { get; set; }
+
+    // External ids for Trakt/TMDB matching; panels use either name (or neither).
+    [JsonPropertyName("tmdb_id")]
+    [JsonConverter(typeof(FlexibleLongConverter))]
+    public long? TmdbId { get; set; }
+
+    [JsonPropertyName("tmdb")]
+    [JsonConverter(typeof(FlexibleLongConverter))]
+    public long? Tmdb { get; set; }
+
+    [JsonPropertyName("imdb_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
+    public string? ImdbId { get; set; }
 }
 
 public sealed class XtreamMovieData
@@ -364,6 +377,19 @@ public sealed class XtreamSeriesInfoDetails
     [JsonPropertyName("backdrop_path")]
     [JsonConverter(typeof(FlexibleStringArrayConverter))]
     public IReadOnlyList<string>? BackdropPath { get; set; }
+
+    // External ids for Trakt/TMDB matching; panels use either name (or neither).
+    [JsonPropertyName("tmdb_id")]
+    [JsonConverter(typeof(FlexibleLongConverter))]
+    public long? TmdbId { get; set; }
+
+    [JsonPropertyName("tmdb")]
+    [JsonConverter(typeof(FlexibleLongConverter))]
+    public long? Tmdb { get; set; }
+
+    [JsonPropertyName("imdb_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
+    public string? ImdbId { get; set; }
 }
 
 public sealed class XtreamEpisode

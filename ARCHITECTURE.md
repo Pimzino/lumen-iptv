@@ -132,6 +132,37 @@ cancel them), and treat every failure as debug-log-and-move-on. Channels missing
 fall back to the mapped XMLTV channel's `<icon>` — local data, no network. The whole service is
 inert during diagnostic runs so gates stay hermetic.
 
+## Watched state & Trakt sync
+
+`watch_history` carries a `completed` flag (plus `play_count`, `completed_utc`, and
+season/episode numbers for series rows) alongside the resume position. Crossing 95% of a VOD
+still stores position 0 (no nag to resume credits), but now also sets `completed` and credits
+one play per session. The repository upsert *merges*: completion never regresses, play counts
+accumulate as deltas, so partial-progress saves and zero-filled live entries are no-ops on the
+watched columns. Detail pages show watched chips/checkmarks with manual toggles (movie, episode,
+season); finished items render a full Netflix-style bar. Browse cards overlay a tick plus a
+poster bar: a movie's own progress, or a series' whole-show watched fraction (completed episodes
+count 1 unit, in-progress ones their fraction, divided by `vod_items.episode_total` — cached
+whenever series details load, which always precedes episode playback). The same fraction bar
+sits on the series detail hero, and next-up skips completed episodes.
+
+Trakt.tv integration is app-global (profiles are provider connections, not people) and lives in
+three layers. `TraktClient` (Providers) is a typed surface over the API — device-code auth,
+scrobbles, watched sync, history add/remove, search. `TraktAuthStore` keeps the user-supplied
+API-app credentials and OAuth tokens DPAPI-protected in the settings table and refreshes tokens
+single-flight. `TraktScrobbler` (hosted) observes `PlaybackService.CurrentVod`/`State` and
+mirrors playback as start/pause/stop scrobbles — Trakt records a watched play at a stop ≥80%;
+every failure is log-and-move-on, playback never notices. `TraktSyncService` is the two-way
+engine: pulls the account's watched snapshot into `trakt_watched` (gated by `last_activities`),
+marks matching catalog movies watched, and pushes locally completed items Trakt doesn't know.
+Matching is cheapest-first via `trakt_match`: provider-supplied TMDB/IMDB ids (Xtream detail
+responses), a zero-API-call title join — `NameNormalizer.Normalize(TitleCleaner.Clean(name))` +
+year ±1 against snapshot titles via `TraktTitleIndex` (Core), ambiguity skipped — then Trakt
+text search; negatives retry after 7 days and flush on reconnect. There is no local episodes
+table, so episode reconciliation runs when a series' details load (the only moment
+season/episode numbers meet provider episode ids); `TraktSyncScheduler` (hosted, EPG-scheduler
+shape) syncs every 6 hours and pages listen for `TraktSyncCompletedMessage`.
+
 ## Signature effect — ambient glow
 
 `AmbientColor` downsamples an image to 16×16, averages its saturated pixels, and normalizes the

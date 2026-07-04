@@ -117,6 +117,8 @@ public static class XtreamMapper
             Rating = info?.Rating,
             ReleaseDate = NullIfBlank(info?.ReleaseDate),
             ContainerExtension = NullIfBlank(dto.MovieData?.ContainerExtension),
+            TmdbId = info?.TmdbId ?? info?.Tmdb,
+            ImdbId = NullIfBlank(info?.ImdbId),
         };
     }
 
@@ -163,6 +165,8 @@ public static class XtreamMapper
             Rating = dto.Info?.Rating,
             ReleaseDate = NullIfBlank(dto.Info?.ReleaseDate),
             BackdropUrl = dto.Info?.BackdropPath?.FirstOrDefault(),
+            TmdbId = dto.Info?.TmdbId ?? dto.Info?.Tmdb,
+            ImdbId = NullIfBlank(dto.Info?.ImdbId),
             Seasons = seasons,
         };
     }

@@ -156,6 +156,28 @@
                         </TextBlock.Style>
                       </TextBlock>
                     </Button>
+                    <!-- Watched tick (finished movie, or fully watched series) -->
+                    <Border Width="22"
+                            Height="22"
+                            CornerRadius="11"
+                            Background="{StaticResource Lumen.Brush.Accent}"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Margin="8,8,0,0"
+                            Visibility="{Binding IsWatched, Converter={StaticResource Lumen.BoolToVisibility}}">
+                      <TextBlock Text="{StaticResource Lumen.Icon.Check}"
+                                 FontFamily="{StaticResource Lumen.Font.Icons}"
+                                 FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                                 Foreground="{StaticResource Lumen.Brush.Text.OnAccent}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <!-- Progress bar: movie resume point, or the series' watched fraction; full when finished -->
+                    <ProgressBar Value="{Binding ResumeProgress, Mode=OneWay}"
+                                 Maximum="100"
+                                 VerticalAlignment="Bottom"
+                                 Margin="8,0,8,8"
+                                 Visibility="{Binding HasResume, Converter={StaticResource Lumen.BoolToVisibility}}" />
                   </Grid>
                   <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
                              Text="{Binding Name}"

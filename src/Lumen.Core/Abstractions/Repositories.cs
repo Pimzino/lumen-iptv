@@ -16,6 +16,12 @@ public sealed record NowNext(Programme? Now, Programme? Next);
 /// <summary>Disk/image cache statistics for the settings page.</summary>
 public sealed record CacheStats(long TotalBytes, int FileCount);
 
+/// <summary>
+/// A series' aggregated watch progress: completed episodes count 1 unit each, in-progress
+/// episodes count their watched fraction. Divide by the series' episode total for a bar.
+/// </summary>
+public sealed record SeriesWatchSummary(double WatchedUnits, int CompletedCount);
+
 /// <summary>CRUD over configured profiles.</summary>
 public interface IProfileRepository
 {
@@ -80,6 +86,9 @@ public interface ICatalogRepository
     Task<IReadOnlyList<VodItem>> GetRecentVodAsync(long profileId, ContentKind kind, int limit, CancellationToken cancellationToken);
 
     Task SetCategoryKindOverrideAsync(long categoryId, ContentKind? kind, CancellationToken cancellationToken);
+
+    /// <summary>Caches a series' total episode count (learned from its detail response).</summary>
+    Task SetSeriesEpisodeTotalAsync(long vodItemId, int episodeTotal, CancellationToken cancellationToken);
 }
 
 /// <summary>EPG channels, programmes, and channel↔EPG mappings.</summary>
@@ -118,16 +127,78 @@ public interface IFavoritesRepository
     Task RemoveAsync(long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken);
 }
 
-/// <summary>Watch history with VOD resume positions.</summary>
+/// <summary>Watch history with VOD resume positions and watched/completion state.</summary>
 public interface IWatchHistoryRepository
 {
+    /// <summary>
+    /// Inserts or merges an entry. Position, duration, title, and watched time replace the stored
+    /// values; <c>Completed</c> never regresses, <c>PlayCount</c> is added as a delta, and
+    /// <c>CompletedUtc</c>/<c>Season</c>/<c>EpisodeNumber</c> only overwrite when non-null.
+    /// </summary>
     Task UpsertAsync(WatchHistoryEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks an item watched or unwatched without touching an in-progress position of other rows.
+    /// Takes a full entry because marking an item never played yet inserts the row. Watched marks
+    /// clear the resume position; unwatched marks also reset the play count.
+    /// </summary>
+    Task SetCompletedAsync(WatchHistoryEntry entry, bool completed, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<WatchHistoryEntry>> GetRecentAsync(long profileId, int limit, CancellationToken cancellationToken);
 
     Task<WatchHistoryEntry?> GetAsync(long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken);
 
+    /// <summary>All episode entries of one series (item keys prefixed <c>{seriesProviderId}:</c>).</summary>
+    Task<IReadOnlyList<WatchHistoryEntry>> GetForSeriesAsync(long profileId, string seriesProviderId, CancellationToken cancellationToken);
+
+    /// <summary>Batch lookup for grids; safe for any key count (queries are chunked internally).</summary>
+    Task<IReadOnlyList<WatchHistoryEntry>> GetByKeysAsync(
+        long profileId, ContentKind kind, IReadOnlyCollection<string> itemKeys, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Per-series watch totals (keyed by series provider id) for grid progress bars:
+    /// <c>WatchedUnits</c> counts each completed episode as 1 and each in-progress episode as
+    /// its watched fraction. Chunked internally like <see cref="GetByKeysAsync"/>.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, SeriesWatchSummary>> GetSeriesWatchSummaryAsync(
+        long profileId, IReadOnlyCollection<string> seriesProviderIds, CancellationToken cancellationToken);
+
+    /// <summary>All completed VOD entries of a profile (movies and episodes), for Trakt push.</summary>
+    Task<IReadOnlyList<WatchHistoryEntry>> GetCompletedAsync(long profileId, CancellationToken cancellationToken);
+
     Task DeleteAsync(long id, CancellationToken cancellationToken);
+}
+
+/// <summary>Cache of provider item → Trakt identity matches.</summary>
+public interface ITraktMatchRepository
+{
+    Task<TraktMatch?> GetAsync(long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<TraktMatch>> GetAllAsync(long profileId, CancellationToken cancellationToken);
+
+    Task UpsertAsync(TraktMatch match, CancellationToken cancellationToken);
+
+    /// <summary>Drops "found nothing" rows so a newly connected account gets a fresh look.</summary>
+    Task ClearNegativeAsync(CancellationToken cancellationToken);
+}
+
+/// <summary>Snapshot of the connected Trakt account's watched history (app-global).</summary>
+public interface ITraktWatchedRepository
+{
+    /// <summary>Atomically replaces the whole snapshot with a fresh pull.</summary>
+    Task ReplaceAllAsync(IReadOnlyList<TraktWatchedItem> items, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<TraktWatchedItem>> GetAllAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<TraktWatchedItem>> GetMoviesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Watched episodes of one show, by the show's Trakt id.</summary>
+    Task<IReadOnlyList<TraktWatchedItem>> GetEpisodesForShowAsync(long traktShowId, CancellationToken cancellationToken);
+
+    /// <summary>Removes a movie (or a show's episode rows) after a history removal is pushed to Trakt.</summary>
+    Task DeleteAsync(TraktMediaType mediaType, long traktId, int? season, int? episodeNumber, CancellationToken cancellationToken);
+
+    Task ClearAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>Key/value settings; profileId 0 holds app-global values.</summary>

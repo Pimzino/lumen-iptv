@@ -213,7 +213,39 @@
   <data name="Vod_NoEpisodes" xml:space="preserve"><value>No episodes available for this series yet.</value></data>
   <data name="Vod_CastLabel" xml:space="preserve"><value>Cast</value></data>
   <data name="Vod_DirectorLabel" xml:space="preserve"><value>Director</value></data>
+  <data name="Vod_Watched" xml:space="preserve"><value>Watched</value></data>
+  <data name="Vod_WatchedOnFormat" xml:space="preserve"><value>Watched · {0}</value></data>
+  <data name="Vod_MarkWatched" xml:space="preserve"><value>Mark watched</value></data>
+  <data name="Vod_MarkUnwatched" xml:space="preserve"><value>Mark unwatched</value></data>
+  <data name="Vod_WatchedCountFormat" xml:space="preserve"><value>{0}/{1} watched</value></data>
+  <data name="Vod_MarkSeasonWatched" xml:space="preserve"><value>Mark season watched</value></data>
+  <data name="Vod_MarkEpisodeWatched" xml:space="preserve"><value>Mark watched</value></data>
+  <data name="Vod_MarkEpisodeUnwatched" xml:space="preserve"><value>Mark unwatched</value></data>
   <data name="Home_ContinueWatchingResume" xml:space="preserve"><value>Resume</value></data>
+
+  <data name="Settings_Trakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="Settings_TraktBody" xml:space="preserve"><value>Track what you watch on your Trakt.tv account: playback is scrobbled as it happens, and watched history syncs both ways.</value></data>
+  <data name="Settings_TraktClientId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="Settings_TraktClientSecret" xml:space="preserve"><value>Client secret</value></data>
+  <data name="Settings_TraktAppHint" xml:space="preserve"><value>Create a (free) personal API app at trakt.tv/oauth/applications — use urn:ietf:wg:oauth:2.0:oob as the redirect URI — and paste its Client ID and Secret here.</value></data>
+  <data name="Settings_TraktConnect" xml:space="preserve"><value>Connect Trakt</value></data>
+  <data name="Settings_TraktDisconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Settings_TraktConnectedFormat" xml:space="preserve"><value>Connected as {0}</value></data>
+  <data name="Settings_TraktCodeFormat" xml:space="preserve"><value>Enter code {0} at trakt.tv/activate</value></data>
+  <data name="Settings_TraktWaiting" xml:space="preserve"><value>Waiting for approval…</value></data>
+  <data name="Settings_TraktOpenActivate" xml:space="preserve"><value>Open trakt.tv/activate</value></data>
+  <data name="Settings_TraktSyncNow" xml:space="preserve"><value>Sync now</value></data>
+  <data name="Settings_TraktLastSyncFormat" xml:space="preserve"><value>Last synced {0}</value></data>
+  <data name="Settings_TraktNeverSynced" xml:space="preserve"><value>Not synced yet</value></data>
+  <data name="Settings_TraktScrobbleToggle" xml:space="preserve"><value>Scrobble playback to Trakt</value></data>
+  <data name="Settings_TraktSyncToggle" xml:space="preserve"><value>Two-way watched sync</value></data>
+  <data name="Settings_TraktUnwatchHint" xml:space="preserve"><value>Marking an item unwatched here also removes its plays from Trakt.</value></data>
+  <data name="Toast_TraktConnected" xml:space="preserve"><value>Trakt connected.</value></data>
+  <data name="Toast_TraktConnectFailed" xml:space="preserve"><value>Trakt sign-in was not completed.</value></data>
+  <data name="Toast_TraktDisconnected" xml:space="preserve"><value>Trakt disconnected.</value></data>
+  <data name="Toast_TraktSyncDone" xml:space="preserve"><value>Trakt sync complete.</value></data>
+  <data name="Toast_TraktSyncFailed" xml:space="preserve"><value>Trakt sync failed — see the log for details.</value></data>
+  <data name="Toast_TraktNeedCredentials" xml:space="preserve"><value>Enter your Trakt API app's Client ID and Secret first.</value></data>
 
   <data name="Search_Placeholder" xml:space="preserve"><value>Search channels, movies, series…</value></data>
   <data name="Search_GroupProgrammes" xml:space="preserve"><value>On now &amp; next</value></data>

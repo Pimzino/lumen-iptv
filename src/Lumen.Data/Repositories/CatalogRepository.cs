@@ -419,6 +419,18 @@ public sealed class CatalogRepository : ICatalogRepository
         }
     }, cancellationToken);
 
+    public Task SetSeriesEpisodeTotalAsync(
+        long vodItemId, int episodeTotal, CancellationToken cancellationToken) => DbOffload.Run(async () =>
+    {
+        var connection = await _connectionFactory.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE vod_items SET episode_total = @episodeTotal WHERE id = @vodItemId",
+                new { vodItemId, episodeTotal }, cancellationToken: cancellationToken)).ConfigureAwait(false);
+        }
+    }, cancellationToken);
+
     private static IEnumerable<List<T>> Chunk<T>(IReadOnlyList<T> source, int size = 500)
     {
         for (var i = 0; i < source.Count; i += size)

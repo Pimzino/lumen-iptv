@@ -49,6 +49,12 @@
                      ctl:ImageLoader.DecodeWidth="440"
                      Stretch="UniformToFill"
                      RenderOptions.BitmapScalingMode="HighQuality" />
+              <!-- Whole-series watched fraction (series only; movies never set it) -->
+              <ProgressBar Value="{Binding SeriesProgress, Mode=OneWay}"
+                           Maximum="100"
+                           VerticalAlignment="Bottom"
+                           Margin="10,0,10,10"
+                           Visibility="{Binding HasSeriesProgress, Converter={StaticResource Lumen.BoolToVisibility}}" />
             </Grid>
           </Border>
 
@@ -74,20 +80,42 @@
                                  Margin="{StaticResource Lumen.Margin.B24}" />
             </StackPanel>
 
-            <ItemsControl ItemsSource="{Binding MetadataChips}" Margin="{StaticResource Lumen.Margin.B16}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
-                                  Content="{Binding}"
-                                  Margin="{StaticResource Lumen.Margin.R8}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <WrapPanel Margin="{StaticResource Lumen.Margin.B16}">
+              <!-- Watched chip (movies; series watched state lives on the episode cards) -->
+              <Border CornerRadius="6"
+                      Background="{StaticResource Lumen.Brush.Accent.Subtle}"
+                      Padding="8,3"
+                      VerticalAlignment="Center"
+                      Margin="{StaticResource Lumen.Margin.R8}"
+                      Visibility="{Binding WatchedLabel, Converter={StaticResource Lumen.NullToCollapsed}}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{StaticResource Lumen.Icon.Check}"
+                             FontFamily="{StaticResource Lumen.Font.Icons}"
+                             FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                             Foreground="{StaticResource Lumen.Brush.Accent}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.R8}" />
+                  <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                             Foreground="{StaticResource Lumen.Brush.Accent}"
+                             Text="{Binding WatchedLabel}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding MetadataChips}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
+                                    Content="{Binding}"
+                                    Margin="{StaticResource Lumen.Margin.R8}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </WrapPanel>
 
             <TextBlock Style="{StaticResource Lumen.Text.Body}"
                        Foreground="{StaticResource Lumen.Brush.Text.Secondary}"
@@ -172,6 +200,29 @@
                         Margin="{StaticResource Lumen.Margin.R12}"
                         Content="{x:Static res:Strings.Vod_StartOver}"
                         Visibility="{Binding CanResume, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                <!-- Manual watched toggle -->
+                <Button Style="{StaticResource Lumen.Button.Ghost}"
+                        Command="{Binding ToggleWatchedCommand}"
+                        Margin="{StaticResource Lumen.Margin.R12}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                               FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                               Text="{StaticResource Lumen.Icon.Check}"
+                               VerticalAlignment="Center"
+                               Margin="{StaticResource Lumen.Margin.R8}">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsWatched}" Value="True">
+                              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{Binding MarkWatchedLabel}" />
+                  </StackPanel>
+                </Button>
               </StackPanel>
 
               <!-- Series action: resume the latest episode or start the next one -->
@@ -234,7 +285,7 @@
                     HorizontalAlignment="Left"
                     Visibility="{Binding IsSeries, Converter={StaticResource Lumen.BoolToVisibility}}">
 
-          <!-- Header: section title + selected season's episode count -->
+          <!-- Header: section title + selected season's episode count + season watched action -->
           <Grid Margin="{StaticResource Lumen.Margin.B12}">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
@@ -242,10 +293,28 @@
             </Grid.ColumnDefinitions>
             <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                        Text="{x:Static res:Strings.Vod_Episodes}" />
-            <TextBlock Grid.Column="1"
-                       Style="{StaticResource Lumen.Text.Caption}"
-                       Text="{Binding SelectedSeason.EpisodeCountLabel}"
-                       VerticalAlignment="Bottom" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+              <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                         Text="{Binding SelectedSeason.EpisodeCountLabel}"
+                         VerticalAlignment="Center" />
+              <Button Command="{Binding MarkSeasonWatchedCommand}"
+                      CommandParameter="{Binding SelectedSeason}"
+                      Content="{x:Static res:Strings.Vod_MarkSeasonWatched}"
+                      Margin="{StaticResource Lumen.Margin.L12}">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource Lumen.Button.Ghost}">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding SelectedSeason}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding SelectedSeason.AllWatched}" Value="True">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+              </Button>
+            </StackPanel>
           </Grid>
 
           <!-- Loading: tab-pill and episode-card skeletons -->
@@ -291,7 +360,13 @@
                    AutomationProperties.Name="Seasons">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <TextBlock Text="{Binding Label}" />
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{Binding Label}" />
+                  <TextBlock Text="{Binding WatchedCountLabel}"
+                             Opacity="0.65"
+                             Margin="{StaticResource Lumen.Margin.L8}"
+                             Visibility="{Binding HasWatched, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
@@ -322,6 +397,7 @@
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
 
                           <!-- Thumbnail: image or episode-number monogram, resume bar, hover play -->
@@ -397,13 +473,38 @@
                                              VerticalAlignment="Center" />
                                 </Border>
                               </Grid>
+                              <!-- Watched tick (kept above the hover scrim) -->
+                              <Border Width="22"
+                                      Height="22"
+                                      CornerRadius="11"
+                                      Background="{StaticResource Lumen.Brush.Accent}"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Top"
+                                      Margin="0,6,6,0"
+                                      Visibility="{Binding IsWatched, Converter={StaticResource Lumen.BoolToVisibility}}">
+                                <TextBlock Text="{StaticResource Lumen.Icon.Check}"
+                                           FontFamily="{StaticResource Lumen.Font.Icons}"
+                                           FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                                           Foreground="{StaticResource Lumen.Brush.Text.OnAccent}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                              </Border>
                             </Grid>
                           </Border>
 
-                          <!-- Title, meta, plot -->
+                          <!-- Title, meta, plot (dimmed once watched) -->
                           <StackPanel Grid.Column="1"
                                       Margin="{StaticResource Lumen.Margin.L16}"
                                       VerticalAlignment="Center">
+                            <StackPanel.Style>
+                              <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding IsWatched}" Value="True">
+                                    <Setter Property="Opacity" Value="0.6" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </StackPanel.Style>
                             <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
                                        Text="{Binding Title}"
                                        TextTrimming="CharacterEllipsis" />
@@ -419,6 +520,42 @@
                                        Margin="{StaticResource Lumen.Margin.T4}"
                                        Visibility="{Binding Plot, Converter={StaticResource Lumen.NullToCollapsed}}" />
                           </StackPanel>
+
+                          <!-- Watched toggle: muted until hovered or already watched -->
+                          <Button Grid.Column="2"
+                                  Command="{Binding DataContext.ToggleEpisodeWatchedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip="{Binding WatchedToggleTooltip}"
+                                  VerticalAlignment="Center"
+                                  Margin="{StaticResource Lumen.Margin.L12}"
+                                  AutomationProperties.Name="{Binding WatchedToggleTooltip}">
+                            <Button.Style>
+                              <Style TargetType="Button" BasedOn="{StaticResource Lumen.Button.Icon}">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding IsWatched}" Value="True">
+                                    <Setter Property="Opacity" Value="1" />
+                                  </DataTrigger>
+                                  <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1" />
+                                  </Trigger>
+                                </Style.Triggers>
+                              </Style>
+                            </Button.Style>
+                            <TextBlock Text="{StaticResource Lumen.Icon.Check}"
+                                       FontFamily="{StaticResource Lumen.Font.Icons}"
+                                       FontSize="{StaticResource Lumen.FontSize.IconSmall}">
+                              <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                  <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsWatched}" Value="True">
+                                      <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
+                                    </DataTrigger>
+                                  </Style.Triggers>
+                                </Style>
+                              </TextBlock.Style>
+                            </TextBlock>
+                          </Button>
                         </Grid>
                       </Button>
                     </DataTemplate>

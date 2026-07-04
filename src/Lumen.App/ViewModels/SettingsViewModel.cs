@@ -5,8 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Lumen.App.Resources;
 using Lumen.App.Services;
+using Lumen.App.Services.Trakt;
 using Lumen.Core.Abstractions;
 using Lumen.Core.Models;
+using Lumen.Providers.Trakt;
 using Serilog;
 
 namespace Lumen.App.ViewModels;
@@ -133,10 +135,14 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly IDialogService _dialogs;
     private readonly IToastService _toasts;
     private readonly IMessenger _messenger;
+    private readonly TraktService _trakt;
+    private readonly TraktAuthStore _traktStore;
+    private readonly TraktSyncService _traktSync;
     private readonly System.Windows.Threading.DispatcherTimer _mappingFilterDebounce;
 
     private bool _loaded;
     private List<ChannelMappingRow> _allUnmapped = [];
+    private CancellationTokenSource? _traktConnectCts;
 
     public SettingsViewModel(
         ISessionService session,
@@ -151,7 +157,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         ArtworkService artworkService,
         IDialogService dialogs,
         IToastService toasts,
-        IMessenger messenger)
+        IMessenger messenger,
+        TraktService trakt,
+        TraktAuthStore traktStore,
+        TraktSyncService traktSync)
     {
         _session = session;
         _profiles = profiles;
@@ -166,6 +175,9 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _dialogs = dialogs;
         _toasts = toasts;
         _messenger = messenger;
+        _trakt = trakt;
+        _traktStore = traktStore;
+        _traktSync = traktSync;
 
         _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
         {
@@ -233,6 +245,42 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     [ObservableProperty]
     private string _cacheSummary = string.Empty;
+
+    // ------------------------------------------------------------------ Trakt
+
+    [ObservableProperty]
+    private string _traktClientId = string.Empty;
+
+    [ObservableProperty]
+    private string _traktClientSecret = string.Empty;
+
+    [ObservableProperty]
+    private bool _isTraktConnected;
+
+    [ObservableProperty]
+    private string? _traktConnectedLabel;
+
+    /// <summary>"Enter code XXXX at trakt.tv/activate" while device sign-in is pending.</summary>
+    [ObservableProperty]
+    private string? _traktConnectCode;
+
+    [ObservableProperty]
+    private string? _traktConnectStatus;
+
+    [ObservableProperty]
+    private bool _isTraktConnecting;
+
+    [ObservableProperty]
+    private bool _traktScrobbleEnabled = true;
+
+    [ObservableProperty]
+    private bool _traktSyncEnabled = true;
+
+    [ObservableProperty]
+    private bool _isTraktSyncing;
+
+    [ObservableProperty]
+    private string _traktLastSyncLabel = string.Empty;
 
     public string VersionLine => Strings.Format(
         Strings.Settings_VersionFormat,
@@ -314,7 +362,37 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         var stats = await _imageCache.GetStatsAsync(cancellationToken);
         CacheSummary = Strings.Format(Strings.Settings_ImageCacheFormat, FormatBytes(stats.TotalBytes));
 
+        await ReloadTraktAsync(cancellationToken);
         await ReloadMappingAsync(cancellationToken);
+    }
+
+    private async Task ReloadTraktAsync(CancellationToken cancellationToken)
+    {
+        await _trakt.InitializeAsync(cancellationToken);
+        var (clientId, clientSecret) = await _traktStore.GetAppCredentialsRawAsync(cancellationToken);
+        TraktClientId = clientId ?? string.Empty;
+        TraktClientSecret = clientSecret ?? string.Empty;
+        IsTraktConnected = _trakt.IsConnected;
+        TraktConnectedLabel = _trakt.Username is { } user
+            ? Strings.Format(Strings.Settings_TraktConnectedFormat, user)
+            : null;
+
+        var scrobble = await _settings.GetAsync(0, TraktSettingsKeys.ScrobbleEnabled, cancellationToken);
+        TraktScrobbleEnabled = !string.Equals(scrobble, "false", StringComparison.OrdinalIgnoreCase);
+        var sync = await _settings.GetAsync(0, TraktSettingsKeys.SyncEnabled, cancellationToken);
+        TraktSyncEnabled = !string.Equals(sync, "false", StringComparison.OrdinalIgnoreCase);
+
+        await RefreshTraktLastSyncAsync(cancellationToken);
+    }
+
+    private async Task RefreshTraktLastSyncAsync(CancellationToken cancellationToken)
+    {
+        var lastSync = await _traktSync.GetLastSyncUtcAsync(cancellationToken);
+        TraktLastSyncLabel = lastSync > 0
+            ? Strings.Format(
+                Strings.Settings_TraktLastSyncFormat,
+                DateTimeOffset.FromUnixTimeSeconds(lastSync).ToLocalTime().ToString("g", CultureInfo.CurrentCulture))
+            : Strings.Settings_TraktNeverSynced;
     }
 
     private async Task ReloadMappingAsync(CancellationToken cancellationToken)
@@ -557,6 +635,154 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         {
             _ = _settings.SetAsync(0, ArtworkService.TmdbKeyKey, value.Trim(), CancellationToken.None);
             _artworkService.Configure(ArtworkOnline, value);
+        }
+    }
+
+    partial void OnTraktClientIdChanged(string value)
+    {
+        if (_loaded)
+        {
+            _ = _traktStore.SetAppCredentialsAsync(value, TraktClientSecret, CancellationToken.None);
+        }
+    }
+
+    partial void OnTraktClientSecretChanged(string value)
+    {
+        if (_loaded)
+        {
+            _ = _traktStore.SetAppCredentialsAsync(TraktClientId, value, CancellationToken.None);
+        }
+    }
+
+    partial void OnTraktScrobbleEnabledChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, TraktSettingsKeys.ScrobbleEnabled, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    partial void OnTraktSyncEnabledChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, TraktSettingsKeys.SyncEnabled, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    /// <summary>Starts device sign-in and waits for the user to approve the code on trakt.tv.</summary>
+    [RelayCommand]
+    private async Task ConnectTraktAsync()
+    {
+        if (IsTraktConnecting)
+        {
+            return;
+        }
+
+        var app = await _traktStore.GetAppCredentialsAsync(CancellationToken.None);
+        if (app is null)
+        {
+            _toasts.Show(Strings.Toast_TraktNeedCredentials, ToastSeverity.Error);
+            return;
+        }
+
+        IsTraktConnecting = true;
+        TraktConnectStatus = Strings.Common_Loading;
+        _traktConnectCts = new CancellationTokenSource();
+        try
+        {
+            var code = await _trakt.StartDeviceAuthAsync(app, _traktConnectCts.Token);
+            TraktConnectCode = Strings.Format(Strings.Settings_TraktCodeFormat, code.UserCode);
+            TraktConnectStatus = Strings.Settings_TraktWaiting;
+
+            var connected = await _trakt.WaitForApprovalAsync(app, code, _traktConnectCts.Token);
+            if (connected)
+            {
+                IsTraktConnected = true;
+                TraktConnectedLabel = _trakt.Username is { } user
+                    ? Strings.Format(Strings.Settings_TraktConnectedFormat, user)
+                    : Strings.Settings_Trakt;
+                _toasts.Show(Strings.Toast_TraktConnected, ToastSeverity.Success);
+
+                // First sync in the background so watched ticks appear without further clicks.
+                _ = Task.Run(() => _traktSync.SyncNowAsync(force: true, CancellationToken.None));
+            }
+            else
+            {
+                _toasts.Show(Strings.Toast_TraktConnectFailed, ToastSeverity.Error);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // user cancelled the pairing
+        }
+        catch (TraktApiException ex)
+        {
+            Log.Warning(ex, "Trakt connect failed");
+            _toasts.Show(ex.Message, ToastSeverity.Error);
+        }
+        finally
+        {
+            IsTraktConnecting = false;
+            TraktConnectCode = null;
+            TraktConnectStatus = null;
+            _traktConnectCts?.Dispose();
+            _traktConnectCts = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelTraktConnect() => _traktConnectCts?.Cancel();
+
+    [RelayCommand]
+    private void OpenTraktActivate()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo("https://trakt.tv/activate") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Opening trakt.tv/activate failed");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DisconnectTraktAsync()
+    {
+        _traktConnectCts?.Cancel();
+        await _trakt.DisconnectAsync(CancellationToken.None);
+        IsTraktConnected = false;
+        TraktConnectedLabel = null;
+        _toasts.Show(Strings.Toast_TraktDisconnected, ToastSeverity.Success);
+    }
+
+    [RelayCommand]
+    private async Task TraktSyncNowAsync()
+    {
+        if (IsTraktSyncing)
+        {
+            return;
+        }
+
+        IsTraktSyncing = true;
+        try
+        {
+            var ok = await Task.Run(() => _traktSync.SyncNowAsync(force: true, CancellationToken.None));
+            await RefreshTraktLastSyncAsync(CancellationToken.None);
+            _toasts.Show(
+                ok ? Strings.Toast_TraktSyncDone : Strings.Toast_TraktSyncFailed,
+                ok ? ToastSeverity.Success : ToastSeverity.Error);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Manual Trakt sync failed");
+            _toasts.Show(Strings.Toast_TraktSyncFailed, ToastSeverity.Error);
+        }
+        finally
+        {
+            IsTraktSyncing = false;
         }
     }
 

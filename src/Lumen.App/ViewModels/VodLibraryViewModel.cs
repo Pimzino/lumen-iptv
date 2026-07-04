@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Lumen.App.Services;
 using Lumen.Core.Abstractions;
 using Lumen.Core.Models;
@@ -34,13 +35,25 @@ public sealed partial class VodCard : ObservableObject
 
     [ObservableProperty]
     private bool _isFavorite;
+
+    /// <summary>Watched tick: movie completed, or every episode of a series watched.</summary>
+    [ObservableProperty]
+    private bool _isWatched;
+
+    /// <summary>Poster bar 0–100: movie resume progress, or the series' watched fraction.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasResume))]
+    private double _resumeProgress;
+
+    public bool HasResume => ResumeProgress > 0;
 }
 
 /// <summary>
 /// Shared logic for the Movies and Series grids: category sidebar, sort, incremental paging,
 /// and navigation to the detail page. Subclasses fix the content kind.
 /// </summary>
-public abstract partial class VodLibraryViewModel : ObservableObject, INavigationAware
+public abstract partial class VodLibraryViewModel : ObservableObject, INavigationAware,
+    IRecipient<WatchProgressSavedMessage>
 {
     private const int PageSize = 120;
 
@@ -48,6 +61,7 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
 
     private readonly ICatalogRepository _catalog;
     private readonly IFavoritesRepository _favorites;
+    private readonly IWatchHistoryRepository _watchHistory;
     private readonly ISessionService _session;
     private readonly INavigationService _navigation;
     private readonly ArtworkService _artwork;
@@ -64,15 +78,19 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     protected VodLibraryViewModel(
         ICatalogRepository catalog,
         IFavoritesRepository favorites,
+        IWatchHistoryRepository watchHistory,
         ISessionService session,
         INavigationService navigation,
-        ArtworkService artwork)
+        ArtworkService artwork,
+        IMessenger messenger)
     {
         _catalog = catalog;
         _favorites = favorites;
+        _watchHistory = watchHistory;
         _session = session;
         _navigation = navigation;
         _artwork = artwork;
+        messenger.RegisterAll(this);
 
         _searchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _searchDebounce.Tick += (_, _) =>
@@ -283,8 +301,64 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         _loadedCount += page.Count;
         _hasMore = page.Count == PageSize;
 
-        // Fill artwork gaps in the background; cancelled by the next reload/navigation.
+        // Fill artwork gaps and watched/progress overlays in the background; both are cancelled
+        // by the next reload/navigation.
         _ = EnrichPostersAsync(added, cancellationToken);
+        _ = ApplyWatchStateAsync(added, cancellationToken);
+    }
+
+    /// <summary>Overlays watched ticks and resume bars onto a freshly loaded page of cards.</summary>
+    private async Task ApplyWatchStateAsync(IReadOnlyList<VodCard> cards, CancellationToken cancellationToken)
+    {
+        if (cards.Count == 0 || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        try
+        {
+            var keys = cards.Select(c => c.Item.ProviderItemId).ToList();
+            if (Kind == ContentKind.Movie)
+            {
+                var entries = await _watchHistory.GetByKeysAsync(profile.Id, Kind, keys, cancellationToken);
+                var map = entries.ToDictionary(e => e.ItemKey, StringComparer.Ordinal);
+                foreach (var card in cards)
+                {
+                    if (map.TryGetValue(card.Item.ProviderItemId, out var entry))
+                    {
+                        card.IsWatched = entry.Completed;
+                        // Finished movies read as a full bar (their stored position is 0).
+                        card.ResumeProgress = entry.Completed ? 100 : entry.Progress * 100;
+                    }
+                }
+            }
+            else
+            {
+                // Series cards show how much of the whole show is watched: completed episodes
+                // count 1 unit, in-progress ones their fraction, divided by the episode total
+                // (cached when the series' details load — which always precedes episode plays).
+                var summaries = await _watchHistory.GetSeriesWatchSummaryAsync(profile.Id, keys, cancellationToken);
+                foreach (var card in cards)
+                {
+                    if (!summaries.TryGetValue(card.Item.ProviderItemId, out var summary)
+                        || card.Item.EpisodeTotal is not { } total || total <= 0)
+                    {
+                        continue;
+                    }
+
+                    card.ResumeProgress = Math.Min(100, summary.WatchedUnits / total * 100);
+                    card.IsWatched = summary.CompletedCount >= total;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded page or navigation away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Watch-state overlay pass failed");
+        }
     }
 
     private async Task EnrichPostersAsync(IReadOnlyList<VodCard> cards, CancellationToken cancellationToken)
@@ -343,6 +417,66 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         }
     }
 
+    /// <summary>
+    /// Playback banked progress while this grid sits under the player/mini-player — update the
+    /// affected card in place instead of waiting for the next navigation.
+    /// </summary>
+    public void Receive(WatchProgressSavedMessage message)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.BeginInvoke(() => _ = ApplySavedProgressAsync(message.Entry));
+    }
+
+    private async Task ApplySavedProgressAsync(WatchHistoryEntry entry)
+    {
+        try
+        {
+            if (entry.ItemKind != Kind || entry.ProfileId != _session.CurrentProfile?.Id)
+            {
+                return;
+            }
+
+            if (Kind == ContentKind.Movie)
+            {
+                var card = Items.FirstOrDefault(c => c.Item.ProviderItemId == entry.ItemKey);
+                if (card is null)
+                {
+                    return;
+                }
+
+                // Write payload semantics: a save can set the tick but never clears it.
+                card.IsWatched |= entry.Completed;
+                card.ResumeProgress = entry.Completed ? 100 : entry.Progress * 100;
+                return;
+            }
+
+            var separator = entry.ItemKey.IndexOf(':', StringComparison.Ordinal);
+            if (separator <= 0)
+            {
+                return;
+            }
+
+            var seriesKey = entry.ItemKey[..separator];
+            var seriesCard = Items.FirstOrDefault(c => c.Item.ProviderItemId == seriesKey);
+            if (seriesCard is null || seriesCard.Item.EpisodeTotal is not { } total || total <= 0)
+            {
+                return;
+            }
+
+            var summaries = await _watchHistory.GetSeriesWatchSummaryAsync(
+                _session.CurrentProfile.Id, [seriesKey], CancellationToken.None);
+            if (summaries.TryGetValue(seriesKey, out var summary))
+            {
+                seriesCard.ResumeProgress = Math.Min(100, summary.WatchedUnits / total * 100);
+                seriesCard.IsWatched = summary.CompletedCount >= total;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Updating a grid card after a progress save failed");
+        }
+    }
+
     [RelayCommand]
     private async Task ToggleFavoriteAsync(VodCard? card)
     {
@@ -372,9 +506,9 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
 public sealed class MoviesViewModel : VodLibraryViewModel
 {
     public MoviesViewModel(
-        ICatalogRepository catalog, IFavoritesRepository favorites,
-        ISessionService session, INavigationService navigation, ArtworkService artwork)
-        : base(catalog, favorites, session, navigation, artwork)
+        ICatalogRepository catalog, IFavoritesRepository favorites, IWatchHistoryRepository watchHistory,
+        ISessionService session, INavigationService navigation, ArtworkService artwork, IMessenger messenger)
+        : base(catalog, favorites, watchHistory, session, navigation, artwork, messenger)
     {
     }
 
@@ -387,9 +521,9 @@ public sealed class MoviesViewModel : VodLibraryViewModel
 public sealed class SeriesViewModel : VodLibraryViewModel
 {
     public SeriesViewModel(
-        ICatalogRepository catalog, IFavoritesRepository favorites,
-        ISessionService session, INavigationService navigation, ArtworkService artwork)
-        : base(catalog, favorites, session, navigation, artwork)
+        ICatalogRepository catalog, IFavoritesRepository favorites, IWatchHistoryRepository watchHistory,
+        ISessionService session, INavigationService navigation, ArtworkService artwork, IMessenger messenger)
+        : base(catalog, favorites, watchHistory, session, navigation, artwork, messenger)
     {
     }
 

@@ -1,6 +1,7 @@
 using Lumen.Providers.Artwork;
 using Lumen.Providers.Http;
 using Lumen.Providers.M3u;
+using Lumen.Providers.Trakt;
 using Lumen.Providers.Xmltv;
 using Lumen.Providers.Xtream;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +51,14 @@ public static class ProvidersServiceCollectionExtensions
             })
             .AddHttpMessageHandler<TransientRetryHandler>();
 
+        services.AddHttpClient(TraktClient.HttpClientName, client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Lumen/1.0");
+            })
+            .AddHttpMessageHandler<TransientRetryHandler>();
+
+        services.AddSingleton<ITraktClient, TraktClient>();
         services.AddSingleton<IXtreamClientFactory, XtreamClientFactory>();
         services.AddSingleton<IM3uPlaylistParser, M3uPlaylistParser>();
         services.AddSingleton<IXmltvParser, XmltvParser>();

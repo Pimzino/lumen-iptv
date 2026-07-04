@@ -59,6 +59,10 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
     private double _pendingResumeSeconds;
     private bool _resumeApplied;
 
+    // Completion is credited once per play session (saves fire on every pause/stop after 95%,
+    // and the play count must not grow with each one).
+    private bool _completedRecordedThisPlay;
+
     // Watch-history writes run on pool threads; shutdown drains the last one (FlushProgressAsync)
     // so a pause-then-quit doesn't lose the resume position.
     private Task _lastProgressSave = Task.CompletedTask;
@@ -189,6 +193,13 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         private set => SetProperty(ref _currentChannel, value);
     }
 
+    /// <summary>The VOD request currently loaded; null during live playback. Observed by the Trakt scrobbler.</summary>
+    public VodPlayRequest? CurrentVod
+    {
+        get => _currentVod;
+        private set => SetProperty(ref _currentVod, value);
+    }
+
     /// <summary>Display title of whatever is playing: the VOD title, else the live channel name.</summary>
     public string? NowPlayingTitle => _currentVod?.Title ?? _currentChannel?.Name;
 
@@ -262,7 +273,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         // position ticks and failure handling run in live mode again.
         SaveVodProgress();
         _positionTimer.Stop();
-        _currentVod = null;
+        CurrentVod = null;
         IsVod = false;
         PositionSeconds = 0;
         DurationSeconds = 0;
@@ -363,12 +374,17 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         CanSeekLive = false;
         _liveWatchSeconds = 0;
         _liveWatchRecordedChannelId = -1;
-        _currentVod = request;
+
+        // Null-then-set: records compare by value, so replaying the same title (Start over twice)
+        // would otherwise raise no change — observers (the Trakt scrobbler) key sessions off it.
+        CurrentVod = null;
+        CurrentVod = request;
         NotifyNowPlayingChanged();
         _isPreviewContext = false;
         _currentUrl = request.Url;
         _pendingResumeSeconds = request.ResumeSeconds;
         _resumeApplied = false;
+        _completedRecordedThisPlay = false;
         IsVod = true;
         PositionSeconds = request.ResumeSeconds;
         DurationSeconds = 0;
@@ -581,7 +597,7 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         // Persist the VOD resume position before tearing down.
         SaveVodProgress();
         _positionTimer.Stop();
-        _currentVod = null;
+        CurrentVod = null;
         IsVod = false;
         ResetBehindLive();
 
@@ -740,9 +756,13 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
             return;
         }
 
-        // Treat "finished" (>95%) as position 0 so it doesn't nag to resume the last seconds.
+        // Treat "finished" (>95%) as position 0 so it doesn't nag to resume the last seconds;
+        // the completed flag (merged, never regressed by later saves) keeps the watched state.
         var fraction = PositionSeconds / DurationSeconds;
         var storedPosition = fraction is > 0.95 or < 0.02 ? 0 : PositionSeconds;
+        var finished = fraction > 0.95;
+        var creditPlay = finished && !_completedRecordedThisPlay;
+        _completedRecordedThisPlay |= finished;
 
         var entry = new WatchHistoryEntry
         {
@@ -754,8 +774,14 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
             PositionSeconds = storedPosition,
             DurationSeconds = DurationSeconds,
             WatchedUtc = _clock.UtcNow.ToUnixTimeSeconds(),
+            Completed = finished,
+            PlayCount = creditPlay ? 1 : 0,
+            CompletedUtc = creditPlay ? _clock.UtcNow.ToUnixTimeSeconds() : null,
+            Season = vod.Season,
+            EpisodeNumber = vod.EpisodeNumber,
         };
         _lastProgressSave = _watchHistory.UpsertAsync(entry, CancellationToken.None);
+        _messenger.Send(new WatchProgressSavedMessage(entry));
     }
 
     /// <summary>The most recent watch-history write, awaited at shutdown.</summary>
@@ -901,6 +927,19 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
 
             case PlayerExitMode.Browse:
             default:
+                // Handing the video to the muted browse preview is a live-TV affordance: the Live
+                // TV list is the only page with a preview surface, so a live channel keeps playing
+                // there behind the list. A VOD has nowhere to preview into — keeping it alive just
+                // leaves the movie decoding off-screen until it resurfaces in the next preview pane
+                // the user opens (the muted Live TV preview would show the leftover film). Backing
+                // out of a movie ends it instead; Stop banks the resume position, and the dedicated
+                // PiP button remains the way to keep a VOD playing while browsing.
+                if (IsVod)
+                {
+                    Stop();
+                    return;
+                }
+
                 // Hide the player overlay and hand the video back to the browsing (preview) surface;
                 // playback keeps running behind whatever page the user returns to.
                 IsFullPlayerActive = false;

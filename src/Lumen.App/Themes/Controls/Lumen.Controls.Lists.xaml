@@ -334,7 +334,7 @@
   <!-- ======================= ToolTip ======================= -->
 
   <Style TargetType="ToolTip">
-    <Setter Property="Background" Value="{StaticResource Lumen.Brush.Bg.OverlaySolid}" />
+    <Setter Property="Background" Value="{StaticResource Lumen.Brush.Glass}" />
     <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
     <Setter Property="FontFamily" Value="{StaticResource Lumen.Font.Text}" />
     <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Caption}" />
@@ -343,7 +343,7 @@
       <Setter.Value>
         <ControlTemplate TargetType="ToolTip">
           <Border Background="{TemplateBinding Background}"
-                  BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                  BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                   BorderThickness="{StaticResource Lumen.Stroke.Border}"
                   CornerRadius="{StaticResource Lumen.Radius.Badge}"
                   Padding="{StaticResource Lumen.Pad.ControlCompact}">

@@ -19,6 +19,12 @@ public static class Strings
         string.Format(CultureInfo.CurrentCulture, format, args);
 
     public static string App_Title => Get(nameof(App_Title));
+
+    public static string Settings_Artwork => Get(nameof(Settings_Artwork));
+    public static string Settings_ArtworkOnline => Get(nameof(Settings_ArtworkOnline));
+    public static string Settings_ArtworkOnlineHint => Get(nameof(Settings_ArtworkOnlineHint));
+    public static string Settings_ArtworkTmdbKey => Get(nameof(Settings_ArtworkTmdbKey));
+    public static string Settings_ArtworkTmdbKeyHint => Get(nameof(Settings_ArtworkTmdbKeyHint));
     public static string Crash_Title => Get(nameof(Crash_Title));
     public static string Crash_Body => Get(nameof(Crash_Body));
     public static string Crash_OpenLogs => Get(nameof(Crash_OpenLogs));

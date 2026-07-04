@@ -142,6 +142,19 @@ public interface ISettingsRepository
     Task<IReadOnlyDictionary<string, string>> GetAllAsync(long profileId, CancellationToken cancellationToken);
 }
 
+/// <summary>Cache of external artwork lookups (posters/backdrops by cleaned title).</summary>
+public interface IArtworkCacheRepository
+{
+    Task<ArtworkCacheEntry?> GetAsync(ContentKind kind, string titleKey, int year, CancellationToken cancellationToken);
+
+    Task UpsertAsync(ArtworkCacheEntry entry, CancellationToken cancellationToken);
+
+    Task ClearAsync(CancellationToken cancellationToken);
+
+    /// <summary>Drops "found nothing" entries so a newly configured source gets a fresh look.</summary>
+    Task ClearNegativeAsync(CancellationToken cancellationToken);
+}
+
 /// <summary>Disk cache for channel logos and posters.</summary>
 public interface IImageCache
 {

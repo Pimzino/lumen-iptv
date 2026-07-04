@@ -78,15 +78,19 @@
       </WrapPanel>
 
       <!-- empty -->
-      <TextBlock Grid.Row="1"
-                 Style="{StaticResource Lumen.Text.BodySecondary}"
-                 Text="{Binding EmptyMessage}"
-                 TextWrapping="Wrap"
-                 TextAlignment="Center"
-                 MaxWidth="320"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 Visibility="{Binding HasItems, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+      <ContentControl Grid.Row="1"
+                      Style="{StaticResource Lumen.EmptyState}"
+                      ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Movies}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Margin="0,0,0,64"
+                      Visibility="{Binding HasItems, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+        <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                   Text="{Binding EmptyMessage}"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   MaxWidth="320" />
+      </ContentControl>
 
       <!-- poster grid -->
       <ListBox x:Name="Grid"

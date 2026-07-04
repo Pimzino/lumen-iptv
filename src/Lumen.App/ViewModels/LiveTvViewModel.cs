@@ -14,16 +14,20 @@ namespace Lumen.App.ViewModels;
 /// <summary>A channel row in the Live TV list, carrying its live EPG state.</summary>
 public sealed partial class ChannelListItem : ObservableObject
 {
-    public ChannelListItem(Channel channel)
+    private readonly string? _logoFallback;
+
+    public ChannelListItem(Channel channel, string? logoFallback = null)
     {
         Channel = channel;
+        _logoFallback = logoFallback;
     }
 
     public Channel Channel { get; }
 
     public string Name => Channel.Name;
 
-    public string? LogoUrl => Channel.LogoUrl;
+    /// <summary>Playlist logo, or the mapped guide channel's icon when the playlist has none.</summary>
+    public string? LogoUrl => string.IsNullOrWhiteSpace(Channel.LogoUrl) ? _logoFallback : Channel.LogoUrl;
 
     public string Monogram => Channel.Name.Length > 0 ? Channel.Name[..1].ToUpperInvariant() : "?";
 
@@ -65,6 +69,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     private readonly ICatalogRepository _catalog;
     private readonly IEpgRepository _epg;
     private readonly PlaybackService _playbackService;
+    private readonly ArtworkService _artwork;
     private readonly IClock _clock;
     private readonly DispatcherTimer _progressTimer;
     private readonly DispatcherTimer _channelSearchDebounce;
@@ -72,6 +77,8 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
     private CancellationTokenSource? _channelsCts;
     private CancellationTokenSource? _previewCts;
     private Dictionary<long, string> _mappings = [];
+    private IReadOnlyDictionary<long, string> _logoFallbacks =
+        System.Collections.Immutable.ImmutableDictionary<long, string>.Empty;
     private IReadOnlyList<ChannelListItem> _allChannelItems = [];
     private List<Category> _allCategories = [];
     private Category? _lastRealCategory;
@@ -84,12 +91,14 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
         ICatalogRepository catalog,
         IEpgRepository epg,
         PlaybackService playbackService,
+        ArtworkService artwork,
         IClock clock)
     {
         _session = session;
         _catalog = catalog;
         _epg = epg;
         _playbackService = playbackService;
+        _artwork = artwork;
         _clock = clock;
 
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
@@ -147,6 +156,7 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
 
         var mappingRows = await _epg.GetMappingsAsync(profile.Id, cancellationToken);
         _mappings = mappingRows.ToDictionary(m => m.ChannelId, m => m.XmltvId);
+        _logoFallbacks = await _artwork.GetChannelLogoFallbacksAsync(profile.Id, cancellationToken);
 
         _allCategories = [AllChannels, .. await _catalog.GetCategoriesAsync(profile.Id, ContentKind.Live, cancellationToken)];
         ApplyCategoryFilter();
@@ -301,7 +311,9 @@ public sealed partial class LiveTvViewModel : ObservableObject, INavigationAware
                 profile.Id, category.Id == 0 ? null : category.Id, token);
             token.ThrowIfCancellationRequested();
 
-            _allChannelItems = channels.Select(channel => new ChannelListItem(channel)).ToList();
+            _allChannelItems = channels
+                .Select(channel => new ChannelListItem(channel, _logoFallbacks.GetValueOrDefault(channel.Id)))
+                .ToList();
             ApplyChannelFilter();
             IsLoadingChannels = false;
 

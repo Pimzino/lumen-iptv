@@ -58,6 +58,13 @@
   <Color x:Key="Lumen.Color.Control.Active">#1FFFFFFF</Color>
   <Color x:Key="Lumen.Color.Field.Bg">#0AFFFFFF</Color>
 
+  <!-- Windows 11 glass layering. Window.Tint is the near-opaque wash the window paints over a
+       live Mica backdrop (WindowFx); Layer is the raised "content pane" surface that sits on it,
+       Fluent-style. Both collapse gracefully onto the solid Bg.Base when no backdrop exists. -->
+  <Color x:Key="Lumen.Color.Window.Tint">#D90B0D10</Color>
+  <Color x:Key="Lumen.Color.Layer">#07FFFFFF</Color>
+  <Color x:Key="Lumen.Color.Layer.Stroke">#0FFFFFFF</Color>
+
   <!-- Chrome -->
   <Color x:Key="Lumen.Color.CloseHover">#C42B1C</Color>
   <Color x:Key="Lumen.Color.ClosePressed">#B12A1B</Color>
@@ -76,6 +83,24 @@
 
   <SolidColorBrush x:Key="Lumen.Brush.Stroke.Subtle" Color="{StaticResource Lumen.Color.Stroke.Subtle}" po:Freeze="True" />
   <SolidColorBrush x:Key="Lumen.Brush.Stroke.Strong" Color="{StaticResource Lumen.Color.Stroke.Strong}" po:Freeze="True" />
+
+  <SolidColorBrush x:Key="Lumen.Brush.Window.Tint" Color="{StaticResource Lumen.Color.Window.Tint}" po:Freeze="True" />
+  <SolidColorBrush x:Key="Lumen.Brush.Layer" Color="{StaticResource Lumen.Color.Layer}" po:Freeze="True" />
+  <SolidColorBrush x:Key="Lumen.Brush.Layer.Stroke" Color="{StaticResource Lumen.Color.Layer.Stroke}" po:Freeze="True" />
+
+  <!-- Edge-lit "glass" sheen for raised surfaces (cards, flyouts, toasts): a faint top-lit
+       gradient fill and a stroke that is brighter along the top edge, echoing acrylic without
+       a real blur (WPF popups cannot host a DWM backdrop). -->
+  <LinearGradientBrush x:Key="Lumen.Brush.Glass" StartPoint="0,0" EndPoint="0,1" po:Freeze="True">
+    <GradientStop Offset="0" Color="#EE1B202A" />
+    <GradientStop Offset="1" Color="#EE12161D" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="Lumen.Brush.Stroke.Glass" StartPoint="0,0" EndPoint="0,1" po:Freeze="True">
+    <GradientStop Offset="0" Color="#2EFFFFFF" />
+    <GradientStop Offset="0.12" Color="#17FFFFFF" />
+    <GradientStop Offset="1" Color="#0DFFFFFF" />
+  </LinearGradientBrush>
 
   <SolidColorBrush x:Key="Lumen.Brush.Text.Primary" Color="{StaticResource Lumen.Color.Text.Primary}" po:Freeze="True" />
   <SolidColorBrush x:Key="Lumen.Brush.Text.Secondary" Color="{StaticResource Lumen.Color.Text.Secondary}" po:Freeze="True" />

@@ -83,6 +83,41 @@ container preference (`.ts`/`.m3u8`). Stream drops trigger reconnect with 1/2/4/
 first Playing event and tracks position into `watch_history` on a 1s timer, saving on pause,
 stop, and navigation.
 
+## Window chrome (Windows 11)
+
+`WindowFx` (attached behavior, applied by the `Lumen.Window` style) owns the DWM story: immersive
+dark frame, `DWMWCP_ROUND` corners, and — on Windows 11 22H2+ — a Mica system backdrop. The
+style's `WindowChrome` keeps `GlassFrameThickness="0,0,0,1"` deliberately. Non-zero, because with
+a zero glass frame the classic theme repaints the non-client area whenever
+`ResizeMode`/`WindowChrome` change at runtime (the fullscreen path does both), which used to draw
+Windows-95-style caption buttons over the custom title bar; a bottom-only sliver, because a frame
+sheet extended over the caption region makes the DWM paint its own ghost min/max/close glyphs
+there, faintly visible through the translucent Mica tint. The backdrop needs no extension —
+`DWMWA_SYSTEMBACKDROP_TYPE` is whole-window base material. With the DWM owning every NC repaint,
+both failure modes are gone. When the backdrop is
+live, the window template swaps its opaque background for a near-opaque tint
+(`Lumen.Brush.Window.Tint`) and the shell hosts pages on a Fluent "layer" surface; with no
+backdrop (Windows 10, or any diagnostic run — captures must stay deterministic) everything
+collapses onto the solid dark palette. Snap Layouts work on the custom maximize button via a
+`WM_NCHITTEST → HTMAXBUTTON` hook registered *after* `WindowChromeWorker`'s own hook (hooks run
+newest-first; registering at Loaded priority guarantees the ordering), with hover/press visuals
+mirrored through the `WindowFx.IsNcHover` attached flag because WPF never sees NC mouse input.
+
+## Artwork enrichment
+
+`ArtworkService` fills catalog artwork gaps from external metadata services, on by default:
+TMDB when the user pasted a credential (v3 key or v4 token, detected by shape), keyless
+iTunes (movies) / TVMaze (series) otherwise. `TitleCleaner` (Core) reduces messy IPTV names
+("EN| The.Matrix.(1999) [4K]") to a searchable title + year; `ArtworkMatcher` scores candidates
+and rejects anything below a confidence threshold — a wrong poster is worse than no poster.
+Every lookup, including "found nothing", lands in the `artwork_cache` SQLite table keyed by
+kind + normalized title + year, so a title is resolved online once per install; negative entries
+retry after 7 days and are flushed when a TMDB key is first configured. Lookups run behind a
+2-slot semaphore with in-flight coalescing, are fire-and-forget from view models (page tokens
+cancel them), and treat every failure as debug-log-and-move-on. Channels missing a playlist logo
+fall back to the mapped XMLTV channel's `<icon>` — local data, no network. The whole service is
+inert during diagnostic runs so gates stay hermetic.
+
 ## Signature effect — ambient glow
 
 `AmbientColor` downsamples an image to 16×16, averages its saturated pixels, and normalizes the

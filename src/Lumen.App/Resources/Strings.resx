@@ -114,6 +114,11 @@
   <data name="Settings_ImageCacheFormat" xml:space="preserve"><value>Image cache · {0}</value></data>
   <data name="Settings_ClearImageCache" xml:space="preserve"><value>Clear image cache</value></data>
   <data name="Settings_ParentalControls" xml:space="preserve"><value>Parental controls</value></data>
+  <data name="Settings_Artwork" xml:space="preserve"><value>Artwork</value></data>
+  <data name="Settings_ArtworkOnline" xml:space="preserve"><value>Fill missing posters and backdrops from online sources</value></data>
+  <data name="Settings_ArtworkOnlineHint" xml:space="preserve"><value>When your provider ships no artwork for a movie or series, Lumen finds it on The Movie Database, iTunes, or TVMaze and caches the result locally. Only the cleaned title is sent — never your account details.</value></data>
+  <data name="Settings_ArtworkTmdbKey" xml:space="preserve"><value>TMDB API key (optional)</value></data>
+  <data name="Settings_ArtworkTmdbKeyHint" xml:space="preserve"><value>With a free key from themoviedb.org/settings/api, artwork comes from The Movie Database first — the highest-quality source, including wide backdrops.</value></data>
   <data name="Settings_Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Settings_ThemeDark" xml:space="preserve"><value>Dark</value></data>
   <data name="Settings_ThemeLight" xml:space="preserve"><value>Light</value></data>

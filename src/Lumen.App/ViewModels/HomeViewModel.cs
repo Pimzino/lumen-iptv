@@ -30,7 +30,9 @@ public sealed partial class FavoriteChannelCard : ObservableObject
 
     public string Name => Channel.Name;
 
-    public string? LogoUrl => Channel.LogoUrl;
+    /// <summary>Playlist logo, or the mapped guide channel's icon when the playlist has none.</summary>
+    [ObservableProperty]
+    private string? _logoUrl;
 
     public string Monogram => Channel.Name.Length > 0 ? Channel.Name[..1].ToUpperInvariant() : "?";
 
@@ -62,6 +64,7 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
     private readonly IClock _clock;
     private readonly PlaybackServiceNavigator _playback;
     private readonly INavigationService _navigation;
+    private readonly ArtworkService _artwork;
 
     public HomeViewModel(
         ISessionService session,
@@ -72,6 +75,7 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         IClock clock,
         PlaybackServiceNavigator playback,
         INavigationService navigation,
+        ArtworkService artwork,
         IMessenger messenger)
     {
         _session = session;
@@ -82,6 +86,7 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         _clock = clock;
         _playback = playback;
         _navigation = navigation;
+        _artwork = artwork;
         messenger.RegisterAll(this);
     }
 
@@ -178,11 +183,18 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
 
         var mappings = (await _epg.GetMappingsAsync(profileId, cancellationToken))
             .ToDictionary(m => m.ChannelId, m => m.XmltvId);
+        var logoFallbacks = await _artwork.GetChannelLogoFallbacksAsync(profileId, cancellationToken);
         var cards = new List<FavoriteChannelCard>();
         var xmltvIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var channel in channels)
         {
-            var card = new FavoriteChannelCard { Channel = channel };
+            var card = new FavoriteChannelCard
+            {
+                Channel = channel,
+                LogoUrl = string.IsNullOrWhiteSpace(channel.LogoUrl)
+                    ? logoFallbacks.GetValueOrDefault(channel.Id)
+                    : channel.LogoUrl,
+            };
             cards.Add(card);
             var xmltvId = mappings.GetValueOrDefault(channel.Id) ?? channel.EpgChannelId;
             if (!string.IsNullOrEmpty(xmltvId))
@@ -217,6 +229,38 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         foreach (var item in items)
         {
             target.Add(new VodCard(item));
+        }
+
+        _ = EnrichPostersAsync(kind, target.ToList(), cancellationToken);
+    }
+
+    private async Task EnrichPostersAsync(
+        ContentKind kind, IReadOnlyList<VodCard> cards, CancellationToken cancellationToken)
+    {
+        try
+        {
+            foreach (var card in cards)
+            {
+                if (!string.IsNullOrWhiteSpace(card.PosterUrl))
+                {
+                    continue;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                var art = await _artwork.GetArtworkAsync(kind, card.Item.Name, card.Item.Year, cancellationToken);
+                if (art?.PosterUrl is { } poster)
+                {
+                    card.PosterUrl = poster;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Home poster enrichment failed");
         }
     }
 

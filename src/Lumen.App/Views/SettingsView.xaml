@@ -237,6 +237,32 @@
         </StackPanel>
       </Border>
 
+      <!-- ============ Artwork ============ -->
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Artwork}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
+        <StackPanel>
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_ArtworkOnline}"
+                    IsChecked="{Binding ArtworkOnline}"
+                    Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_ArtworkOnlineHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Settings_ArtworkTmdbKey}"
+                   Text="{Binding ArtworkTmdbKey, UpdateSourceTrigger=LostFocus}"
+                   IsEnabled="{Binding ArtworkOnline}"
+                   HorizontalAlignment="Stretch"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_ArtworkTmdbKeyHint}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <!-- ============ Storage ============ -->
       <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                  Text="{x:Static res:Strings.Settings_Storage}"

@@ -25,6 +25,13 @@ interface built to sit next to Netflix or Apple TV without feeling out of place.
 - **Search** — global, debounced, across channels, VOD, and guide titles (Ctrl+K from anywhere).
 - **Favorites & Home** — heart anything; Home surfaces continue-watching, favorite channels with
   live now/next, and recently added content.
+- **Artwork that fills itself in** — when the provider ships no posters or backdrops, Lumen
+  resolves them online (The Movie Database with your free key, keyless iTunes/TVMaze otherwise),
+  caches every lookup in SQLite, and falls back to the guide's channel icons for logo-less
+  channels. On by default; tunable under Settings → Artwork.
+- **Native Windows 11 chrome** — Mica backdrop washed with the cinematic dark tint, rounded
+  corners, dark DWM frame, Snap Layouts on the maximize button, and a Fluent content layer —
+  all degrading gracefully on Windows 10.
 - **The signature touch** — an *ambient glow*: the playing channel's dominant color, sampled and
   softly washed into the now-playing bar and zap banner.
 

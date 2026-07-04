@@ -97,11 +97,13 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     private readonly ISessionService _session;
     private readonly PlaybackService _playback;
     private readonly INavigationService _navigation;
+    private readonly ArtworkService _artwork;
 
     private VodItem? _item;
     private MovieDetails? _movieDetails;
     private WatchHistoryEntry? _resumeEntry;
     private EpisodeRow? _seriesNextUp;
+    private bool _hasProviderBackdrop;
 
     public VodDetailViewModel(
         VodService vodService,
@@ -109,7 +111,8 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         IFavoritesRepository favorites,
         ISessionService session,
         PlaybackService playback,
-        INavigationService navigation)
+        INavigationService navigation,
+        ArtworkService artwork)
     {
         _vodService = vodService;
         _watchHistory = watchHistory;
@@ -117,6 +120,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         _session = session;
         _playback = playback;
         _navigation = navigation;
+        _artwork = artwork;
     }
 
     [ObservableProperty]
@@ -223,6 +227,44 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
             HasEpisodes = Seasons.Count > 0;
             ShowEmptyEpisodes = !HasEpisodes;
         }
+
+        // Fill missing art from the external metadata services after the page is interactive.
+        _ = EnrichArtworkAsync(item, cancellationToken);
+    }
+
+    private async Task EnrichArtworkAsync(VodItem item, CancellationToken cancellationToken)
+    {
+        if (PosterUrl is not null && _hasProviderBackdrop)
+        {
+            return;
+        }
+
+        try
+        {
+            var art = await _artwork.GetArtworkAsync(item.Kind, item.Name, item.Year, cancellationToken);
+            if (art is null || !ReferenceEquals(_item, item))
+            {
+                return;
+            }
+
+            if (PosterUrl is null && art.PosterUrl is not null)
+            {
+                PosterUrl = art.PosterUrl;
+            }
+
+            if (!_hasProviderBackdrop && art.BackdropUrl is not null)
+            {
+                BackdropUrl = art.BackdropUrl;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Detail artwork enrichment failed");
+        }
     }
 
     public void OnNavigatedFrom()
@@ -237,6 +279,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         Plot = _movieDetails?.Plot;
         Cast = _movieDetails?.Cast;
         Director = _movieDetails?.Director;
+        _hasProviderBackdrop = !string.IsNullOrWhiteSpace(_movieDetails?.BackdropUrl);
         BackdropUrl = _movieDetails?.BackdropUrl ?? item.PosterUrl;
 
         var chips = new List<string>();
@@ -285,6 +328,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         Plot = details?.Plot;
         Cast = details?.Cast;
         Director = details?.Director;
+        _hasProviderBackdrop = !string.IsNullOrWhiteSpace(details?.BackdropUrl);
         BackdropUrl = details?.BackdropUrl ?? item.PosterUrl;
 
         var seasons = details?.Seasons ?? [];

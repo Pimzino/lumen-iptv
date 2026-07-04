@@ -603,3 +603,70 @@ categories + channels), and global-search result activation was fixed for large 
   brace runs), plus a `/series/…` stream route so episode playback works against the fixture.
   `--shot-shell` now switches to an Xtream profile (M3U profiles have no series) and captures
   `series-detail.png`.
+## Windows 11 chrome + external artwork — the production polish pass
+
+Driven by a field report: classic Windows-95-style caption buttons intermittently painted over
+the custom title bar, and the UI needed to land as native Windows 11 rather than "generic dark".
+
+- **The caption-button bug was the zero glass frame.** `Lumen.Window` used
+  `GlassFrameThickness="0"`, which removes the DWM's claim on non-client painting; any runtime
+  NC change (the fullscreen path swaps `ResizeMode` *and* clones the `WindowChrome`) let the
+  classic theme repaint its own `_ □ ✕` strip. The fix is structural, not a repaint patch:
+  `GlassFrameThickness="-1"` hands every NC repaint to the DWM permanently. `WindowFx` (new)
+  then applies `DWMWA_USE_IMMERSIVE_DARK_MODE`, `DWMWCP_ROUND` corners, and — on 22621+ —
+  `DWMWA_SYSTEMBACKDROP_TYPE=Mica` (21H2 falls back to the pre-release attribute 1029; Windows
+  10 gets the solid palette). With a live backdrop the window paints a 85% `Window.Tint` so the
+  desktop breathes through the chrome without washing out the cinematic dark.
+- **Snap Layouts on a custom maximize button** requires answering `HTMAXBUTTON` from
+  `WM_NCHITTEST` — but `WindowChromeWorker` answers `HTCLIENT` first for any
+  `IsHitTestVisibleInChrome` element. `HwndSource` runs hooks newest-first, so `WindowFx`
+  registers its hook at `DispatcherPriority.Loaded` (provably after the chrome's own hook).
+  That steals WPF mouse input over the button, so hover/press visuals are driven through a
+  `WindowFx.IsNcHover` attached flag and the click is re-dispatched from `WM_NCLBUTTONUP`.
+  Verified interactively: flyout appears, snap zones work, click toggles maximize/restore.
+- **Fluent shell layering**: pages now sit on a "layer" surface (rounded top-left corner, 1px
+  hairline, faint white wash) over the Mica-tinted shell — the Windows 11 Settings/Terminal
+  pattern — and elevated surfaces (dialogs, toasts, dropdowns, flyouts, tooltips, zap banner,
+  reconnect pill) share a new edge-lit `Lumen.Brush.Glass` gradient + top-bright stroke, since
+  WPF popups cannot host a real DWM backdrop. The title bar gains the app icon; `lumen.ico`
+  had to become a pack `Resource` (an `ApplicationIcon` only brands the exe). A reusable
+  `Lumen.EmptyState` (glyph disc + secondary text) replaced the bare-text empty states on
+  Home/Search/Favorites/VOD grids.
+- **Screenshot gates stay deterministic** by disabling the translucent backdrop whenever any
+  `--` diagnostic argument is present — `RenderTargetBitmap` cannot see a DWM backdrop and
+  would bake the tint's alpha into the PNGs.
+- **External artwork is on by default, keyless.** Missing posters/backdrops resolve through a
+  provider chain — TMDB when a credential exists (v3 key or v4 bearer, detected by shape;
+  posters w500, backdrops w1280), else iTunes Search for movies (the 100×100 thumb URL
+  rewritten to the 600×900 rendition) and TVMaze for series (plus its `/images` "background"
+  for detail backdrops). Shipping a baked-in TMDB key was rejected (ToS + a repo is not a
+  secret store); keyless sources make the default real, and Settings → Artwork explains the
+  free-key upgrade. `TitleCleaner` (Core, tested) reduces "EN| The.Matrix.(1999) [4K HEVC]" to
+  title+year — parenthesized years are authoritative, bare trailing years become hints only
+  when other words remain ("1917" stays a title), and dot-runs collapse only in space-poor
+  names so "S.W.A.T." survives. `ArtworkMatcher` scores candidates against both title forms
+  ("Wonder Woman" + 1984 must match the film titled "Wonder Woman 1984") with a hard accept
+  threshold — a wrong poster is worse than a monogram.
+- **Every lookup is cached** in `artwork_cache` (migration 0005) keyed by kind + normalized
+  title + year, shared across profiles and refreshes; negatives retry after 7 days and are
+  flushed wholesale when a TMDB key is first configured (a keyless miss must not suppress the
+  better source) or when the user clears the image cache (the wrong-poster escape hatch).
+  Resolution runs behind a 2-slot semaphore with in-flight coalescing, detached from page
+  tokens once a provider call starts (the result is about to be cached; cancelling wastes it),
+  and never surfaces errors — artwork is cosmetic. `VodCard.PosterUrl` became observable so
+  grids fill in as answers arrive; channels without playlist logos borrow the mapped XMLTV
+  channel's icon (pure local data). The service is inert in diagnostic runs, keeping every
+  gate offline-hermetic.
+
+**Correction after first hands-on pass — ghost caption buttons.** With `GlassFrameThickness="-1"`
+and the translucent Mica tint, faint duplicate min/max/close glyphs appeared behind Lumen's own
+caption buttons: the DWM paints its *standard* caption buttons into any frame sheet extended over
+the caption region — invisible under opaque apps, shimmering through an 85% tint. The frame is now
+a 1px bottom sliver (`GlassFrameThickness="0,0,0,1"`): still non-zero, so the DWM keeps owning NC
+repaints (the original classic-buttons fix holds — re-verified via `--e2e-fullscreen`), but the
+caption region is pure client, so the DWM draws no buttons there. The system backdrop is unaffected
+(`DWMWA_SYSTEMBACKDROP_TYPE` covers the whole window regardless of extension); the 21H2-only
+`DWMWA_MICA_EFFECT` fallback was dropped because that legacy mechanism only rendered where the
+frame was extended — 21H2 now gets the solid dark palette like Windows 10. Screenshot gates could
+never have caught this: they run with the backdrop disabled and `RenderTargetBitmap` cannot see
+DWM-composed layers — translucent-chrome changes need a live-window check.

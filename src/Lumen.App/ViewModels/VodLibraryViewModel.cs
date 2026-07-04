@@ -15,13 +15,16 @@ public sealed partial class VodCard : ObservableObject
     public VodCard(VodItem item)
     {
         Item = item;
+        _posterUrl = item.PosterUrl;
     }
 
     public VodItem Item { get; }
 
     public string Name => Item.Name;
 
-    public string? PosterUrl => Item.PosterUrl;
+    /// <summary>Provider poster, or an external-artwork fill-in resolved after load.</summary>
+    [ObservableProperty]
+    private string? _posterUrl;
 
     public string Monogram => Item.Name.Length > 0 ? Item.Name[..1].ToUpperInvariant() : "?";
 
@@ -47,6 +50,7 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
     private readonly IFavoritesRepository _favorites;
     private readonly ISessionService _session;
     private readonly INavigationService _navigation;
+    private readonly ArtworkService _artwork;
     private readonly DispatcherTimer _searchDebounce;
 
     private CancellationTokenSource? _loadCts;
@@ -61,12 +65,14 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         ICatalogRepository catalog,
         IFavoritesRepository favorites,
         ISessionService session,
-        INavigationService navigation)
+        INavigationService navigation,
+        ArtworkService artwork)
     {
         _catalog = catalog;
         _favorites = favorites;
         _session = session;
         _navigation = navigation;
+        _artwork = artwork;
 
         _searchDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _searchDebounce.Tick += (_, _) =>
@@ -266,13 +272,48 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
             SearchText, Sort, PageSize, _loadedCount, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var added = new List<VodCard>(page.Count);
         foreach (var item in page)
         {
-            Items.Add(new VodCard(item) { IsFavorite = _favoriteKeys.Contains(item.ProviderItemId) });
+            var card = new VodCard(item) { IsFavorite = _favoriteKeys.Contains(item.ProviderItemId) };
+            Items.Add(card);
+            added.Add(card);
         }
 
         _loadedCount += page.Count;
         _hasMore = page.Count == PageSize;
+
+        // Fill artwork gaps in the background; cancelled by the next reload/navigation.
+        _ = EnrichPostersAsync(added, cancellationToken);
+    }
+
+    private async Task EnrichPostersAsync(IReadOnlyList<VodCard> cards, CancellationToken cancellationToken)
+    {
+        try
+        {
+            foreach (var card in cards)
+            {
+                if (!string.IsNullOrWhiteSpace(card.PosterUrl))
+                {
+                    continue;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                var art = await _artwork.GetArtworkAsync(Kind, card.Item.Name, card.Item.Year, cancellationToken);
+                if (art?.PosterUrl is { } poster)
+                {
+                    card.PosterUrl = poster;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded page or navigation away
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Poster enrichment pass failed");
+        }
     }
 
     /// <summary>Called by the view as the grid nears its end (infinite scroll).</summary>
@@ -332,8 +373,8 @@ public sealed class MoviesViewModel : VodLibraryViewModel
 {
     public MoviesViewModel(
         ICatalogRepository catalog, IFavoritesRepository favorites,
-        ISessionService session, INavigationService navigation)
-        : base(catalog, favorites, session, navigation)
+        ISessionService session, INavigationService navigation, ArtworkService artwork)
+        : base(catalog, favorites, session, navigation, artwork)
     {
     }
 
@@ -347,8 +388,8 @@ public sealed class SeriesViewModel : VodLibraryViewModel
 {
     public SeriesViewModel(
         ICatalogRepository catalog, IFavoritesRepository favorites,
-        ISessionService session, INavigationService navigation)
-        : base(catalog, favorites, session, navigation)
+        ISessionService session, INavigationService navigation, ArtworkService artwork)
+        : base(catalog, favorites, session, navigation, artwork)
     {
     }
 

@@ -24,6 +24,7 @@ public static class LumenDataServiceCollectionExtensions
         services.AddSingleton<IWatchHistoryRepository, WatchHistoryRepository>();
         services.AddSingleton<ISettingsRepository, SettingsRepository>();
         services.AddSingleton<ISearchRepository, SearchRepository>();
+        services.AddSingleton<IArtworkCacheRepository, ArtworkCacheRepository>();
         services.AddSingleton<IEpgImportSinkFactory, SqliteEpgImportSinkFactory>();
 
         services.AddHttpClient();

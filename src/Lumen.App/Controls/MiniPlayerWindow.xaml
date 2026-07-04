@@ -16,6 +16,7 @@
         Title="Lumen"
         UseLayoutRounding="True"
         Background="{StaticResource Lumen.Brush.VideoBackground}"
+        ctl:WindowFx.Effects="Frame"
         WindowStartupLocation="Manual">
   <Grid>
     <ctl:VideoSurface Kind="MiniPlayer" />

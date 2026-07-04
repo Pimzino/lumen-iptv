@@ -234,8 +234,8 @@
                      AllowsTransparency="True"
                      StaysOpen="False"
                      IsOpen="{Binding IsChecked, ElementName=SubtitleMenuButton, Mode=TwoWay}">
-                <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
-                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                <Border Background="{StaticResource Lumen.Brush.Glass}"
+                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                         BorderThickness="{StaticResource Lumen.Stroke.Border}"
                         CornerRadius="{StaticResource Lumen.Radius.Control}"
                         Padding="{StaticResource Lumen.Pad.8}"
@@ -270,8 +270,8 @@
                      AllowsTransparency="True"
                      StaysOpen="False"
                      IsOpen="{Binding IsChecked, ElementName=AudioMenuButton, Mode=TwoWay}">
-                <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
-                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                <Border Background="{StaticResource Lumen.Brush.Glass}"
+                        BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                         BorderThickness="{StaticResource Lumen.Stroke.Border}"
                         CornerRadius="{StaticResource Lumen.Radius.Control}"
                         Padding="{StaticResource Lumen.Pad.8}"
@@ -305,8 +305,8 @@
       <Border HorizontalAlignment="Center"
               VerticalAlignment="Top"
               Margin="{StaticResource Lumen.Margin.T24}"
-              Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
-              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              Background="{StaticResource Lumen.Brush.Glass}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
               BorderThickness="{StaticResource Lumen.Stroke.Border}"
               CornerRadius="{StaticResource Lumen.Radius.Card}"
               Padding="{StaticResource Lumen.Pad.Toast}"
@@ -358,12 +358,10 @@
               MinWidth="320"
               MaxWidth="480"
               CornerRadius="{StaticResource Lumen.Radius.Card}"
-              BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+              Background="{StaticResource Lumen.Brush.Glass}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
               BorderThickness="{StaticResource Lumen.Stroke.Border}"
               Visibility="{Binding IsBannerVisible, Converter={StaticResource Lumen.BoolToVisibility}}">
-        <Border.Background>
-          <SolidColorBrush Color="{StaticResource Lumen.Color.Bg.Overlay}" />
-        </Border.Background>
         <Grid>
           <!-- Signature ambient glow: the current channel logo's dominant color washes in. -->
           <Border ctl:AmbientGlow.SourceUrl="{Binding Playback.CurrentChannel.LogoUrl}"

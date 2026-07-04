@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ApplicationIcon only brands the exe; the title bar's Image needs it as a pack resource. -->
+    <Resource Include="Assets\lumen.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="LibVLCSharp.WPF" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />

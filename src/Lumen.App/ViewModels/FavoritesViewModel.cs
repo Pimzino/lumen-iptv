@@ -16,7 +16,9 @@ public sealed partial class FavoriteCard : ObservableObject
 
     public required string Name { get; init; }
 
-    public string? ImageUrl { get; init; }
+    /// <summary>Provider art, guide-icon fallback (channels), or external fill-in (VOD).</summary>
+    [ObservableProperty]
+    private string? _imageUrl;
 
     public Channel? Channel { get; init; }
 
@@ -35,19 +37,22 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
     private readonly ISessionService _session;
     private readonly PlaybackServiceNavigator _playback;
     private readonly INavigationService _navigation;
+    private readonly ArtworkService _artwork;
 
     public FavoritesViewModel(
         IFavoritesRepository favorites,
         ICatalogRepository catalog,
         ISessionService session,
         PlaybackServiceNavigator playback,
-        INavigationService navigation)
+        INavigationService navigation,
+        ArtworkService artwork)
     {
         _favorites = favorites;
         _catalog = catalog;
         _session = session;
         _playback = playback;
         _navigation = navigation;
+        _artwork = artwork;
     }
 
     public ObservableCollection<FavoriteCard> Channels { get; } = [];
@@ -86,6 +91,7 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
             .ToHashSet();
         if (channelIds.Count > 0)
         {
+            var logoFallbacks = await _artwork.GetChannelLogoFallbacksAsync(profile.Id, cancellationToken);
             var all = await _catalog.GetChannelsAsync(profile.Id, null, cancellationToken);
             foreach (var channel in all.Where(c => channelIds.Contains(c.Id)))
             {
@@ -94,7 +100,9 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
                     Kind = ContentKind.Live,
                     ItemKey = channel.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     Name = channel.Name,
-                    ImageUrl = channel.LogoUrl,
+                    ImageUrl = string.IsNullOrWhiteSpace(channel.LogoUrl)
+                        ? logoFallbacks.GetValueOrDefault(channel.Id)
+                        : channel.LogoUrl,
                     Channel = channel,
                 });
             }
@@ -106,6 +114,37 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
 
         IsLoading = false;
         IsEmpty = Channels.Count == 0 && Movies.Count == 0 && Series.Count == 0;
+
+        _ = EnrichPostersAsync(cancellationToken);
+    }
+
+    private async Task EnrichPostersAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            foreach (var card in Movies.Concat(Series).ToList())
+            {
+                if (!string.IsNullOrWhiteSpace(card.ImageUrl) || card.VodItem is not { } item)
+                {
+                    continue;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                var art = await _artwork.GetArtworkAsync(card.Kind, item.Name, item.Year, cancellationToken);
+                if (art?.PosterUrl is { } poster)
+                {
+                    card.ImageUrl = poster;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Debug(ex, "Favorites poster enrichment failed");
+        }
     }
 
     private async Task AddVodFavoritesAsync(

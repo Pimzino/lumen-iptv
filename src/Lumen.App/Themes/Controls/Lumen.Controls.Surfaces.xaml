@@ -296,11 +296,23 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ContentControl">
-          <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
-                  BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
-                  BorderThickness="{StaticResource Lumen.Stroke.Border}"
-                  CornerRadius="{StaticResource Lumen.Radius.Card}"
-                  Padding="{StaticResource Lumen.Pad.Toast}">
+          <Grid>
+            <!-- Shadow lives on its own layer so the text above stays crisp. -->
+            <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
+                    CornerRadius="{StaticResource Lumen.Radius.Card}">
+              <Border.Effect>
+                <DropShadowEffect Color="{StaticResource Lumen.Color.Shadow}"
+                                  Direction="270"
+                                  ShadowDepth="8"
+                                  BlurRadius="24"
+                                  Opacity="0.35" />
+              </Border.Effect>
+            </Border>
+            <Border Background="{StaticResource Lumen.Brush.Glass}"
+                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
+                    BorderThickness="{StaticResource Lumen.Stroke.Border}"
+                    CornerRadius="{StaticResource Lumen.Radius.Card}"
+                    Padding="{StaticResource Lumen.Pad.Toast}">
             <DockPanel>
               <TextBlock DockPanel.Dock="Left"
                          Text="{Binding Path=(ctl:LumenUi.Glyph), RelativeSource={RelativeSource TemplatedParent}}"
@@ -314,7 +326,8 @@
                                 TextElement.FontFamily="{StaticResource Lumen.Font.Text}"
                                 TextElement.FontSize="{StaticResource Lumen.FontSize.Body}" />
             </DockPanel>
-          </Border>
+            </Border>
+          </Grid>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
@@ -330,6 +343,43 @@
     <Setter Property="ctl:LumenUi.Glyph" Value="{StaticResource Lumen.Icon.Warning}" />
   </Style>
 
+  <!-- ======================= Empty state ======================= -->
+
+  <!-- Designed empty state: a soft glyph disc over secondary text. Set the icon via
+       ctl:LumenUi.Glyph and the message as Content. -->
+  <Style x:Key="Lumen.EmptyState" TargetType="ContentControl">
+    <Setter Property="ctl:LumenUi.Glyph" Value="{StaticResource Lumen.Icon.Info}" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContentControl">
+          <StackPanel HorizontalAlignment="Center">
+            <Border Width="64"
+                    Height="64"
+                    CornerRadius="32"
+                    Background="{StaticResource Lumen.Brush.Control.Rest}"
+                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                    BorderThickness="{StaticResource Lumen.Stroke.Border}"
+                    HorizontalAlignment="Center"
+                    Margin="{StaticResource Lumen.Margin.B16}">
+              <TextBlock Text="{Binding Path=(ctl:LumenUi.Glyph), RelativeSource={RelativeSource TemplatedParent}}"
+                         FontFamily="{StaticResource Lumen.Font.Icons}"
+                         FontSize="28"
+                         Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
+            </Border>
+            <ContentPresenter HorizontalAlignment="Center"
+                              TextElement.Foreground="{StaticResource Lumen.Brush.Text.Secondary}"
+                              TextElement.FontFamily="{StaticResource Lumen.Font.Text}"
+                              TextElement.FontSize="{StaticResource Lumen.FontSize.Body}" />
+          </StackPanel>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ======================= Window chrome ======================= -->
 
   <Style x:Key="Lumen.Window" TargetType="Window">
@@ -339,12 +389,21 @@
     <Setter Property="FontSize" Value="{StaticResource Lumen.FontSize.Body}" />
     <Setter Property="UseLayoutRounding" Value="True" />
     <Setter Property="ctl:LumenChrome.EnableWindowCommands" Value="True" />
+    <!-- Dark DWM frame + Win11 rounded corners + Mica backdrop (graceful no-ops downlevel). -->
+    <Setter Property="ctl:WindowFx.Effects" Value="Mica" />
     <Setter Property="WindowChrome.WindowChrome">
       <Setter.Value>
-        <!-- CaptionHeight matches Lumen.Size.TitleBar. -->
+        <!-- CaptionHeight matches Lumen.Size.TitleBar. GlassFrameThickness is a deliberate
+             1px bottom sliver: it must be NON-ZERO so the DWM owns every non-client repaint
+             (a zero frame hands NC repaints to the classic theme, which used to draw
+             Windows-95-style caption buttons over the custom title bar during the fullscreen
+             transitions) — but it must NOT cover the caption region, because the DWM paints
+             its own ghost min/max/close glyphs into any frame sheet extended up there, and
+             they shimmer through the translucent Mica tint. The backdrop itself does not
+             need the extension: DWMWA_SYSTEMBACKDROP_TYPE is whole-window base material. -->
         <WindowChrome CaptionHeight="48"
                       ResizeBorderThickness="6"
-                      GlassFrameThickness="0"
+                      GlassFrameThickness="0,0,0,1"
                       CornerRadius="0"
                       UseAeroCaptionButtons="False" />
       </Setter.Value>
@@ -366,14 +425,21 @@
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
-                           Text="{TemplateBinding Title}"
-                           FontFamily="{StaticResource Lumen.Font.Display}"
-                           FontSize="{StaticResource Lumen.FontSize.Caption}"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource Lumen.Brush.Text.Secondary}"
-                           VerticalAlignment="Center"
-                           Margin="{StaticResource Lumen.Margin.L16}" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Image Source="pack://application:,,,/Assets/lumen.ico"
+                         Width="16"
+                         Height="16"
+                         RenderOptions.BitmapScalingMode="HighQuality"
+                         VerticalAlignment="Center"
+                         Margin="16,0,0,0" />
+                  <TextBlock Text="{TemplateBinding Title}"
+                             FontFamily="{StaticResource Lumen.Font.Display}"
+                             FontSize="{StaticResource Lumen.FontSize.Caption}"
+                             FontWeight="SemiBold"
+                             Foreground="{StaticResource Lumen.Brush.Text.Secondary}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.L8}" />
+                </StackPanel>
 
                 <ContentPresenter Grid.Column="1"
                                   Content="{Binding Path=(ctl:LumenChrome.TitleBarContent), RelativeSource={RelativeSource TemplatedParent}}"
@@ -393,6 +459,7 @@
                           Style="{StaticResource Lumen.Button.Caption}"
                           Content="{StaticResource Lumen.Icon.WindowMaximize}"
                           Command="{x:Static SystemCommands.MaximizeWindowCommand}"
+                          ctl:WindowFx.IsSnapTarget="True"
                           AutomationProperties.Name="Maximize" />
                   <Button x:Name="CloseButton"
                           Style="{StaticResource Lumen.Button.CaptionClose}"
@@ -408,6 +475,11 @@
             </Grid>
           </Border>
           <ControlTemplate.Triggers>
+            <!-- With a live Mica backdrop the root swaps to a translucent tint so the desktop's
+                 luminance breathes through the chrome, Windows-11 style. -->
+            <Trigger Property="ctl:WindowFx.IsBackdropActive" Value="True">
+              <Setter TargetName="WindowRoot" Property="Background" Value="{StaticResource Lumen.Brush.Window.Tint}" />
+            </Trigger>
             <!-- Compensate for the OS overhang when a borderless window maximizes. -->
             <Trigger Property="WindowState" Value="Maximized">
               <Setter TargetName="WindowRoot" Property="Margin" Value="7" />
@@ -444,11 +516,11 @@
                                   Direction="270"
                                   ShadowDepth="16"
                                   BlurRadius="48"
-                                  Opacity="0.4" />
+                                  Opacity="0.5" />
               </Border.Effect>
             </Border>
-            <Border Background="{StaticResource Lumen.Brush.Bg.Raised}"
-                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+            <Border Background="{StaticResource Lumen.Brush.Glass}"
+                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                     BorderThickness="{StaticResource Lumen.Stroke.Border}"
                     CornerRadius="{StaticResource Lumen.Radius.Card}">
               <AdornerDecorator>

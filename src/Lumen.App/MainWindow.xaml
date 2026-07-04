@@ -101,8 +101,8 @@
                  StaysOpen="False"
                  PopupAnimation="None"
                  IsOpen="{Binding IsProfileFlyoutOpen, Mode=TwoWay}">
-            <Border Background="{StaticResource Lumen.Brush.Bg.OverlaySolid}"
-                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+            <Border Background="{StaticResource Lumen.Brush.Glass}"
+                    BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                     BorderThickness="{StaticResource Lumen.Stroke.Border}"
                     CornerRadius="{StaticResource Lumen.Radius.Card}"
                     Padding="{StaticResource Lumen.Pad.8}"
@@ -171,10 +171,28 @@
     </Border>
 
     <!-- ======================= Content ======================= -->
-    <ctl:TransitioningContentControl Grid.Column="1"
-                                     Content="{Binding Navigation.CurrentViewModel}"
-                                     IsTabStop="False"
-                                     Focusable="False" />
+    <!-- Fluent "layer" pane: pages sit on a faintly raised surface with a rounded top-left
+         corner where it meets the rail and title bar, so the Mica shell reads as chrome and
+         the content reads as the canvas. Full-bleed during onboarding (no rail). -->
+    <Border Grid.Column="1">
+      <Border.Style>
+        <Style TargetType="Border">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsShellReady}" Value="True">
+              <Setter Property="Background" Value="{StaticResource Lumen.Brush.Layer}" />
+              <Setter Property="BorderBrush" Value="{StaticResource Lumen.Brush.Layer.Stroke}" />
+              <Setter Property="BorderThickness" Value="1,1,0,0" />
+              <Setter Property="CornerRadius" Value="8,0,0,0" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Border.Style>
+      <ctl:TransitioningContentControl Content="{Binding Navigation.CurrentViewModel}"
+                                       IsTabStop="False"
+                                       Focusable="False" />
+    </Border>
 
     <!-- ======================= Full player layer ======================= -->
     <Border Grid.Column="0"

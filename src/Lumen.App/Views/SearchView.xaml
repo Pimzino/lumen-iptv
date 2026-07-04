@@ -52,17 +52,25 @@
     </Border>
 
     <!-- Prompt / empty / results -->
-    <TextBlock Grid.Row="1"
-               Style="{StaticResource Lumen.Text.BodySecondary}"
-               Text="{x:Static res:Strings.Search_Prompt}"
-               VerticalAlignment="Top"
-               Visibility="{Binding HasQuery, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+    <ContentControl Grid.Row="1"
+                    Style="{StaticResource Lumen.EmptyState}"
+                    ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Search}"
+                    VerticalAlignment="Center"
+                    Margin="0,0,0,96"
+                    Visibility="{Binding HasQuery, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{x:Static res:Strings.Search_Prompt}"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="380" />
+    </ContentControl>
 
-    <TextBlock Grid.Row="1"
-               VerticalAlignment="Top"
-               Text="{Binding Query, StringFormat={x:Static res:Strings.Search_NoResultsFormat}}">
-      <TextBlock.Style>
-        <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.BodySecondary}">
+    <ContentControl Grid.Row="1"
+                    ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Search}"
+                    VerticalAlignment="Center"
+                    Margin="0,0,0,96">
+      <ContentControl.Style>
+        <Style TargetType="ContentControl" BasedOn="{StaticResource Lumen.EmptyState}">
           <Setter Property="Visibility" Value="Collapsed" />
           <Style.Triggers>
             <MultiDataTrigger>
@@ -75,8 +83,13 @@
             </MultiDataTrigger>
           </Style.Triggers>
         </Style>
-      </TextBlock.Style>
-    </TextBlock>
+      </ContentControl.Style>
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{Binding Query, StringFormat={x:Static res:Strings.Search_NoResultsFormat}}"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="380" />
+    </ContentControl>
 
     <ScrollViewer Grid.Row="1"
                   VerticalScrollBarVisibility="Auto"

@@ -1,3 +1,4 @@
+using Lumen.Providers.Artwork;
 using Lumen.Providers.Http;
 using Lumen.Providers.M3u;
 using Lumen.Providers.Xmltv;
@@ -41,9 +42,20 @@ public static class ProvidersServiceCollectionExtensions
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Lumen/1.0");
         });
 
+        // Short timeout + retries: artwork lookups are cosmetic and must never hold up a page.
+        services.AddHttpClient(TmdbArtworkProvider.HttpClientName, client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Lumen/1.0");
+            })
+            .AddHttpMessageHandler<TransientRetryHandler>();
+
         services.AddSingleton<IXtreamClientFactory, XtreamClientFactory>();
         services.AddSingleton<IM3uPlaylistParser, M3uPlaylistParser>();
         services.AddSingleton<IXmltvParser, XmltvParser>();
+        services.AddSingleton<IArtworkProvider, TmdbArtworkProvider>();
+        services.AddSingleton<IArtworkProvider, ItunesArtworkProvider>();
+        services.AddSingleton<IArtworkProvider, TvMazeArtworkProvider>();
         return services;
     }
 }

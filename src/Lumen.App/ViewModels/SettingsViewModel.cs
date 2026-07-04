@@ -128,6 +128,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly ICatalogRepository _catalog;
     private readonly IImageCache _imageCache;
     private readonly ISettingsRepository _settings;
+    private readonly IArtworkCacheRepository _artworkCache;
+    private readonly ArtworkService _artworkService;
     private readonly IDialogService _dialogs;
     private readonly IToastService _toasts;
     private readonly IMessenger _messenger;
@@ -145,6 +147,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         ICatalogRepository catalog,
         IImageCache imageCache,
         ISettingsRepository settings,
+        IArtworkCacheRepository artworkCache,
+        ArtworkService artworkService,
         IDialogService dialogs,
         IToastService toasts,
         IMessenger messenger)
@@ -157,6 +161,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _catalog = catalog;
         _imageCache = imageCache;
         _settings = settings;
+        _artworkCache = artworkCache;
+        _artworkService = artworkService;
         _dialogs = dialogs;
         _toasts = toasts;
         _messenger = messenger;
@@ -218,6 +224,12 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     [ObservableProperty]
     private string _streamUserAgent = string.Empty;
+
+    [ObservableProperty]
+    private bool _artworkOnline = true;
+
+    [ObservableProperty]
+    private string _artworkTmdbKey = string.Empty;
 
     [ObservableProperty]
     private string _cacheSummary = string.Empty;
@@ -294,6 +306,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
         var hw = await _settings.GetAsync(0, HardwareAccelerationKey, cancellationToken);
         HardwareAcceleration = hw != "0";
+
+        var artwork = await _settings.GetAsync(0, ArtworkService.EnabledKey, cancellationToken);
+        ArtworkOnline = artwork != "0";
+        ArtworkTmdbKey = await _settings.GetAsync(0, ArtworkService.TmdbKeyKey, cancellationToken) ?? string.Empty;
 
         var stats = await _imageCache.GetStatsAsync(cancellationToken);
         CacheSummary = Strings.Format(Strings.Settings_ImageCacheFormat, FormatBytes(stats.TotalBytes));
@@ -449,6 +465,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private async Task ClearImageCacheAsync()
     {
         await _imageCache.ClearAsync(CancellationToken.None);
+
+        // Clear resolved artwork lookups too — this is the escape hatch for a wrong poster.
+        await _artworkCache.ClearAsync(CancellationToken.None);
+
         var stats = await _imageCache.GetStatsAsync(CancellationToken.None);
         CacheSummary = Strings.Format(Strings.Settings_ImageCacheFormat, FormatBytes(stats.TotalBytes));
         _toasts.Show(Strings.Toast_CacheCleared, ToastSeverity.Success);
@@ -505,6 +525,24 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         if (_loaded)
         {
             _ = _settings.SetAsync(0, HardwareAccelerationKey, value ? "1" : "0", CancellationToken.None);
+        }
+    }
+
+    partial void OnArtworkOnlineChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, ArtworkService.EnabledKey, value ? "1" : "0", CancellationToken.None);
+            _artworkService.Configure(value, ArtworkTmdbKey);
+        }
+    }
+
+    partial void OnArtworkTmdbKeyChanged(string value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, ArtworkService.TmdbKeyKey, value.Trim(), CancellationToken.None);
+            _artworkService.Configure(ArtworkOnline, value);
         }
     }
 

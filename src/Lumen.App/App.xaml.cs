@@ -43,9 +43,18 @@ public partial class App : Application
         MotionSettings.AnimationsEnabled = SystemParameters.ClientAreaAnimation;
     }
 
+    /// <summary>True when launched with any diagnostic/e2e flag; gates non-hermetic behavior.</summary>
+    internal static bool IsDiagnosticRun { get; private set; }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Diagnostic runs must stay deterministic and hermetic: screenshot gates get opaque
+        // backgrounds (RenderTargetBitmap cannot see a DWM backdrop, only its alpha hole) and
+        // no external network lookups fire against live services.
+        IsDiagnosticRun = e.Args.Any(a => a.StartsWith("--", StringComparison.Ordinal));
+        Controls.WindowFx.DisableBackdropForDiagnostics = IsDiagnosticRun;
 
         // The window is created after async initialization, so keep the app alive explicitly
         // until MainWindow exists.
@@ -452,6 +461,7 @@ public partial class App : Application
         services.AddSingleton<ICatalogSyncService, CatalogSyncService>();
         services.AddSingleton<IEpgSyncService, EpgSyncService>();
         services.AddSingleton<ImageSourceCache>();
+        services.AddSingleton<ArtworkService>();
         services.AddSingleton<Services.Playback.PlaybackService>();
         services.AddSingleton<Services.Playback.IPlaybackService>(sp =>
             sp.GetRequiredService<Services.Playback.PlaybackService>());

@@ -23,19 +23,17 @@
         </StackPanel>
 
         <!-- Empty state -->
-        <Border Style="{StaticResource Lumen.Card}"
-                HorizontalAlignment="Left"
-                MaxWidth="480"
-                Visibility="{Binding IsEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
-          <StackPanel>
-            <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                       Text="{x:Static res:Strings.Home_ContinueWatching}"
-                       Margin="{StaticResource Lumen.Margin.B8}" />
-            <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                       Text="{x:Static res:Strings.Home_EmptyBody}"
-                       TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
+        <ContentControl Style="{StaticResource Lumen.EmptyState}"
+                        ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.LiveTv}"
+                        HorizontalAlignment="Center"
+                        Margin="0,96,0,0"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{x:Static res:Strings.Home_EmptyBody}"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center"
+                     MaxWidth="420" />
+        </ContentControl>
 
         <!-- ============ Continue watching ============ -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"

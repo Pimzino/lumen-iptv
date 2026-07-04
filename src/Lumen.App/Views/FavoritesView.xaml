@@ -31,12 +31,17 @@
         </StackPanel>
 
         <!-- Empty -->
-        <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                   Text="{x:Static res:Strings.Favorites_Empty}"
-                   TextWrapping="Wrap"
-                   MaxWidth="420"
-                   HorizontalAlignment="Left"
-                   Visibility="{Binding IsEmpty, Converter={StaticResource Lumen.BoolToVisibility}}" />
+        <ContentControl Style="{StaticResource Lumen.EmptyState}"
+                        ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Favorites}"
+                        HorizontalAlignment="Center"
+                        Margin="0,64,0,0"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{x:Static res:Strings.Favorites_Empty}"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center"
+                     MaxWidth="420" />
+        </ContentControl>
 
         <!-- Channels -->
         <StackPanel Margin="{StaticResource Lumen.Margin.B32}"

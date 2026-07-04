@@ -178,6 +178,12 @@
               <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Overlay.Hover}" />
               <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
             </Trigger>
+            <!-- Snap Layouts: the maximize button's rect answers HTMAXBUTTON at the Win32 level,
+                 so WPF hover never fires there; WindowFx mirrors it into this attached flag. -->
+            <Trigger Property="ctl:WindowFx.IsNcHover" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Overlay.Hover}" />
+              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+            </Trigger>
             <Trigger Property="IsPressed" Value="True">
               <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Overlay.Pressed}" />
             </Trigger>
@@ -788,8 +794,8 @@
                    PopupAnimation="None"
                    Focusable="False">
               <Border x:Name="DropDownBorder"
-                      Background="{StaticResource Lumen.Brush.Bg.Overlay}"
-                      BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+                      Background="{StaticResource Lumen.Brush.Glass}"
+                      BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
                       BorderThickness="{StaticResource Lumen.Stroke.Border}"
                       CornerRadius="{StaticResource Lumen.Radius.Control}"
                       Padding="{StaticResource Lumen.Pad.4}"

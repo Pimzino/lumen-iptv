@@ -53,6 +53,7 @@ public sealed partial class ShellViewModel : ObservableObject,
         ISessionService session,
         IToastService toasts,
         Services.Playback.PlaybackService playback,
+        SearchViewModel search,
         IMessenger messenger)
     {
         Navigation = navigation;
@@ -60,6 +61,7 @@ public sealed partial class ShellViewModel : ObservableObject,
         _toasts = toasts;
         Session = (SessionService)session;
         Playback = playback;
+        Search = search;
 
         RailItems =
         [
@@ -68,7 +70,6 @@ public sealed partial class ShellViewModel : ObservableObject,
             new RailItem("guide", "", Strings.Nav_Guide),
             new RailItem("movies", "", Strings.Nav_Movies),
             new RailItem("series", "", Strings.Nav_Series),
-            new RailItem("search", "", Strings.Nav_Search),
             new RailItem("favorites", "", Strings.Nav_Favorites),
             new RailItem("settings", "", Strings.Nav_Settings),
         ];
@@ -84,6 +85,9 @@ public sealed partial class ShellViewModel : ObservableObject,
 
     /// <summary>Playback state for the player layer, mini player, and immersive chrome.</summary>
     public Services.Playback.PlaybackService Playback { get; }
+
+    /// <summary>Title-bar search dropdown (shell-owned; opened from anywhere via Ctrl+K).</summary>
+    public SearchViewModel Search { get; }
 
     public ObservableCollection<RailItem> RailItems { get; }
 
@@ -109,6 +113,10 @@ public sealed partial class ShellViewModel : ObservableObject,
 
     [RelayCommand]
     private void ToggleRail() => IsRailExpanded = !IsRailExpanded;
+
+    /// <summary>Ctrl+K: focus the title-bar search field (and reopen its dropdown if mid-query).</summary>
+    [RelayCommand]
+    private void FocusSearch() => Search.RequestFocus();
 
     [RelayCommand]
     private void Navigate(string? key)
@@ -194,9 +202,6 @@ public sealed partial class ShellViewModel : ObservableObject,
                 break;
             case "series":
                 Navigation.NavigateTo<SeriesViewModel>();
-                break;
-            case "search":
-                Navigation.NavigateTo<SearchViewModel>();
                 break;
             case "favorites":
                 Navigation.NavigateTo<FavoritesViewModel>();

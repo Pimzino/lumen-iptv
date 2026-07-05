@@ -1,0 +1,171 @@
+<UserControl x:Class="Lumen.App.Controls.SearchBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Lumen.App.Resources"
+             x:Name="Root"
+             Width="320"
+             Height="32">
+  <Grid>
+    <!-- Search field -->
+    <Border x:Name="FieldBorder"
+            Background="{StaticResource Lumen.Brush.Field.Bg}"
+            BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
+            BorderThickness="{StaticResource Lumen.Stroke.Border}"
+            CornerRadius="{StaticResource Lumen.Radius.Control}">
+      <Border.Style>
+        <Style TargetType="Border">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, ElementName=Root}" Value="True">
+              <Setter Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Strong}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=Root}" Value="True">
+              <Setter Property="BorderBrush" Value="{StaticResource Lumen.Brush.Accent}" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Border.Style>
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0"
+                   Text="{StaticResource Lumen.Icon.Search}"
+                   FontFamily="{StaticResource Lumen.Font.Icons}"
+                   FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                   Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
+                   VerticalAlignment="Center"
+                   Margin="12,0,8,0" />
+
+        <Grid Grid.Column="1">
+          <!-- Placeholder sits behind the caret; clicks fall through to the box. -->
+          <TextBlock Text="{x:Static res:Strings.Shell_SearchPlaceholder}"
+                     Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
+                     FontSize="{StaticResource Lumen.FontSize.Caption}"
+                     VerticalAlignment="Center"
+                     IsHitTestVisible="False"
+                     Visibility="{Binding HasQuery, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+          <TextBox x:Name="Box"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Padding="0"
+                   Foreground="{StaticResource Lumen.Brush.Text.Primary}"
+                   CaretBrush="{StaticResource Lumen.Brush.Accent}"
+                   FontSize="{StaticResource Lumen.FontSize.Caption}"
+                   VerticalContentAlignment="Center"
+                   Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                   AutomationProperties.Name="{x:Static res:Strings.Nav_Search}" />
+        </Grid>
+
+        <ContentControl Grid.Column="2"
+                        Style="{StaticResource Lumen.Spinner}"
+                        Width="14"
+                        Height="14"
+                        VerticalAlignment="Center"
+                        Margin="0,0,12,0"
+                        Visibility="{Binding IsSearching, Converter={StaticResource Lumen.BoolToVisibility}}" />
+      </Grid>
+    </Border>
+
+    <!-- Results dropdown -->
+    <Popup x:Name="ResultsPopup"
+           PlacementTarget="{Binding ElementName=FieldBorder}"
+           Placement="Bottom"
+           VerticalOffset="6"
+           AllowsTransparency="True"
+           StaysOpen="False"
+           PopupAnimation="None"
+           IsOpen="{Binding IsOpen, Mode=TwoWay}">
+      <Border Background="{StaticResource Lumen.Brush.Glass}"
+              BorderBrush="{StaticResource Lumen.Brush.Stroke.Glass}"
+              BorderThickness="{StaticResource Lumen.Stroke.Border}"
+              CornerRadius="{StaticResource Lumen.Radius.Card}"
+              MinWidth="{Binding ActualWidth, ElementName=FieldBorder}"
+              MaxWidth="520"
+              Padding="{StaticResource Lumen.Pad.8}">
+        <Grid MaxHeight="480">
+          <!-- Results -->
+          <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        Visibility="{Binding HasResults, Converter={StaticResource Lumen.BoolToVisibility}}">
+            <ItemsControl ItemsSource="{Binding Groups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Margin="{StaticResource Lumen.Margin.B12}">
+                    <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                               Text="{Binding Header}"
+                               Margin="8,4,8,4" />
+                    <ItemsControl ItemsSource="{Binding Hits}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Style="{StaticResource Lumen.Button.Ghost}"
+                                  HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Padding="{StaticResource Lumen.Pad.12}"
+                                  Margin="{StaticResource Lumen.Margin.B4}"
+                                  Command="{Binding DataContext.ActivateCommand, ElementName=Root}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel Orientation="Horizontal">
+                              <TextBlock Style="{StaticResource Lumen.Text.Body}"
+                                         Text="{Binding Title}"
+                                         TextTrimming="CharacterEllipsis" />
+                              <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                         Text="{Binding Subtitle}"
+                                         Margin="{StaticResource Lumen.Margin.L12}"
+                                         VerticalAlignment="Center"
+                                         Visibility="{Binding Subtitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Searching (debounce + in-flight, before any results land) -->
+          <TextBlock Text="{x:Static res:Strings.Search_Searching}"
+                     Margin="{StaticResource Lumen.Pad.12}">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.BodySecondary}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                  <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                      <Condition Binding="{Binding HasResults}" Value="False" />
+                      <Condition Binding="{Binding HasSearched}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                  </MultiDataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+
+          <!-- No results -->
+          <TextBlock Text="{Binding Query, StringFormat={x:Static res:Strings.Search_NoResultsFormat}}"
+                     TextTrimming="CharacterEllipsis"
+                     Margin="{StaticResource Lumen.Pad.12}">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.BodySecondary}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                  <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                      <Condition Binding="{Binding HasResults}" Value="False" />
+                      <Condition Binding="{Binding HasSearched}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                  </MultiDataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </Grid>
+      </Border>
+    </Popup>
+  </Grid>
+</UserControl>

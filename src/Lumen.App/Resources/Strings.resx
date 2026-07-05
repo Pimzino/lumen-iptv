@@ -277,9 +277,8 @@
   <data name="Toast_TraktSyncFailed" xml:space="preserve"><value>Trakt sync failed — see the log for details.</value></data>
   <data name="Toast_TraktNeedCredentials" xml:space="preserve"><value>Enter your Trakt API app's Client ID and Secret first.</value></data>
 
-  <data name="Search_Placeholder" xml:space="preserve"><value>Search channels, movies, series…</value></data>
   <data name="Search_GroupProgrammes" xml:space="preserve"><value>On now &amp; next</value></data>
-  <data name="Search_Prompt" xml:space="preserve"><value>Start typing to search across your library and guide.</value></data>
+  <data name="Search_Searching" xml:space="preserve"><value>Searching…</value></data>
   <data name="Search_NoResultsFormat" xml:space="preserve"><value>No results for “{0}”.</value></data>
   <data name="Filter_CategoriesPlaceholder" xml:space="preserve"><value>Filter categories…</value></data>
   <data name="Filter_ChannelsPlaceholder" xml:space="preserve"><value>Filter channels…</value></data>

@@ -37,10 +37,6 @@
     <views:VodDetailView />
   </DataTemplate>
 
-  <DataTemplate DataType="{x:Type vm:SearchViewModel}">
-    <views:SearchView />
-  </DataTemplate>
-
   <DataTemplate DataType="{x:Type vm:FavoritesViewModel}">
     <views:FavoritesView />
   </DataTemplate>

@@ -285,9 +285,8 @@ public static class Strings
     public static string Toast_TraktSyncFailed => Get(nameof(Toast_TraktSyncFailed));
     public static string Toast_TraktNeedCredentials => Get(nameof(Toast_TraktNeedCredentials));
 
-    public static string Search_Placeholder => Get(nameof(Search_Placeholder));
     public static string Search_GroupProgrammes => Get(nameof(Search_GroupProgrammes));
-    public static string Search_Prompt => Get(nameof(Search_Prompt));
+    public static string Search_Searching => Get(nameof(Search_Searching));
     public static string Search_NoResultsFormat => Get(nameof(Search_NoResultsFormat));
     public static string Filter_CategoriesPlaceholder => Get(nameof(Filter_CategoriesPlaceholder));
     public static string Filter_ChannelsPlaceholder => Get(nameof(Filter_ChannelsPlaceholder));

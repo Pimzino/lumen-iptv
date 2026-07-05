@@ -19,9 +19,10 @@ public sealed class SearchGroup
 
 /// <summary>
 /// Global search: 300ms-debounced queries across channels, VOD, and EPG programme titles,
-/// presented as grouped results. Opened from anywhere via Ctrl+K.
+/// presented as grouped results in a title-bar dropdown. Owned by the shell for the app's
+/// lifetime and opened from anywhere via Ctrl+K.
 /// </summary>
-public sealed partial class SearchViewModel : ObservableObject, INavigationAware
+public sealed partial class SearchViewModel : ObservableObject
 {
     private const int PerGroupLimit = 20;
 
@@ -72,40 +73,46 @@ public sealed partial class SearchViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private bool _hasResults;
 
+    /// <summary>True once a search has completed for the current query (gates the "no results"
+    /// message so it never flashes during the debounce/in-flight window).</summary>
+    [ObservableProperty]
+    private bool _hasSearched;
+
+    /// <summary>Whether the results dropdown is showing under the title-bar search box.</summary>
+    [ObservableProperty]
+    private bool _isOpen;
+
     [ObservableProperty]
     private double _lastSearchMs;
 
-    /// <summary>Set by the view so it can focus the search box on entry.</summary>
+    /// <summary>Set by the search box so Ctrl+K can move keyboard focus into the field.</summary>
     public Action? FocusRequested { get; set; }
 
-    public Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
+    /// <summary>Focuses the search box and reopens the dropdown if a query is already present.</summary>
+    public void RequestFocus()
     {
-        FocusRequested?.Invoke();
-        if (parameter is string initial && !string.IsNullOrWhiteSpace(initial))
+        if (HasQuery)
         {
-            Query = initial;
+            IsOpen = true;
         }
 
-        return Task.CompletedTask;
-    }
-
-    public void OnNavigatedFrom()
-    {
-        _debounce.Stop();
-        _searchCts?.Cancel();
+        FocusRequested?.Invoke();
     }
 
     partial void OnQueryChanged(string value)
     {
         HasQuery = value.Trim().Length > 0;
+        HasSearched = false;
         _debounce.Stop();
         if (value.Trim().Length < 2)
         {
             Groups.Clear();
             HasResults = false;
+            IsOpen = false;
             return;
         }
 
+        IsOpen = true;
         _debounce.Start();
     }
 
@@ -138,6 +145,7 @@ public sealed partial class SearchViewModel : ObservableObject, INavigationAware
             AddGroup(Resources.Strings.Search_GroupProgrammes, results.Programmes);
 
             HasResults = results.TotalCount > 0;
+            HasSearched = true;
             LastSearchMs = (_clock.UtcNow - started).TotalMilliseconds;
         }
         catch (OperationCanceledException)
@@ -147,6 +155,7 @@ public sealed partial class SearchViewModel : ObservableObject, INavigationAware
         catch (Exception ex)
         {
             Log.Error(ex, "Search failed");
+            HasSearched = true;
         }
         finally
         {
@@ -169,6 +178,10 @@ public sealed partial class SearchViewModel : ObservableObject, INavigationAware
         {
             return;
         }
+
+        // Selecting a result dismisses the dropdown and resets the field.
+        IsOpen = false;
+        Query = string.Empty;
 
         switch (hit.Kind)
         {

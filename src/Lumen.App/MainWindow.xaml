@@ -19,18 +19,12 @@
   </Window.Style>
 
   <ctl:LumenChrome.TitleBarContent>
-    <Button Style="{StaticResource Lumen.SearchBox.Shell}"
-            Content="{x:Static res:Strings.Shell_SearchPlaceholder}"
-            Command="{Binding NavigateCommand}"
-            CommandParameter="search"
-            Visibility="{Binding IsShellReady, Converter={StaticResource Lumen.BoolToVisibility}}"
-            AutomationProperties.Name="{x:Static res:Strings.Nav_Search}" />
+    <ctl:SearchBox DataContext="{Binding Search}"
+                   Visibility="{Binding DataContext.IsShellReady, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Lumen.BoolToVisibility}}" />
   </ctl:LumenChrome.TitleBarContent>
 
   <Window.InputBindings>
-    <KeyBinding Modifiers="Control" Key="K"
-                Command="{Binding NavigateCommand}"
-                CommandParameter="search" />
+    <KeyBinding Modifiers="Control" Key="K" Command="{Binding FocusSearchCommand}" />
   </Window.InputBindings>
 
   <Grid>

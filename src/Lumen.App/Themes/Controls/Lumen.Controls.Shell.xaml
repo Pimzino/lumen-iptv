@@ -70,41 +70,6 @@
     </Setter>
   </Style>
 
-  <!-- Title-bar search entry point (activates the Search page; Ctrl+K). -->
-  <Style x:Key="Lumen.SearchBox.Shell" TargetType="Button">
-    <Setter Property="FocusVisualStyle" Value="{StaticResource Lumen.FocusVisual}" />
-    <Setter Property="Width" Value="320" />
-    <Setter Property="Height" Value="32" />
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="Button">
-          <Border x:Name="Root"
-                  Background="{StaticResource Lumen.Brush.Field.Bg}"
-                  BorderBrush="{StaticResource Lumen.Brush.Stroke.Subtle}"
-                  BorderThickness="{StaticResource Lumen.Stroke.Border}"
-                  CornerRadius="{StaticResource Lumen.Radius.Control}">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="{StaticResource Lumen.Margin.L12}">
-              <TextBlock Text="{StaticResource Lumen.Icon.Search}"
-                         FontFamily="{StaticResource Lumen.Font.Icons}"
-                         FontSize="{StaticResource Lumen.FontSize.IconSmall}"
-                         Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
-                         VerticalAlignment="Center"
-                         Margin="{StaticResource Lumen.Margin.R8}" />
-              <ContentPresenter TextElement.Foreground="{StaticResource Lumen.Brush.Text.Tertiary}"
-                                TextElement.FontSize="{StaticResource Lumen.FontSize.Caption}"
-                                VerticalAlignment="Center" />
-            </StackPanel>
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Lumen.Brush.Stroke.Strong}" />
-            </Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-
   <!-- Rail-bottom profile chip. DataContext is the ShellViewModel. -->
   <Style x:Key="Lumen.ProfileChip" TargetType="Button">
     <Setter Property="FocusVisualStyle" Value="{StaticResource Lumen.FocusVisual}" />

@@ -415,15 +415,15 @@ public partial class App : Application
             await Task.Delay(700);
             await SnapAsync("favorites.png");
 
-            shell.NavigateToSection("search");
+            // Search is now a title-bar dropdown rather than a page: drive it on the shell so the
+            // capture shows the live results popover over whatever page is behind it.
+            shell.NavigateToSection("home");
             await Task.Delay(300);
-            if (shell.Navigation.CurrentViewModel is ViewModels.SearchViewModel searchVm)
-            {
-                searchVm.Query = "s";
-                searchVm.Query = "sh"; // ≥2 chars triggers the debounced search
-                await Task.Delay(700);
-                await SnapAsync("search.png");
-            }
+            shell.Search.Query = "sh"; // ≥2 chars triggers the debounced search + opens the dropdown
+            shell.Search.IsOpen = true;
+            await Task.Delay(700);
+            await SnapAsync("search.png");
+            shell.Search.Query = string.Empty;
 
             shell.NavigateToSection("settings");
             await SnapAsync("settings.png");
@@ -528,7 +528,7 @@ public partial class App : Application
         services.AddTransient<GuideViewModel>();
         services.AddTransient<MoviesViewModel>();
         services.AddTransient<SeriesViewModel>();
-        services.AddTransient<SearchViewModel>();
+        services.AddSingleton<SearchViewModel>();
         services.AddTransient<FavoritesViewModel>();
         services.AddTransient<VodDetailViewModel>();
     }

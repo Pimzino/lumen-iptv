@@ -80,7 +80,18 @@
             VerticalAlignment="Top"
             IsHitTestVisible="False"
             ctl:AmbientGlow.SourceUrl="{Binding Hero.ImageUrl}"
-            ctl:AmbientGlow.Intensity="0.09" />
+            ctl:AmbientGlow.Intensity="0.09">
+      <!-- The radial wash is still partly opaque at the Border's bottom edge, so
+           without this it ends on a hard horizontal seam at 420px. Fade it out to
+           fully transparent over the lower portion so it dissolves into the page. -->
+      <Border.OpacityMask>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+          <GradientStop Offset="0" Color="White" />
+          <GradientStop Offset="0.45" Color="White" />
+          <GradientStop Offset="1" Color="Transparent" />
+        </LinearGradientBrush>
+      </Border.OpacityMask>
+    </Border>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="{StaticResource Lumen.Pad.Page}">

@@ -148,6 +148,19 @@
     <GradientStop Offset="1" Color="#CC0B0D10" />
   </LinearGradientBrush>
 
+  <!-- VOD backdrop bottom fade. The content pane is a translucent Layer over a live Mica
+       backdrop, NOT a solid colour, so a fully-opaque scrim would punch a flat dark rectangle
+       into the Mica (a visible "darker square"). Instead this darkens the mid-band for hero-text
+       legibility, then tapers back to fully transparent at the clip edge so the band melts into
+       the Layer with no seam and no opaque block. Dedicated to the backdrop; Scrim.Bottom is
+       unchanged (cards and the player transport still need their bottom edge darkened). -->
+  <LinearGradientBrush x:Key="Lumen.Brush.Scrim.BackdropBottom" StartPoint="0,0" EndPoint="0,1" po:Freeze="True">
+    <GradientStop Offset="0" Color="#000B0D10" />
+    <GradientStop Offset="0.45" Color="#990B0D10" />
+    <GradientStop Offset="0.8" Color="#800B0D10" />
+    <GradientStop Offset="1" Color="#000B0D10" />
+  </LinearGradientBrush>
+
   <!-- Placeholder ambient glow (accent-tinted); Phase 8 swaps in sampled dominant colors. -->
   <RadialGradientBrush x:Key="Lumen.Brush.Glow.Accent" po:Freeze="True">
     <GradientStop Offset="0" Color="#334C8DFF" />

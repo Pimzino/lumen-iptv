@@ -6,15 +6,26 @@
              xmlns:theming="clr-namespace:Lumen.App.Theming">
   <Grid>
     <!-- Backdrop with scrims -->
-    <Image ctl:ImageLoader.Url="{Binding BackdropUrl}"
-           ctl:ImageLoader.DecodeWidth="1280"
-           Stretch="UniformToFill"
-           VerticalAlignment="Top"
-           MaxHeight="520"
-           Opacity="0.5"
-           RenderOptions.BitmapScalingMode="HighQuality" />
+    <!-- Backdrop art in a fixed-height, clipped host so the fade mask maps to the band's real
+         520px bounds. An OpacityMask on the UniformToFill Image itself maps to the image's
+         overflowing content bounds, which pushes the fade off-screen and leaves a hard cut;
+         masking the fixed 520px host instead makes the art dissolve into the Mica layer. -->
+    <Grid VerticalAlignment="Top" Height="520" ClipToBounds="True">
+      <Grid.OpacityMask>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+          <GradientStop Offset="0" Color="White" />
+          <GradientStop Offset="0.55" Color="White" />
+          <GradientStop Offset="1" Color="Transparent" />
+        </LinearGradientBrush>
+      </Grid.OpacityMask>
+      <Image ctl:ImageLoader.Url="{Binding BackdropUrl}"
+             ctl:ImageLoader.DecodeWidth="1280"
+             Stretch="UniformToFill"
+             Opacity="0.5"
+             RenderOptions.BitmapScalingMode="HighQuality" />
+    </Grid>
     <Border VerticalAlignment="Top" Height="520" Background="{StaticResource Lumen.Brush.Scrim.Top}" />
-    <Border VerticalAlignment="Top" Height="520" Background="{StaticResource Lumen.Brush.Scrim.Bottom}" />
+    <Border VerticalAlignment="Top" Height="520" Background="{StaticResource Lumen.Brush.Scrim.BackdropBottom}" />
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="{StaticResource Lumen.Pad.Page}">

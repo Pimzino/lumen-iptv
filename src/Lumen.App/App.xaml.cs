@@ -73,7 +73,8 @@ public partial class App : Application
 
     /// <summary>
     /// Debug entry points: <c>--gallery</c> opens the design-system gallery,
-    /// <c>--gallery-shot [dir]</c> captures it to PNGs and exits.
+    /// <c>--gallery-shot [dir]</c> captures it to PNGs and exits, and
+    /// <c>--show-support</c> previews the support reminder dialog.
     /// </summary>
     private bool TryHandleDiagnosticArgs(string[] args)
     {
@@ -96,7 +97,44 @@ public partial class App : Application
             return true;
         }
 
+        if (args.Contains("--show-support"))
+        {
+            ShowSupportPreview();
+            return true;
+        }
+
         return false;
+    }
+
+    /// <summary>
+    /// Dev-only: previews the support ("buy me a coffee") reminder dialog on demand, bypassing the
+    /// once-a-fortnight gate. Needs no database, host, or profile — launch with
+    /// <c>Lumen.exe --show-support</c>.
+    /// </summary>
+    private void ShowSupportPreview()
+    {
+        // Render with the real chrome (the "--" arg would otherwise disable the backdrop).
+        Controls.WindowFx.DisableBackdropForDiagnostics = false;
+
+        var dialog = new Views.Dialogs.SupportDialog
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(Services.SupportService.DonationUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to open donation page from the support preview");
+            }
+        }
+
+        Shutdown(0);
     }
 
     private async Task CaptureGalleryAsync(string directory)

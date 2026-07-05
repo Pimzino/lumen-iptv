@@ -504,6 +504,7 @@ public partial class App : Application
             sp.GetRequiredService<Services.Playback.PlaybackService>());
         services.AddSingleton<Services.PlaybackServiceNavigator>();
         services.AddSingleton<Services.VodService>();
+        services.AddSingleton<Services.AccountService>();
         services.AddHostedService<Services.EpgRefreshScheduler>();
 
         // Trakt: connection + matching + two-way sync; the scrobbler and scheduler are hosted

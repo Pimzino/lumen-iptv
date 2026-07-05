@@ -159,6 +159,28 @@ public static class Strings
     public static string Settings_VersionFormat => Get(nameof(Settings_VersionFormat));
     public static string Settings_Licenses => Get(nameof(Settings_Licenses));
 
+    public static string Settings_Account => Get(nameof(Settings_Account));
+    public static string Settings_AccountStatus => Get(nameof(Settings_AccountStatus));
+    public static string Settings_AccountExpiry => Get(nameof(Settings_AccountExpiry));
+    public static string Settings_AccountConnections => Get(nameof(Settings_AccountConnections));
+    public static string Settings_AccountTrial => Get(nameof(Settings_AccountTrial));
+    public static string Settings_AccountCreated => Get(nameof(Settings_AccountCreated));
+    public static string Settings_AccountFormats => Get(nameof(Settings_AccountFormats));
+    public static string Settings_AccountServerTime => Get(nameof(Settings_AccountServerTime));
+    public static string Settings_AccountServerTimeFormat => Get(nameof(Settings_AccountServerTimeFormat));
+    public static string Settings_AccountConnectionsFormat => Get(nameof(Settings_AccountConnectionsFormat));
+    public static string Settings_AccountConnectionsAvailableFormat => Get(nameof(Settings_AccountConnectionsAvailableFormat));
+    public static string Settings_AccountConnectionsInUseOnlyFormat => Get(nameof(Settings_AccountConnectionsInUseOnlyFormat));
+    public static string Settings_AccountExpiryNever => Get(nameof(Settings_AccountExpiryNever));
+    public static string Settings_AccountExpiryExpiredFormat => Get(nameof(Settings_AccountExpiryExpiredFormat));
+    public static string Settings_AccountExpiryInDaysFormat => Get(nameof(Settings_AccountExpiryInDaysFormat));
+    public static string Settings_AccountExpiryTomorrowFormat => Get(nameof(Settings_AccountExpiryTomorrowFormat));
+    public static string Settings_AccountExpiresSoonWarning => Get(nameof(Settings_AccountExpiresSoonWarning));
+    public static string Settings_AccountAllConnectionsWarning => Get(nameof(Settings_AccountAllConnectionsWarning));
+    public static string Settings_AccountLoadFailed => Get(nameof(Settings_AccountLoadFailed));
+    public static string Settings_AccountTrialYes => Get(nameof(Settings_AccountTrialYes));
+    public static string Settings_AccountTrialNo => Get(nameof(Settings_AccountTrialNo));
+
     public static string Toast_ProfileConnectedFormat => Get(nameof(Toast_ProfileConnectedFormat));
     public static string Toast_ProfileUpdatedFormat => Get(nameof(Toast_ProfileUpdatedFormat));
     public static string Toast_ProfileSwitchedFormat => Get(nameof(Toast_ProfileSwitchedFormat));

@@ -152,6 +152,28 @@
   <data name="Settings_VersionFormat" xml:space="preserve"><value>Lumen {0}</value></data>
   <data name="Settings_Licenses" xml:space="preserve"><value>Built with LibVLC (LGPL-2.1), CommunityToolkit.Mvvm (MIT), Serilog (Apache-2.0), Dapper (Apache-2.0), Microsoft.Data.Sqlite (MIT).</value></data>
 
+  <data name="Settings_Account" xml:space="preserve"><value>Account</value></data>
+  <data name="Settings_AccountStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Settings_AccountExpiry" xml:space="preserve"><value>Subscription expires</value></data>
+  <data name="Settings_AccountConnections" xml:space="preserve"><value>Connections</value></data>
+  <data name="Settings_AccountTrial" xml:space="preserve"><value>Trial</value></data>
+  <data name="Settings_AccountCreated" xml:space="preserve"><value>Member since</value></data>
+  <data name="Settings_AccountFormats" xml:space="preserve"><value>Allowed formats</value></data>
+  <data name="Settings_AccountServerTime" xml:space="preserve"><value>Server time</value></data>
+  <data name="Settings_AccountServerTimeFormat" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="Settings_AccountConnectionsFormat" xml:space="preserve"><value>{0} of {1} in use</value></data>
+  <data name="Settings_AccountConnectionsAvailableFormat" xml:space="preserve"><value>{0} available</value></data>
+  <data name="Settings_AccountConnectionsInUseOnlyFormat" xml:space="preserve"><value>{0} in use</value></data>
+  <data name="Settings_AccountExpiryNever" xml:space="preserve"><value>No expiry (lifetime)</value></data>
+  <data name="Settings_AccountExpiryExpiredFormat" xml:space="preserve"><value>{0} (expired)</value></data>
+  <data name="Settings_AccountExpiryInDaysFormat" xml:space="preserve"><value>{0} (in {1} days)</value></data>
+  <data name="Settings_AccountExpiryTomorrowFormat" xml:space="preserve"><value>{0} (tomorrow)</value></data>
+  <data name="Settings_AccountExpiresSoonWarning" xml:space="preserve"><value>Your subscription ends soon.</value></data>
+  <data name="Settings_AccountAllConnectionsWarning" xml:space="preserve"><value>All connections are in use — this can cause playback to fail.</value></data>
+  <data name="Settings_AccountLoadFailed" xml:space="preserve"><value>Couldn’t load account details.</value></data>
+  <data name="Settings_AccountTrialYes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Settings_AccountTrialNo" xml:space="preserve"><value>No</value></data>
+
   <data name="Toast_ProfileConnectedFormat" xml:space="preserve"><value>Profile “{0}” connected.</value></data>
   <data name="Toast_ProfileUpdatedFormat" xml:space="preserve"><value>Profile “{0}” updated.</value></data>
   <data name="Toast_ProfileSwitchedFormat" xml:space="preserve"><value>Switched to “{0}”.</value></data>

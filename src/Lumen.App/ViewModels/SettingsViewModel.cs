@@ -138,6 +138,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly TraktService _trakt;
     private readonly TraktAuthStore _traktStore;
     private readonly TraktSyncService _traktSync;
+    private readonly AccountService _accounts;
+    private readonly IClock _clock;
     private readonly System.Windows.Threading.DispatcherTimer _mappingFilterDebounce;
 
     private bool _loaded;
@@ -160,7 +162,9 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         IMessenger messenger,
         TraktService trakt,
         TraktAuthStore traktStore,
-        TraktSyncService traktSync)
+        TraktSyncService traktSync,
+        AccountService accounts,
+        IClock clock)
     {
         _session = session;
         _profiles = profiles;
@@ -178,6 +182,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _trakt = trakt;
         _traktStore = traktStore;
         _traktSync = traktSync;
+        _accounts = accounts;
+        _clock = clock;
 
         _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
         {
@@ -245,6 +251,57 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     [ObservableProperty]
     private string _cacheSummary = string.Empty;
+
+    // ------------------------------------------------------------------ Account (Xtream)
+
+    /// <summary>Gates the whole Account card — hidden for M3U profiles.</summary>
+    [ObservableProperty]
+    private bool _isCurrentProfileXtream;
+
+    [ObservableProperty]
+    private bool _isAccountLoading;
+
+    [ObservableProperty]
+    private bool _accountLoadFailed;
+
+    /// <summary>True once a snapshot has loaded — drives the details block's visibility.</summary>
+    [ObservableProperty]
+    private bool _accountReady;
+
+    [ObservableProperty]
+    private string _accountStatus = string.Empty;
+
+    /// <summary>Active and unexpired — colors the status green vs. red.</summary>
+    [ObservableProperty]
+    private bool _accountStatusIsHealthy;
+
+    [ObservableProperty]
+    private string _expiryText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showExpirySoonWarning;
+
+    [ObservableProperty]
+    private string _connectionsText = string.Empty;
+
+    [ObservableProperty]
+    private string? _connectionsAvailableText;
+
+    /// <summary>Every connection is in use — surfaced as the playback-failure hint.</summary>
+    [ObservableProperty]
+    private bool _showConnectionsWarning;
+
+    [ObservableProperty]
+    private string _trialText = string.Empty;
+
+    [ObservableProperty]
+    private string _createdText = string.Empty;
+
+    [ObservableProperty]
+    private string _allowedFormatsText = string.Empty;
+
+    [ObservableProperty]
+    private string _serverTimeText = string.Empty;
 
     // ------------------------------------------------------------------ Trakt
 
@@ -342,6 +399,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
             StreamUserAgent = current.StreamUserAgent ?? string.Empty;
         }
 
+        IsCurrentProfileXtream = current?.Kind == ProfileKind.Xtream;
+
         var intervalRaw = await _settings.GetAsync(0, EpgIntervalKey, cancellationToken);
         EpgIntervalIndex = intervalRaw switch
         {
@@ -364,6 +423,123 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
         await ReloadTraktAsync(cancellationToken);
         await ReloadMappingAsync(cancellationToken);
+
+        // Account details load in the background: a slow or unreachable panel must never hold up
+        // the rest of the page behind the loading skeleton. The card shows its own spinner.
+        if (current is { Kind: ProfileKind.Xtream })
+        {
+            _ = LoadAccountAsync(current, cancellationToken);
+        }
+    }
+
+    private async Task LoadAccountAsync(Profile profile, CancellationToken cancellationToken)
+    {
+        IsAccountLoading = true;
+        AccountLoadFailed = false;
+        AccountReady = false;
+        try
+        {
+            var info = await _accounts.GetAccountInfoAsync(profile, cancellationToken);
+            if (info is null)
+            {
+                // Credentials vanished mid-session; nothing to show.
+                IsCurrentProfileXtream = false;
+                return;
+            }
+
+            ApplyAccountInfo(info);
+            AccountReady = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // Navigated away before the panel answered — drop it silently.
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to load Xtream account details");
+            AccountLoadFailed = true;
+        }
+        finally
+        {
+            IsAccountLoading = false;
+        }
+    }
+
+    private void ApplyAccountInfo(AccountInfo info)
+    {
+        var now = _clock.UtcNow;
+
+        AccountStatus = string.IsNullOrWhiteSpace(info.Status) ? "—" : info.Status;
+        var expired = info.ExpiresAt is { } end && end < now;
+        AccountStatusIsHealthy = info.IsActive && !expired;
+
+        if (info.ExpiresAt is { } expiry)
+        {
+            var date = expiry.ToLocalTime().ToString("d MMMM yyyy", CultureInfo.CurrentCulture);
+            if (expired)
+            {
+                ExpiryText = Strings.Format(Strings.Settings_AccountExpiryExpiredFormat, date);
+                ShowExpirySoonWarning = false;
+            }
+            else
+            {
+                var days = (int)Math.Ceiling((expiry - now).TotalDays);
+                ExpiryText = days <= 1
+                    ? Strings.Format(Strings.Settings_AccountExpiryTomorrowFormat, date)
+                    : Strings.Format(Strings.Settings_AccountExpiryInDaysFormat, date, days);
+                ShowExpirySoonWarning = days <= 7;
+            }
+        }
+        else
+        {
+            ExpiryText = Strings.Settings_AccountExpiryNever;
+            ShowExpirySoonWarning = false;
+        }
+
+        if (info.MaxConnections is { } max && max > 0)
+        {
+            ConnectionsText = Strings.Format(
+                Strings.Settings_AccountConnectionsFormat, info.ActiveConnections ?? 0, max);
+            ConnectionsAvailableText = info.ConnectionsAvailable is { } available
+                ? Strings.Format(Strings.Settings_AccountConnectionsAvailableFormat, available)
+                : null;
+        }
+        else
+        {
+            ConnectionsText = info.ActiveConnections is { } active
+                ? Strings.Format(Strings.Settings_AccountConnectionsInUseOnlyFormat, active)
+                : "—";
+            ConnectionsAvailableText = null;
+        }
+
+        ShowConnectionsWarning = info.AllConnectionsInUse;
+
+        TrialText = info.IsTrial ? Strings.Settings_AccountTrialYes : Strings.Settings_AccountTrialNo;
+
+        CreatedText = info.CreatedAt is { } created
+            ? created.ToLocalTime().ToString("d MMMM yyyy", CultureInfo.CurrentCulture)
+            : "—";
+
+        AllowedFormatsText = info.AllowedFormats.Count > 0
+            ? string.Join(", ", info.AllowedFormats)
+            : "—";
+
+        ServerTimeText = (info.ServerTimeNow, info.ServerTimezone) switch
+        {
+            ({ } time, { } zone) => Strings.Format(Strings.Settings_AccountServerTimeFormat, time, zone),
+            ({ } time, null) => time,
+            (null, { } zone) => zone,
+            _ => "—",
+        };
+    }
+
+    [RelayCommand]
+    private async Task RefreshAccountAsync()
+    {
+        if (_session.CurrentProfile is { Kind: ProfileKind.Xtream } profile)
+        {
+            await LoadAccountAsync(profile, CancellationToken.None);
+        }
     }
 
     private async Task ReloadTraktAsync(CancellationToken cancellationToken)

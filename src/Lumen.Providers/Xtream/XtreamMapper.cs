@@ -171,6 +171,28 @@ public static class XtreamMapper
         };
     }
 
+    /// <summary>Projects an auth response's user/server info onto the neutral account snapshot.</summary>
+    public static AccountInfo ToAccountInfo(XtreamAuthResponse auth)
+    {
+        ArgumentNullException.ThrowIfNull(auth);
+        var user = auth.UserInfo;
+        var server = auth.ServerInfo;
+        return new AccountInfo
+        {
+            Status = NullIfBlank(user?.Status),
+            ExpiresAt = user?.ExpiresAt,
+            IsTrial = user?.IsTrial ?? false,
+            ActiveConnections = user?.ActiveConnections,
+            MaxConnections = user?.MaxConnections,
+            CreatedAt = user?.CreatedAtUnix is > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(user.CreatedAtUnix.Value)
+                : null,
+            AllowedFormats = user?.AllowedOutputFormats ?? [],
+            ServerTimezone = NullIfBlank(server?.Timezone),
+            ServerTimeNow = NullIfBlank(server?.TimeNow),
+        };
+    }
+
     private static long? ResolveCategory(
         string? providerCategoryId, IReadOnlyDictionary<string, long> categoryIdsByProviderId) =>
         providerCategoryId is not null && categoryIdsByProviderId.TryGetValue(providerCategoryId, out var id)

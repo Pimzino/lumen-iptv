@@ -97,6 +97,153 @@
         </StackPanel>
       </Border>
 
+      <!-- ============ Account (Xtream only) ============ -->
+      <StackPanel Visibility="{Binding IsCurrentProfileXtream, Converter={StaticResource Lumen.BoolToVisibility}}">
+        <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                   Text="{x:Static res:Strings.Settings_Account}"
+                   Margin="{StaticResource Lumen.Margin.B12}" />
+        <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
+          <StackPanel>
+
+            <!-- Loading -->
+            <ctl:SkeletonBlock Height="150" CornerRadius="8"
+                               Visibility="{Binding IsAccountLoading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+
+            <!-- Fetch failed -->
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding AccountLoadFailed, Converter={StaticResource Lumen.BoolToVisibility}}">
+              <TextBlock Style="{StaticResource Lumen.Text.Body}"
+                         Foreground="{StaticResource Lumen.Brush.Error}"
+                         Text="{x:Static res:Strings.Settings_AccountLoadFailed}"
+                         VerticalAlignment="Center"
+                         Margin="{StaticResource Lumen.Margin.R12}" />
+              <Button Style="{StaticResource Lumen.Button.Ghost}"
+                      Content="{x:Static res:Strings.Common_Refresh}"
+                      Command="{Binding RefreshAccountCommand}" />
+            </StackPanel>
+
+            <!-- Details -->
+            <StackPanel Visibility="{Binding AccountReady, Converter={StaticResource Lumen.BoolToVisibility}}">
+
+              <!-- Status -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountStatus}" />
+                <TextBlock Grid.Column="1" Text="{Binding AccountStatus}">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.BodyStrong}">
+                      <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Success}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding AccountStatusIsHealthy}" Value="False">
+                          <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Error}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Grid>
+
+              <!-- Subscription expiry -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountExpiry}" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="{Binding ExpiryText}" />
+                  <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                             Foreground="{StaticResource Lumen.Brush.Accent}"
+                             Text="{x:Static res:Strings.Settings_AccountExpiresSoonWarning}"
+                             Margin="{StaticResource Lumen.Margin.T4}"
+                             Visibility="{Binding ShowExpirySoonWarning, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Connections -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountConnections}" />
+                <StackPanel Grid.Column="1">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="{Binding ConnectionsText}" />
+                    <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                               Text="{Binding ConnectionsAvailableText}"
+                               Margin="{StaticResource Lumen.Margin.L8}"
+                               Visibility="{Binding ConnectionsAvailableText, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                  </StackPanel>
+                  <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                             Foreground="{StaticResource Lumen.Brush.Error}"
+                             Text="{x:Static res:Strings.Settings_AccountAllConnectionsWarning}"
+                             TextWrapping="Wrap"
+                             Margin="{StaticResource Lumen.Margin.T4}"
+                             Visibility="{Binding ShowConnectionsWarning, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Trial -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountTrial}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding TrialText}" />
+              </Grid>
+
+              <!-- Member since -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountCreated}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding CreatedText}" />
+              </Grid>
+
+              <!-- Allowed formats -->
+              <Grid Margin="{StaticResource Lumen.Margin.B12}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountFormats}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}"
+                           Text="{Binding AllowedFormatsText}" TextWrapping="Wrap" />
+              </Grid>
+
+              <!-- Server time -->
+              <Grid Margin="{StaticResource Lumen.Margin.B16}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="190" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                           Text="{x:Static res:Strings.Settings_AccountServerTime}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding ServerTimeText}" />
+              </Grid>
+
+              <Button Style="{StaticResource Lumen.Button.Ghost}"
+                      Content="{x:Static res:Strings.Common_Refresh}"
+                      Command="{Binding RefreshAccountCommand}"
+                      HorizontalAlignment="Left" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
       <!-- ============ Guide ============ -->
       <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                  Text="{x:Static res:Strings.Settings_Epg}"

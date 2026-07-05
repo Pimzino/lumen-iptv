@@ -1,0 +1,140 @@
+name: Release
+
+# Manually-triggered build & release pipeline.
+#
+# What it does, end to end:
+#   1. Builds and tests the solution (via build.ps1, the same script used locally).
+#   2. Publishes a self-contained, single-file win-x64 build.
+#   3. Packages a portable .zip and an Inno Setup installer (.exe).
+#   4. Cuts a GitHub Release (tag vX.Y.Z) with both assets attached and a
+#      changelog of the commits since the previous release.
+#
+# Trigger it from the Actions tab -> "Release" -> "Run workflow".
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.2.0 (leave blank to use <Version> from Directory.Build.props)"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark the GitHub Release as a pre-release"
+        required: false
+        default: false
+        type: boolean
+
+# Allow the workflow to create tags, releases, and upload release assets.
+permissions:
+  contents: write
+
+# Never let two releases run at once; a second dispatch waits rather than racing.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout (full history + tags for the changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET SDK (pinned by global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $v = "$env:INPUT_VERSION".Trim()
+          if ([string]::IsNullOrWhiteSpace($v)) {
+            [xml]$props = Get-Content Directory.Build.props
+            $v = @($props.Project.PropertyGroup.Version | Where-Object { $_ }) | Select-Object -First 1
+          }
+          $v = "$v".Trim().TrimStart('v', 'V')
+          if ([string]::IsNullOrWhiteSpace($v)) { throw "Could not determine a version to release." }
+          "version=$v" | Out-File $env:GITHUB_OUTPUT -Append
+          "tag=v$v"    | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Releasing version $v (tag v$v)"
+
+      - name: Build & test
+        run: ./build.ps1 -Configuration Release
+
+      - name: Publish self-contained win-x64
+        run: dotnet publish src/Lumen.App/Lumen.App.csproj -c Release -p:PublishProfile=win-x64 -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Package portable archive
+        id: portable
+        run: |
+          $ver = "${{ steps.version.outputs.version }}"
+          $src = "artifacts/publish/win-x64"
+          $zip = "artifacts/Lumen-$ver-win-x64-portable.zip"
+          if (-not (Test-Path $src)) { throw "Publish output not found at $src" }
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "$src/*" -DestinationPath $zip -CompressionLevel Optimal
+          "path=$zip" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Portable archive: $zip"
+
+      - name: Build installer (Inno Setup)
+        id: installer
+        run: |
+          choco install innosetup --no-progress --yes
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after installing Inno Setup." }
+          & $iscc "/DAppVersion=${{ steps.version.outputs.version }}" "build\Lumen.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed (exit $LASTEXITCODE)." }
+          $exe = "artifacts/installer/Lumen-${{ steps.version.outputs.version }}-win-x64-setup.exe"
+          if (-not (Test-Path $exe)) { throw "Installer not found at $exe" }
+          "path=$exe" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Installer: $exe"
+
+      - name: Generate release notes
+        run: |
+          # `git describe` exits non-zero when no prior tag exists (e.g. the very first
+          # release). Don't let that non-zero exit abort the step before we handle it.
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag  = "${{ steps.version.outputs.tag }}"
+          $repo = "${{ github.server_url }}/${{ github.repository }}"
+          $prev = (git describe --tags --abbrev=0 2>$null)
+          if ($LASTEXITCODE -ne 0) { $prev = "" }
+          $prev = "$prev".Trim()
+          if ($prev) {
+            $commits = git log --no-merges --pretty=format:"- %s (%h)" "$prev..HEAD"
+          } else {
+            $commits = git log --no-merges --pretty=format:"- %s (%h)"
+          }
+          $commitsText = (@($commits) -join "`n").Trim()
+          if (-not $commitsText) { $commitsText = "- No changes recorded." }
+          $body = "## What's Changed`n`n$commitsText`n"
+          if ($prev) { $body += "`n**Full Changelog**: $repo/compare/$prev...$tag`n" }
+          $body | Out-File release-notes.md -Encoding utf8
+          Write-Host "----- release-notes.md -----"
+          Get-Content release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ghArgs = @(
+            "${{ steps.version.outputs.tag }}",
+            "${{ steps.portable.outputs.path }}",
+            "${{ steps.installer.outputs.path }}",
+            "--repo",       "${{ github.repository }}",
+            "--target",     "${{ github.sha }}",
+            "--title",      "Lumen ${{ steps.version.outputs.version }}",
+            "--notes-file", "release-notes.md"
+          )
+          if ("${{ inputs.prerelease }}" -eq "true") { $ghArgs += "--prerelease" }
+          gh release create @ghArgs

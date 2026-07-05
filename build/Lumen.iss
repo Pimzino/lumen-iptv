@@ -9,9 +9,14 @@
 ; Build the payload first:
 ;   dotnet publish src/Lumen.App -c Release -p:PublishProfile=win-x64
 ; Then compile this script with the Inno Setup Compiler (iscc build/Lumen.iss).
+;
+; The version can be overridden from the command line without editing this file:
+;   iscc /DAppVersion=1.2.3 build/Lumen.iss
 
 #define AppName "Lumen"
-#define AppVersion "0.1.0"
+#ifndef AppVersion
+  #define AppVersion "0.1.0"
+#endif
 #define AppPublisher "Lumen"
 #define AppExeName "Lumen.exe"
 
@@ -20,13 +25,13 @@ AppId={{9B3F5B1E-3C1D-49D2-9C0E-4C8DFF000001}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
-AppPublisherURL=https://example.com/lumen
+AppPublisherURL=https://github.com/Pimzino/lumen-iptv
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#AppExeName}
 OutputDir=..\artifacts\installer
-OutputBaseFilename=Lumen-{#AppVersion}-setup
+OutputBaseFilename=Lumen-{#AppVersion}-win-x64-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

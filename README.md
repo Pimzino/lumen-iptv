@@ -36,13 +36,13 @@
 |---|---|
 | ![Live TV](docs/screenshots/livetv.png) | ![Guide](docs/screenshots/guide-live.png) |
 
-| Movies | Detail |
+| Movies | Movie detail |
 |---|---|
-| ![Movies](docs/screenshots/movies.png) | ![Detail](docs/screenshots/movie-detail.png) |
+| ![Movies](docs/screenshots/movies.png) | ![Movie detail](docs/screenshots/movie-detail.png) |
 
-| Search | Settings |
+| Series | Settings |
 |---|---|
-| ![Search](docs/screenshots/search.png) | ![Settings](docs/screenshots/settings.png) |
+| ![Series detail](docs/screenshots/series-detail.png) | ![Settings](docs/screenshots/settings.png) |
 
 <sub>Screenshots are rendered by the app's own <code>--shot-shell</code> capture mode (an offscreen WPF render in <a href="src/Lumen.App/App.xaml.cs">App.xaml.cs</a>), not hand-taken.</sub>
 

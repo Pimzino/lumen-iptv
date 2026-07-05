@@ -1,0 +1,25 @@
+Lumen
+Copyright 2026 Pimzino
+
+This product is licensed under the Apache License, Version 2.0 (the "License");
+you may not use this software except in compliance with the License. A copy of
+the License is provided in the LICENSE file, and may also be obtained at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+Lumen redistributes, or is built with, the following third-party software, each
+under its own license:
+
+  - LibVLC / VideoLAN.LibVLC.Windows          LGPL-2.1-or-later   (c) VideoLAN
+  - CommunityToolkit.Mvvm                     MIT                 (c) .NET Foundation
+  - Serilog (+ Extensions, Sinks)             Apache-2.0          (c) Serilog Contributors
+  - Dapper                                    Apache-2.0          (c) .NET Foundation & contributors
+  - Microsoft.Data.Sqlite                     MIT                 (c) .NET Foundation
+  - Microsoft.Extensions.* (Hosting, Http)    MIT                 (c) .NET Foundation
+
+The bundled LibVLC libraries remain the property of the VideoLAN project and are
+distributed under the terms of the GNU Lesser General Public License v2.1.

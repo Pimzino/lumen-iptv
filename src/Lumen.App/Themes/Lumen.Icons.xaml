@@ -51,6 +51,7 @@
   <sys:String x:Key="Lumen.Icon.Appearance">&#xE790;</sys:String>
   <sys:String x:Key="Lumen.Icon.Clock">&#xE823;</sys:String>
   <sys:String x:Key="Lumen.Icon.Reminder">&#xEA8F;</sys:String>
+  <sys:String x:Key="Lumen.Icon.BuyCoffee">&#xEC32;</sys:String>
   <sys:String x:Key="Lumen.Icon.JumpToNow">&#xE8AF;</sys:String>
 
   <!-- Chevrons -->

@@ -140,6 +140,7 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly TraktSyncService _traktSync;
     private readonly AccountService _accounts;
     private readonly IClock _clock;
+    private readonly SupportService _support;
     private readonly System.Windows.Threading.DispatcherTimer _mappingFilterDebounce;
 
     private bool _loaded;
@@ -164,7 +165,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         TraktAuthStore traktStore,
         TraktSyncService traktSync,
         AccountService accounts,
-        IClock clock)
+        IClock clock,
+        SupportService support)
     {
         _session = session;
         _profiles = profiles;
@@ -184,6 +186,7 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _traktSync = traktSync;
         _accounts = accounts;
         _clock = clock;
+        _support = support;
 
         _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
         {
@@ -417,6 +420,9 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
         var hw = await _settings.GetAsync(0, HardwareAccelerationKey, cancellationToken);
         HardwareAcceleration = hw != "0";
+
+        var reminder = await _settings.GetAsync(0, SupportService.ReminderEnabledKey, cancellationToken);
+        SupportReminderEnabled = reminder != "false";
 
         var artwork = await _settings.GetAsync(0, ArtworkService.EnabledKey, cancellationToken);
         ArtworkOnline = artwork != "0";
@@ -849,6 +855,22 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
             _ = _settings.SetAsync(0, TraktSettingsKeys.SyncEnabled, value ? "true" : "false", CancellationToken.None);
         }
     }
+
+    /// <summary>When off, the occasional "buy me a coffee" reminder never appears.</summary>
+    [ObservableProperty]
+    private bool _supportReminderEnabled = true;
+
+    partial void OnSupportReminderEnabledChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, SupportService.ReminderEnabledKey, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    /// <summary>Opens the "buy me a coffee" page from the About section.</summary>
+    [RelayCommand]
+    private void OpenDonation() => _support.OpenDonationPage();
 
     /// <summary>Starts device sign-in and waits for the user to approve the code on trakt.tv.</summary>
     [RelayCommand]

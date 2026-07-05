@@ -38,6 +38,8 @@ public sealed partial class ShellViewModel : ObservableObject,
 {
     private readonly ISessionService _session;
     private readonly IToastService _toasts;
+    private readonly IDialogService _dialogs;
+    private readonly SupportService _support;
 
     [ObservableProperty]
     private bool _isRailExpanded;
@@ -52,6 +54,8 @@ public sealed partial class ShellViewModel : ObservableObject,
         NavigationService navigation,
         ISessionService session,
         IToastService toasts,
+        IDialogService dialogs,
+        SupportService support,
         Services.Playback.PlaybackService playback,
         SearchViewModel search,
         IMessenger messenger)
@@ -59,6 +63,8 @@ public sealed partial class ShellViewModel : ObservableObject,
         Navigation = navigation;
         _session = session;
         _toasts = toasts;
+        _dialogs = dialogs;
+        _support = support;
         Session = (SessionService)session;
         Playback = playback;
         Search = search;
@@ -109,10 +115,52 @@ public sealed partial class ShellViewModel : ObservableObject,
 
         IsShellReady = true;
         NavigateToSection("home");
+        _ = MaybeShowSupportReminderAsync();
     }
 
     [RelayCommand]
     private void ToggleRail() => IsRailExpanded = !IsRailExpanded;
+
+    /// <summary>Opens the "buy me a coffee" page (rail button and Settings link).</summary>
+    [RelayCommand]
+    private void OpenDonation() => _support.OpenDonationPage();
+
+    /// <summary>
+    /// Shows the occasional support reminder at startup, but only when eligible: never during a
+    /// diagnostic/screenshot run, never while media is playing, and at most once a fortnight. A
+    /// short settle delay keeps it from landing over the home page's entrance transition.
+    /// </summary>
+    private async Task MaybeShowSupportReminderAsync()
+    {
+        try
+        {
+            if (App.IsDiagnosticRun || Playback.IsFullPlayerActive || Playback.IsMiniPlayerActive)
+            {
+                return;
+            }
+
+            if (!await _support.IsReminderDueAsync(CancellationToken.None))
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            if (Playback.IsFullPlayerActive || Playback.IsMiniPlayerActive)
+            {
+                return; // the user started watching while we waited
+            }
+
+            await _support.MarkShownAsync(CancellationToken.None);
+            if (await _dialogs.ShowSupportPromptAsync())
+            {
+                _support.OpenDonationPage();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Support reminder failed");
+        }
+    }
 
     /// <summary>Ctrl+K: focus the title-bar search field (and reopen its dropdown if mid-query).</summary>
     [RelayCommand]

@@ -19,6 +19,38 @@
         </StackPanel>
       </Border>
 
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Support_AboutHeading}"
+                 Margin="0,24,0,12" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{x:Static res:Strings.Support_AboutBody}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <Button Style="{StaticResource Lumen.Button.Primary}"
+                  Command="{Binding OpenDonationCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="{StaticResource Lumen.Margin.B16}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                         Text="{StaticResource Lumen.Icon.BuyCoffee}"
+                         VerticalAlignment="Center"
+                         Margin="{StaticResource Lumen.Margin.R8}" />
+              <TextBlock Text="{x:Static res:Strings.Support_BuyCoffee}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Support_ReminderToggle}"
+                    IsChecked="{Binding SupportReminderEnabled}"
+                    Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Support_ReminderHint}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
     </StackPanel>
   </ScrollViewer>
 </UserControl>

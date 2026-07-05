@@ -83,6 +83,13 @@
                 AutomationProperties.Name="{x:Static res:Strings.Shell_Menu}" />
 
         <StackPanel DockPanel.Dock="Bottom">
+          <Button Style="{StaticResource Lumen.Button.Icon}"
+                  Content="{StaticResource Lumen.Icon.BuyCoffee}"
+                  Command="{Binding OpenDonationCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="18,8,0,8"
+                  ToolTip="{x:Static res:Strings.Support_BuyCoffee}"
+                  AutomationProperties.Name="{x:Static res:Strings.Support_BuyCoffee}" />
           <Button x:Name="ProfileChip"
                   Style="{StaticResource Lumen.ProfileChip}"
                   Command="{Binding OpenProfileFlyoutCommand}"

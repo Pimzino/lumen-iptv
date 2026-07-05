@@ -505,6 +505,7 @@ public partial class App : Application
         services.AddSingleton<Services.PlaybackServiceNavigator>();
         services.AddSingleton<Services.VodService>();
         services.AddSingleton<Services.AccountService>();
+        services.AddSingleton<Services.SupportService>();
         services.AddHostedService<Services.EpgRefreshScheduler>();
 
         // Trakt: connection + matching + two-way sync; the scrobbler and scheduler are hosted

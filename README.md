@@ -11,6 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Pimzino/lumen-iptv?color=3b82f6" alt="License"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white" alt="Platform: Windows 10 / 11">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white" alt=".NET 8.0">
+  <a href="https://www.buymeacoffee.com/Pimzino"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Pimzino-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
 </p>
 
 <img src="docs/screenshots/home.png" alt="Lumen Home" width="820" />
@@ -89,6 +90,16 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the layering, threading model, and 
 ## Storage & privacy
 
 All state lives under `%LocalAppData%\Lumen` (SQLite database, logs, image cache). Xtream passwords are encrypted at rest with Windows DPAPI (current-user scope) and never written in plaintext.
+
+## Support
+
+Lumen is free and developed in my spare time. If it's earned a place in your setup and you'd like to help fund continued development, you can buy me a coffee — thank you! ☕
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/Pimzino"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Pimzino-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
+</p>
+
+The app shows a gentle, optional reminder about this at most once a fortnight — never while you're watching, and switchable off under **Settings → About**.
 
 ## Contributing
 

@@ -294,4 +294,13 @@ public static class Strings
     public static string Filter_TypeToFilterPlaceholder => Get(nameof(Filter_TypeToFilterPlaceholder));
     public static string Favorites_Empty => Get(nameof(Favorites_Empty));
     public static string Favorites_Remove => Get(nameof(Favorites_Remove));
+
+    public static string Support_BuyCoffee => Get(nameof(Support_BuyCoffee));
+    public static string Support_MaybeLater => Get(nameof(Support_MaybeLater));
+    public static string Support_PromptTitle => Get(nameof(Support_PromptTitle));
+    public static string Support_PromptBody => Get(nameof(Support_PromptBody));
+    public static string Support_AboutHeading => Get(nameof(Support_AboutHeading));
+    public static string Support_AboutBody => Get(nameof(Support_AboutBody));
+    public static string Support_ReminderToggle => Get(nameof(Support_ReminderToggle));
+    public static string Support_ReminderHint => Get(nameof(Support_ReminderHint));
 }

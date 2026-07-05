@@ -13,6 +13,9 @@ public interface IDialogService
 
     /// <summary>Opens the profile edit dialog. True when edits were saved.</summary>
     Task<bool> EditProfileAsync(long profileId);
+
+    /// <summary>Shows the support ("buy me a coffee") prompt. True when the user chooses to donate.</summary>
+    Task<bool> ShowSupportPromptAsync();
 }
 
 /// <summary>Default dialog service using <see cref="ConfirmDialog"/>.</summary>
@@ -53,6 +56,16 @@ public sealed class DialogService : IDialogService
             {
                 Owner = Application.Current.MainWindow,
             };
+            return dialog.ShowDialog() == true;
+        }).Task;
+    }
+
+    public Task<bool> ShowSupportPromptAsync()
+    {
+        var dispatcher = Application.Current.Dispatcher;
+        return dispatcher.InvokeAsync(() =>
+        {
+            var dialog = new SupportDialog { Owner = Application.Current.MainWindow };
             return dialog.ShowDialog() == true;
         }).Task;
     }

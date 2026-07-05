@@ -934,7 +934,13 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 // the user opens (the muted Live TV preview would show the leftover film). Backing
                 // out of a movie ends it instead; Stop banks the resume position, and the dedicated
                 // PiP button remains the way to keep a VOD playing while browsing.
-                if (IsVod)
+                //
+                // A live channel has the same problem when playback was started from somewhere other
+                // than the Live TV list (Search, Home, Favorites, the Guide): no preview surface is
+                // registered, so handing off would orphan the video on the now-hidden full-player
+                // surface — it keeps decoding unseen and its opening/buffering overlay leaks onto
+                // whatever page is revealed. Stop in that case too.
+                if (IsVod || !_surfaces.ContainsKey(VideoSurfaceKind.Preview))
                 {
                     Stop();
                     return;

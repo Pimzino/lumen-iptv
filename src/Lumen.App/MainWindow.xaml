@@ -107,11 +107,10 @@
                          IsHitTestVisible="False"
                          Visibility="{Binding Update.IsDownloading, Converter={StaticResource Lumen.BoolToVisibility}}" />
           </Grid>
-          <Button Style="{StaticResource Lumen.Button.Icon}"
-                  Content="{StaticResource Lumen.Icon.BuyCoffee}"
+          <Button Style="{StaticResource Lumen.RailAction}"
+                  ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.BuyCoffee}"
+                  Content="{x:Static res:Strings.Support_BuyCoffee}"
                   Command="{Binding OpenDonationCommand}"
-                  HorizontalAlignment="Left"
-                  Margin="18,8,0,8"
                   ToolTip="{x:Static res:Strings.Support_BuyCoffee}"
                   AutomationProperties.Name="{x:Static res:Strings.Support_BuyCoffee}" />
           <Button x:Name="ProfileChip"

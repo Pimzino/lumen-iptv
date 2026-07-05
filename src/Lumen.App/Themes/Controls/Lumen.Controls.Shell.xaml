@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="clr-namespace:Lumen.App.Controls"
                     xmlns:theming="clr-namespace:Lumen.App.Theming">
 
   <ResourceDictionary.MergedDictionaries>
@@ -64,6 +65,53 @@
               <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
               <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
             </DataTrigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- Rail action: a standing command shown as a rail row. Reuses Lumen.RailItem's icon column
+       (56px glyph, centred) and its reveal-label-when-expanded behaviour, but for a fixed command
+       rather than a nav destination — the glyph comes from ctl:LumenUi.Glyph, the label from
+       Content. Used for the rail's bottom actions (e.g. Buy me a coffee) so they read as a labelled
+       row when the rail is expanded instead of a lone icon, with the glyph lined up under the nav
+       items above. -->
+  <Style x:Key="Lumen.RailAction" TargetType="Button">
+    <Setter Property="FocusVisualStyle" Value="{StaticResource Lumen.FocusVisual}" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="Margin" Value="8,2" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="Transparent"
+                  CornerRadius="{StaticResource Lumen.Radius.Control}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="Glyph"
+                         Text="{Binding Path=(ctl:LumenUi.Glyph), RelativeSource={RelativeSource TemplatedParent}}"
+                         FontFamily="{StaticResource Lumen.Font.Icons}"
+                         FontSize="{StaticResource Lumen.FontSize.IconLarge}"
+                         Foreground="{TemplateBinding Foreground}"
+                         Width="56"
+                         TextAlignment="Center"
+                         VerticalAlignment="Center" />
+              <TextBlock Text="{TemplateBinding Content}"
+                         FontFamily="{StaticResource Lumen.Font.Text}"
+                         FontSize="{StaticResource Lumen.FontSize.Body}"
+                         FontWeight="SemiBold"
+                         Foreground="{TemplateBinding Foreground}"
+                         VerticalAlignment="Center"
+                         Visibility="{Binding DataContext.IsRailExpanded, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Lumen.BoolToVisibility}}" />
+            </StackPanel>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{StaticResource Lumen.Brush.Overlay.Hover}" />
+              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
+            </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>

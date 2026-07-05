@@ -311,40 +311,49 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ContentControl">
-          <Grid>
-            <Ellipse Stroke="{StaticResource Lumen.Brush.Control.Rest}"
-                     StrokeThickness="3"
-                     Margin="2" />
-            <Path x:Name="Arc"
-                  Data="M 16,2 A 14,14 0 0 1 30,16"
-                  Stroke="{StaticResource Lumen.Brush.Accent}"
-                  StrokeThickness="3"
-                  StrokeStartLineCap="Round"
-                  StrokeEndLineCap="Round"
-                  RenderTransformOrigin="0.5,0.5"
-                  Stretch="None">
-              <Path.RenderTransform>
-                <!-- Inline (unshared) so the Angle sub-property stays animatable. -->
-                <RotateTransform Angle="0" />
-              </Path.RenderTransform>
-              <!-- The rotation lives in the Path's own EventTrigger with NO Storyboard.TargetName,
-                   so it targets this element directly. Storyboard.TargetName resolution against a
-                   ControlTemplate namescope is unreliable for nested children (throws "name cannot
-                   be found in the name scope of ControlTemplate") — this sidesteps the lookup. -->
-              <Path.Triggers>
-                <EventTrigger RoutedEvent="Loaded">
-                  <BeginStoryboard>
-                    <Storyboard RepeatBehavior="{theming:Loop}">
-                      <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                       From="0"
-                                       To="360"
-                                       Duration="0:0:0.9" />
-                    </Storyboard>
-                  </BeginStoryboard>
-                </EventTrigger>
-              </Path.Triggers>
-            </Path>
-          </Grid>
+          <!-- Authored at 32×32 (ring inset 2px → Ø28; arc radius 14 about centre 16,16). The arc
+               is a fixed-coordinate Path with Stretch="None", so it does NOT scale on its own —
+               only the ring does. A consumer that sets a smaller size (the 18×18 reconnect pill,
+               the 14×14 search spinner) therefore drew the arc at 32-space coordinates: oversized,
+               off-centre, and spilling outside the ring. The Viewbox scales the whole 32×32
+               composition uniformly to the control's size, so the arc tracks the ring and keeps
+               rotating about the true centre at any size. -->
+          <Viewbox Stretch="Uniform">
+            <Grid Width="32" Height="32">
+              <Ellipse Stroke="{StaticResource Lumen.Brush.Control.Rest}"
+                       StrokeThickness="3"
+                       Margin="2" />
+              <Path x:Name="Arc"
+                    Data="M 16,2 A 14,14 0 0 1 30,16"
+                    Stroke="{StaticResource Lumen.Brush.Accent}"
+                    StrokeThickness="3"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    RenderTransformOrigin="0.5,0.5"
+                    Stretch="None">
+                <Path.RenderTransform>
+                  <!-- Inline (unshared) so the Angle sub-property stays animatable. -->
+                  <RotateTransform Angle="0" />
+                </Path.RenderTransform>
+                <!-- The rotation lives in the Path's own EventTrigger with NO Storyboard.TargetName,
+                     so it targets this element directly. Storyboard.TargetName resolution against a
+                     ControlTemplate namescope is unreliable for nested children (throws "name cannot
+                     be found in the name scope of ControlTemplate") — this sidesteps the lookup. -->
+                <Path.Triggers>
+                  <EventTrigger RoutedEvent="Loaded">
+                    <BeginStoryboard>
+                      <Storyboard RepeatBehavior="{theming:Loop}">
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                         From="0"
+                                         To="360"
+                                         Duration="0:0:0.9" />
+                      </Storyboard>
+                    </BeginStoryboard>
+                  </EventTrigger>
+                </Path.Triggers>
+              </Path>
+            </Grid>
+          </Viewbox>
         </ControlTemplate>
       </Setter.Value>
     </Setter>

@@ -60,6 +60,9 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; Silent installs (the in-app auto-updater runs the setup with /SILENT) skip the entry above.
+; Relaunch Lumen after such an update, as the original non-elevated user rather than as admin.
+Filename: "{app}\{#AppExeName}"; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 [Code]
 // True if the uninstaller was launched with the given command-line switch,

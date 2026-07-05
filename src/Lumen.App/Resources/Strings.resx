@@ -295,4 +295,41 @@
   <data name="Support_AboutBody" xml:space="preserve"><value>Lumen is free and developed in my spare time. If you'd like to help fund continued development, you can buy me a coffee — thank you.</value></data>
   <data name="Support_ReminderToggle" xml:space="preserve"><value>Show an occasional support reminder</value></data>
   <data name="Support_ReminderHint" xml:space="preserve"><value>A gentle nudge at most once a fortnight — never while you're watching. Turn it off here anytime.</value></data>
+
+  <data name="Update_RailName" xml:space="preserve"><value>Update</value></data>
+  <data name="Update_RailAvailableTooltip" xml:space="preserve"><value>An update is available</value></data>
+  <data name="Update_RailDownloadingTooltip" xml:space="preserve"><value>Downloading update…</value></data>
+  <data name="Update_RailReadyTooltip" xml:space="preserve"><value>Update ready — click to install</value></data>
+  <data name="Update_DialogTitle" xml:space="preserve"><value>Update available</value></data>
+  <data name="Update_AvailableFormat" xml:space="preserve"><value>Lumen {0} is available.</value></data>
+  <data name="Update_CurrentFormat" xml:space="preserve"><value>You have Lumen {0}.</value></data>
+  <data name="Update_ReleaseNotesHeading" xml:space="preserve"><value>What's new</value></data>
+  <data name="Update_StatusChecking" xml:space="preserve"><value>Checking for updates…</value></data>
+  <data name="Update_StatusDownloadingFormat" xml:space="preserve"><value>Downloading… {0}%  ·  {1} / {2}  ·  {3}/s</value></data>
+  <data name="Update_StatusReady" xml:space="preserve"><value>Ready to install.</value></data>
+  <data name="Update_StatusAvailable" xml:space="preserve"><value>A new version is available.</value></data>
+  <data name="Update_StatusFailed" xml:space="preserve"><value>Couldn't download the update. It will be retried later.</value></data>
+  <data name="Update_InstallNow" xml:space="preserve"><value>Install now</value></data>
+  <data name="Update_SkipVersion" xml:space="preserve"><value>Skip this version</value></data>
+  <data name="Update_Later" xml:space="preserve"><value>Later</value></data>
+  <data name="Update_OpenReleasePage" xml:space="preserve"><value>Open release page</value></data>
+  <data name="Update_ToastAvailableFormat" xml:space="preserve"><value>Lumen {0} is available.</value></data>
+  <data name="Update_ToastReadyFormat" xml:space="preserve"><value>Lumen {0} is ready to install.</value></data>
+  <data name="Update_ToastPostponed" xml:space="preserve"><value>Update postponed. Install it anytime from the sidebar.</value></data>
+  <data name="Update_ToastFailed" xml:space="preserve"><value>Couldn't download the update.</value></data>
+
+  <data name="Settings_Updates" xml:space="preserve"><value>Updates</value></data>
+  <data name="Settings_UpdatesAutoCheck" xml:space="preserve"><value>Check for updates automatically</value></data>
+  <data name="Settings_UpdatesAutoCheckHint" xml:space="preserve"><value>Lumen checks on launch and periodically, downloads new versions in the background, and lets you know when one is ready to install.</value></data>
+  <data name="Settings_UpdatesFrequency" xml:space="preserve"><value>Check frequency</value></data>
+  <data name="Settings_UpdatesFrequencyDaily" xml:space="preserve"><value>Daily</value></data>
+  <data name="Settings_UpdatesFrequencyWeekly" xml:space="preserve"><value>Weekly</value></data>
+  <data name="Settings_UpdatesPrerelease" xml:space="preserve"><value>Include pre-release versions</value></data>
+  <data name="Settings_UpdatesPrereleaseHint" xml:space="preserve"><value>Get early builds as soon as they're published. These may be less stable.</value></data>
+  <data name="Settings_UpdatesCheckNow" xml:space="preserve"><value>Check now</value></data>
+  <data name="Settings_UpdatesChecking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Settings_UpdatesStatusUpToDateFormat" xml:space="preserve"><value>You're up to date (Lumen {0}).</value></data>
+  <data name="Settings_UpdatesStatusAvailableFormat" xml:space="preserve"><value>Update available: Lumen {0}.</value></data>
+  <data name="Settings_UpdatesLastCheckedFormat" xml:space="preserve"><value>Last checked {0}.</value></data>
+  <data name="Settings_UpdatesPortableNote" xml:space="preserve"><value>You're running the portable build, so updates open the release page instead of installing automatically.</value></data>
 </root>

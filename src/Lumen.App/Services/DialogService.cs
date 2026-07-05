@@ -16,6 +16,9 @@ public interface IDialogService
 
     /// <summary>Shows the support ("buy me a coffee") prompt. True when the user chooses to donate.</summary>
     Task<bool> ShowSupportPromptAsync();
+
+    /// <summary>Shows the update dialog (version, notes, progress, actions), bound to the shared view model.</summary>
+    Task ShowUpdateAsync(UpdateViewModel viewModel);
 }
 
 /// <summary>Default dialog service using <see cref="ConfirmDialog"/>.</summary>
@@ -67,6 +70,16 @@ public sealed class DialogService : IDialogService
         {
             var dialog = new SupportDialog { Owner = Application.Current.MainWindow };
             return dialog.ShowDialog() == true;
+        }).Task;
+    }
+
+    public Task ShowUpdateAsync(UpdateViewModel viewModel)
+    {
+        var dispatcher = Application.Current.Dispatcher;
+        return dispatcher.InvokeAsync(() =>
+        {
+            var dialog = new UpdateDialog(viewModel) { Owner = Application.Current.MainWindow };
+            dialog.ShowDialog();
         }).Task;
     }
 }

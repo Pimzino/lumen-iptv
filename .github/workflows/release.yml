@@ -100,6 +100,21 @@ jobs:
           "path=$exe" | Out-File $env:GITHUB_OUTPUT -Append
           Write-Host "Installer: $exe"
 
+      - name: Compute SHA-256 checksums
+        id: checksums
+        run: |
+          # Publish a checksums manifest so the in-app updater can verify the download it fetches.
+          $files = @("${{ steps.portable.outputs.path }}", "${{ steps.installer.outputs.path }}")
+          $lines = foreach ($f in $files) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $f).Hash.ToLower()
+            "$hash  $([System.IO.Path]::GetFileName($f))"
+          }
+          $out = "artifacts/SHA256SUMS.txt"
+          [System.IO.File]::WriteAllText($out, ($lines -join "`n") + "`n")
+          "path=$out" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "----- SHA256SUMS.txt -----"
+          Get-Content $out
+
       - name: Generate release notes
         run: |
           # `git describe` exits non-zero when no prior tag exists (e.g. the very first
@@ -131,6 +146,7 @@ jobs:
             "${{ steps.version.outputs.tag }}",
             "${{ steps.portable.outputs.path }}",
             "${{ steps.installer.outputs.path }}",
+            "${{ steps.checksums.outputs.path }}",
             "--repo",       "${{ github.repository }}",
             "--target",     "${{ github.sha }}",
             "--title",      "Lumen ${{ steps.version.outputs.version }}",

@@ -2,6 +2,7 @@ using Lumen.Providers.Artwork;
 using Lumen.Providers.Http;
 using Lumen.Providers.M3u;
 using Lumen.Providers.Trakt;
+using Lumen.Providers.Updates;
 using Lumen.Providers.Xmltv;
 using Lumen.Providers.Xtream;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +59,17 @@ public static class ProvidersServiceCollectionExtensions
             })
             .AddHttpMessageHandler<TransientRetryHandler>();
 
+        // GitHub Releases API: requires a User-Agent; the versioned Accept header pins the schema.
+        services.AddHttpClient(GitHubReleaseClient.HttpClientName, client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Lumen/1.0");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+            })
+            .AddHttpMessageHandler<TransientRetryHandler>();
+
+        services.AddSingleton<IGitHubReleaseClient, GitHubReleaseClient>();
         services.AddSingleton<ITraktClient, TraktClient>();
         services.AddSingleton<IXtreamClientFactory, XtreamClientFactory>();
         services.AddSingleton<IM3uPlaylistParser, M3uPlaylistParser>();

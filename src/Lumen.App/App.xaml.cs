@@ -322,6 +322,13 @@ public partial class App : Application
 
             await _host.Services.GetRequiredService<ShellViewModel>().InitializeAsync();
 
+            // Dev/QA: force an immediate update check (the scheduler skips diagnostic runs).
+            if (args.Contains("--check-update"))
+            {
+                _ = _host.Services.GetRequiredService<Services.UpdateService>()
+                    .CheckAsync(manual: true, CancellationToken.None);
+            }
+
             if (shellShotDir is not null)
             {
                 await CaptureShellShotsAsync(window, shellShotDir);
@@ -544,7 +551,9 @@ public partial class App : Application
         services.AddSingleton<Services.VodService>();
         services.AddSingleton<Services.AccountService>();
         services.AddSingleton<Services.SupportService>();
+        services.AddSingleton<Services.UpdateService>();
         services.AddHostedService<Services.EpgRefreshScheduler>();
+        services.AddHostedService<Services.UpdateCheckScheduler>();
 
         // Trakt: connection + matching + two-way sync; the scrobbler and scheduler are hosted
         // so they run without being injected anywhere.
@@ -557,6 +566,7 @@ public partial class App : Application
 
         // Shell + pages (pages are transient: fresh state per navigation)
         services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<UpdateViewModel>();
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<MainWindow>();
         services.AddTransient<HomeViewModel>();

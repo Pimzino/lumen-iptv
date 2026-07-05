@@ -83,6 +83,30 @@
                 AutomationProperties.Name="{x:Static res:Strings.Shell_Menu}" />
 
         <StackPanel DockPanel.Dock="Bottom">
+          <!-- Update indicator: shown only when an update is available; a dot marks it,
+               a thin bar tracks the background download, and clicking opens the dialog. -->
+          <Grid HorizontalAlignment="Left"
+                Margin="18,8,0,8"
+                Visibility="{Binding Update.IsUpdateAvailable, Converter={StaticResource Lumen.BoolToVisibility}}">
+            <Button Style="{StaticResource Lumen.Button.Icon}"
+                    Content="{StaticResource Lumen.Icon.Update}"
+                    Command="{Binding Update.OpenDialogCommand}"
+                    ToolTip="{Binding Update.RailTooltip}"
+                    AutomationProperties.Name="{Binding Update.RailTooltip}" />
+            <Ellipse Width="8" Height="8"
+                     Fill="{StaticResource Lumen.Brush.Accent}"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Top"
+                     Margin="0,4,2,0"
+                     IsHitTestVisible="False" />
+            <ProgressBar Value="{Binding Update.Percent, Mode=OneWay}"
+                         Maximum="100"
+                         Height="2"
+                         Width="26"
+                         VerticalAlignment="Bottom"
+                         IsHitTestVisible="False"
+                         Visibility="{Binding Update.IsDownloading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+          </Grid>
           <Button Style="{StaticResource Lumen.Button.Icon}"
                   Content="{StaticResource Lumen.Icon.BuyCoffee}"
                   Command="{Binding OpenDonationCommand}"

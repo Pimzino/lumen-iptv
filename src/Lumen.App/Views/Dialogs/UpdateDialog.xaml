@@ -1,0 +1,89 @@
+<ctl:LumenDialogWindow x:Class="Lumen.App.Views.Dialogs.UpdateDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ctl="clr-namespace:Lumen.App.Controls"
+                       xmlns:res="clr-namespace:Lumen.App.Resources">
+  <StackPanel Width="440" Margin="{StaticResource Lumen.Pad.24}">
+    <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+               Text="{StaticResource Lumen.Icon.Update}"
+               FontSize="40"
+               Foreground="{StaticResource Lumen.Brush.Accent}"
+               Margin="{StaticResource Lumen.Margin.B12}" />
+
+    <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+               Text="{x:Static res:Strings.Update_DialogTitle}"
+               Margin="{StaticResource Lumen.Margin.B8}" />
+
+    <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+               Text="{Binding AvailableVersionLine}"
+               TextWrapping="Wrap" />
+    <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+               Text="{Binding CurrentVersionLine}"
+               Margin="{StaticResource Lumen.Margin.B16}" />
+
+    <!-- Release notes -->
+    <Border Style="{StaticResource Lumen.Card}"
+            Margin="{StaticResource Lumen.Margin.B16}"
+            Visibility="{Binding HasReleaseNotes, Converter={StaticResource Lumen.BoolToVisibility}}">
+      <StackPanel>
+        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                   Text="{x:Static res:Strings.Update_ReleaseNotesHeading}"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+        <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{Binding ReleaseNotes}"
+                     TextWrapping="Wrap" />
+        </ScrollViewer>
+      </StackPanel>
+    </Border>
+
+    <!-- Progress / status -->
+    <ProgressBar Value="{Binding Percent, Mode=OneWay}"
+                 Maximum="100"
+                 Margin="{StaticResource Lumen.Margin.B8}"
+                 Visibility="{Binding IsDownloading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+    <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+               Text="{Binding StatusText}"
+               TextWrapping="Wrap"
+               Margin="{StaticResource Lumen.Margin.B24}" />
+
+    <!-- Actions: installer build (auto-update) -->
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Visibility="{Binding CanAutoUpdate, Converter={StaticResource Lumen.BoolToVisibility}}">
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              Content="{x:Static res:Strings.Update_SkipVersion}"
+              Command="{Binding SkipVersionCommand}"
+              Click="OnCloseClick"
+              Margin="{StaticResource Lumen.Margin.R8}" />
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              Content="{x:Static res:Strings.Update_Later}"
+              IsCancel="True"
+              Margin="{StaticResource Lumen.Margin.R8}" />
+      <Button Style="{StaticResource Lumen.Button.Primary}"
+              Content="{x:Static res:Strings.Update_InstallNow}"
+              Command="{Binding InstallNowCommand}"
+              IsDefault="True" />
+    </StackPanel>
+
+    <!-- Actions: portable build (open the release page) -->
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Visibility="{Binding CanAutoUpdate, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              Content="{x:Static res:Strings.Update_SkipVersion}"
+              Command="{Binding SkipVersionCommand}"
+              Click="OnCloseClick"
+              Margin="{StaticResource Lumen.Margin.R8}" />
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              Content="{x:Static res:Strings.Update_Later}"
+              IsCancel="True"
+              Margin="{StaticResource Lumen.Margin.R8}" />
+      <Button Style="{StaticResource Lumen.Button.Primary}"
+              Content="{x:Static res:Strings.Update_OpenReleasePage}"
+              Command="{Binding OpenReleasePageCommand}"
+              Click="OnCloseClick"
+              IsDefault="True" />
+    </StackPanel>
+  </StackPanel>
+</ctl:LumenDialogWindow>

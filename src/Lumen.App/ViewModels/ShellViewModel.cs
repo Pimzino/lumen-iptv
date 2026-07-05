@@ -58,6 +58,7 @@ public sealed partial class ShellViewModel : ObservableObject,
         SupportService support,
         Services.Playback.PlaybackService playback,
         SearchViewModel search,
+        UpdateViewModel update,
         IMessenger messenger)
     {
         Navigation = navigation;
@@ -68,6 +69,7 @@ public sealed partial class ShellViewModel : ObservableObject,
         Session = (SessionService)session;
         Playback = playback;
         Search = search;
+        Update = update;
 
         RailItems =
         [
@@ -94,6 +96,9 @@ public sealed partial class ShellViewModel : ObservableObject,
 
     /// <summary>Title-bar search dropdown (shell-owned; opened from anywhere via Ctrl+K).</summary>
     public SearchViewModel Search { get; }
+
+    /// <summary>Auto-update state for the rail indicator and update dialog.</summary>
+    public UpdateViewModel Update { get; }
 
     public ObservableCollection<RailItem> RailItems { get; }
 

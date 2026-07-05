@@ -303,4 +303,41 @@ public static class Strings
     public static string Support_AboutBody => Get(nameof(Support_AboutBody));
     public static string Support_ReminderToggle => Get(nameof(Support_ReminderToggle));
     public static string Support_ReminderHint => Get(nameof(Support_ReminderHint));
+
+    public static string Update_RailName => Get(nameof(Update_RailName));
+    public static string Update_RailAvailableTooltip => Get(nameof(Update_RailAvailableTooltip));
+    public static string Update_RailDownloadingTooltip => Get(nameof(Update_RailDownloadingTooltip));
+    public static string Update_RailReadyTooltip => Get(nameof(Update_RailReadyTooltip));
+    public static string Update_DialogTitle => Get(nameof(Update_DialogTitle));
+    public static string Update_AvailableFormat => Get(nameof(Update_AvailableFormat));
+    public static string Update_CurrentFormat => Get(nameof(Update_CurrentFormat));
+    public static string Update_ReleaseNotesHeading => Get(nameof(Update_ReleaseNotesHeading));
+    public static string Update_StatusChecking => Get(nameof(Update_StatusChecking));
+    public static string Update_StatusDownloadingFormat => Get(nameof(Update_StatusDownloadingFormat));
+    public static string Update_StatusReady => Get(nameof(Update_StatusReady));
+    public static string Update_StatusAvailable => Get(nameof(Update_StatusAvailable));
+    public static string Update_StatusFailed => Get(nameof(Update_StatusFailed));
+    public static string Update_InstallNow => Get(nameof(Update_InstallNow));
+    public static string Update_SkipVersion => Get(nameof(Update_SkipVersion));
+    public static string Update_Later => Get(nameof(Update_Later));
+    public static string Update_OpenReleasePage => Get(nameof(Update_OpenReleasePage));
+    public static string Update_ToastAvailableFormat => Get(nameof(Update_ToastAvailableFormat));
+    public static string Update_ToastReadyFormat => Get(nameof(Update_ToastReadyFormat));
+    public static string Update_ToastPostponed => Get(nameof(Update_ToastPostponed));
+    public static string Update_ToastFailed => Get(nameof(Update_ToastFailed));
+
+    public static string Settings_Updates => Get(nameof(Settings_Updates));
+    public static string Settings_UpdatesAutoCheck => Get(nameof(Settings_UpdatesAutoCheck));
+    public static string Settings_UpdatesAutoCheckHint => Get(nameof(Settings_UpdatesAutoCheckHint));
+    public static string Settings_UpdatesFrequency => Get(nameof(Settings_UpdatesFrequency));
+    public static string Settings_UpdatesFrequencyDaily => Get(nameof(Settings_UpdatesFrequencyDaily));
+    public static string Settings_UpdatesFrequencyWeekly => Get(nameof(Settings_UpdatesFrequencyWeekly));
+    public static string Settings_UpdatesPrerelease => Get(nameof(Settings_UpdatesPrerelease));
+    public static string Settings_UpdatesPrereleaseHint => Get(nameof(Settings_UpdatesPrereleaseHint));
+    public static string Settings_UpdatesCheckNow => Get(nameof(Settings_UpdatesCheckNow));
+    public static string Settings_UpdatesChecking => Get(nameof(Settings_UpdatesChecking));
+    public static string Settings_UpdatesStatusUpToDateFormat => Get(nameof(Settings_UpdatesStatusUpToDateFormat));
+    public static string Settings_UpdatesStatusAvailableFormat => Get(nameof(Settings_UpdatesStatusAvailableFormat));
+    public static string Settings_UpdatesLastCheckedFormat => Get(nameof(Settings_UpdatesLastCheckedFormat));
+    public static string Settings_UpdatesPortableNote => Get(nameof(Settings_UpdatesPortableNote));
 }

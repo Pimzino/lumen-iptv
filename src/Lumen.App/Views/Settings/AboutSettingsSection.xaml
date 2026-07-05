@@ -20,6 +20,58 @@
       </Border>
 
       <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Updates}"
+                 Margin="0,24,0,12" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                     Text="{Binding UpdateStatusLine}"
+                     Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{Binding UpdateLastCheckedLine}"
+                     Margin="{StaticResource Lumen.Margin.B16}"
+                     Visibility="{Binding UpdateLastCheckedLine, Converter={StaticResource Lumen.NullToCollapsed}}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_UpdatesPortableNote}"
+                     TextWrapping="Wrap"
+                     Foreground="{StaticResource Lumen.Brush.Accent}"
+                     Margin="{StaticResource Lumen.Margin.B16}"
+                     Visibility="{Binding IsPortableBuild, Converter={StaticResource Lumen.BoolToVisibility}}" />
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_UpdatesAutoCheck}"
+                    IsChecked="{Binding AutoUpdateEnabled}"
+                    Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_UpdatesAutoCheckHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
+            <TextBlock Style="{StaticResource Lumen.Text.Body}"
+                       Text="{x:Static res:Strings.Settings_UpdatesFrequency}"
+                       VerticalAlignment="Center"
+                       Margin="{StaticResource Lumen.Margin.R16}" />
+            <ComboBox Width="200" SelectedIndex="{Binding UpdateFrequencyIndex}">
+              <ComboBoxItem Content="{x:Static res:Strings.Settings_UpdatesFrequencyDaily}" />
+              <ComboBoxItem Content="{x:Static res:Strings.Settings_UpdatesFrequencyWeekly}" />
+            </ComboBox>
+          </StackPanel>
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_UpdatesPrerelease}"
+                    IsChecked="{Binding IncludePrerelease}"
+                    Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_UpdatesPrereleaseHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <Button Style="{StaticResource Lumen.Button.Secondary}"
+                  Content="{x:Static res:Strings.Settings_UpdatesCheckNow}"
+                  Command="{Binding CheckForUpdatesCommand}"
+                  HorizontalAlignment="Left"
+                  IsEnabled="{Binding IsCheckingForUpdates, Converter={StaticResource Lumen.InverseBool}}" />
+        </StackPanel>
+      </Border>
+
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
                  Text="{x:Static res:Strings.Support_AboutHeading}"
                  Margin="0,24,0,12" />
       <Border Style="{StaticResource Lumen.Card}">

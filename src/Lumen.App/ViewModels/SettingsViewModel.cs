@@ -141,6 +141,7 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly AccountService _accounts;
     private readonly IClock _clock;
     private readonly SupportService _support;
+    private readonly UpdateService _updates;
     private readonly System.Windows.Threading.DispatcherTimer _mappingFilterDebounce;
 
     private bool _loaded;
@@ -166,7 +167,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         TraktSyncService traktSync,
         AccountService accounts,
         IClock clock,
-        SupportService support)
+        SupportService support,
+        UpdateService updates)
     {
         _session = session;
         _profiles = profiles;
@@ -187,6 +189,7 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _accounts = accounts;
         _clock = clock;
         _support = support;
+        _updates = updates;
 
         _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
         {
@@ -362,9 +365,17 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         {
             IsLoading = false;
         }
+
+        // Reflect background download/check progress live while the page is open.
+        _updates.Changed -= OnUpdateStateChanged;
+        _updates.Changed += OnUpdateStateChanged;
     }
 
-    public void OnNavigatedFrom() => _mappingFilterDebounce.Stop();
+    public void OnNavigatedFrom()
+    {
+        _mappingFilterDebounce.Stop();
+        _updates.Changed -= OnUpdateStateChanged;
+    }
 
     partial void OnMappingFilterTextChanged(string value)
     {
@@ -423,6 +434,14 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
         var reminder = await _settings.GetAsync(0, SupportService.ReminderEnabledKey, cancellationToken);
         SupportReminderEnabled = reminder != "false";
+
+        var autoUpdate = await _settings.GetAsync(0, UpdateService.AutoCheckEnabledKey, cancellationToken);
+        AutoUpdateEnabled = autoUpdate != "false";
+        UpdateFrequencyIndex = await _updates.GetFrequencyHoursAsync(cancellationToken) >= 168 ? 1 : 0;
+        var includePre = await _settings.GetAsync(0, UpdateService.IncludePrereleaseKey, cancellationToken);
+        IncludePrerelease = includePre == "true";
+        IsPortableBuild = !_updates.IsInstalledBuild;
+        await RefreshUpdateStatusAsync(cancellationToken);
 
         var artwork = await _settings.GetAsync(0, ArtworkService.EnabledKey, cancellationToken);
         ArtworkOnline = artwork != "0";
@@ -865,6 +884,110 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         if (_loaded)
         {
             _ = _settings.SetAsync(0, SupportService.ReminderEnabledKey, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    // ------------------------------------------------------------------ Updates
+
+    /// <summary>When on, Lumen checks GitHub on launch and periodically, downloading in the background.</summary>
+    [ObservableProperty]
+    private bool _autoUpdateEnabled = true;
+
+    /// <summary>0 = daily, 1 = weekly.</summary>
+    [ObservableProperty]
+    private int _updateFrequencyIndex;
+
+    [ObservableProperty]
+    private bool _includePrerelease;
+
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
+    /// <summary>True for portable builds, which surface a note that auto-install is unavailable.</summary>
+    [ObservableProperty]
+    private bool _isPortableBuild;
+
+    [ObservableProperty]
+    private string _updateStatusLine = string.Empty;
+
+    [ObservableProperty]
+    private string? _updateLastCheckedLine;
+
+    partial void OnAutoUpdateEnabledChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, UpdateService.AutoCheckEnabledKey, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    partial void OnUpdateFrequencyIndexChanged(int value)
+    {
+        if (_loaded)
+        {
+            var hours = value == 1 ? "168" : "24";
+            _ = _settings.SetAsync(0, UpdateService.FrequencyHoursKey, hours, CancellationToken.None);
+        }
+    }
+
+    partial void OnIncludePrereleaseChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = _settings.SetAsync(0, UpdateService.IncludePrereleaseKey, value ? "true" : "false", CancellationToken.None);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        if (IsCheckingForUpdates)
+        {
+            return;
+        }
+
+        IsCheckingForUpdates = true;
+        try
+        {
+            await _updates.CheckAsync(manual: true, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Manual update check failed");
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+            await RefreshUpdateStatusAsync(CancellationToken.None);
+        }
+    }
+
+    private async Task RefreshUpdateStatusAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = _updates.Snapshot;
+        var available = snapshot.AvailableVersion is { } version
+            && snapshot.Status is UpdateStatus.Available or UpdateStatus.Downloading or UpdateStatus.ReadyToInstall;
+
+        UpdateStatusLine = available
+            ? Strings.Format(Strings.Settings_UpdatesStatusAvailableFormat, snapshot.AvailableVersion!)
+            : Strings.Format(Strings.Settings_UpdatesStatusUpToDateFormat, snapshot.CurrentVersion);
+
+        var lastCheck = await _updates.GetLastCheckUtcAsync(cancellationToken);
+        UpdateLastCheckedLine = lastCheck is not null
+            ? Strings.Format(Strings.Settings_UpdatesLastCheckedFormat, UpdateViewModel.FormatLastChecked(lastCheck))
+            : null;
+    }
+
+    private void OnUpdateStateChanged(object? sender, EventArgs e)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+        {
+            _ = RefreshUpdateStatusAsync(CancellationToken.None);
+        }
+        else
+        {
+            dispatcher.BeginInvoke(() => _ = RefreshUpdateStatusAsync(CancellationToken.None));
         }
     }
 

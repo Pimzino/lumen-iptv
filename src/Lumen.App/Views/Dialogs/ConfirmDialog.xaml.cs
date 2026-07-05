@@ -16,7 +16,7 @@ public partial class ConfirmDialog : LumenDialogWindow
 
         if (destructive)
         {
-            ConfirmButton.Background = (System.Windows.Media.Brush)FindResource("Lumen.Brush.Error");
+            ConfirmButton.Style = (Style)FindResource("Lumen.Button.Danger");
         }
     }
 

@@ -152,6 +152,14 @@
   <data name="Settings_VersionFormat" xml:space="preserve"><value>Lumen {0}</value></data>
   <data name="Settings_Licenses" xml:space="preserve"><value>Built with LibVLC (LGPL-2.1), CommunityToolkit.Mvvm (MIT), Serilog (Apache-2.0), Dapper (Apache-2.0), Microsoft.Data.Sqlite (MIT).</value></data>
 
+  <data name="SettingsNav_Account" xml:space="preserve"><value>Account</value></data>
+  <data name="SettingsNav_Playback" xml:space="preserve"><value>Playback</value></data>
+  <data name="SettingsNav_Guide" xml:space="preserve"><value>Guide</value></data>
+  <data name="SettingsNav_Integrations" xml:space="preserve"><value>Integrations</value></data>
+  <data name="SettingsNav_Storage" xml:space="preserve"><value>Storage</value></data>
+  <data name="SettingsNav_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="SettingsNav_About" xml:space="preserve"><value>About</value></data>
+
   <data name="Settings_Account" xml:space="preserve"><value>Account</value></data>
   <data name="Settings_AccountStatus" xml:space="preserve"><value>Status</value></data>
   <data name="Settings_AccountExpiry" xml:space="preserve"><value>Subscription expires</value></data>

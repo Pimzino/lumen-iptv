@@ -30,7 +30,7 @@
                  MaxHeight="120" />
     </Border>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-      <Button Style="{StaticResource Lumen.Button.Ghost}"
+      <Button Style="{StaticResource Lumen.Button.Secondary}"
               Content="{x:Static res:Strings.Crash_OpenLogs}"
               Click="OnOpenLogsClick"
               Margin="{StaticResource Lumen.Margin.R8}" />

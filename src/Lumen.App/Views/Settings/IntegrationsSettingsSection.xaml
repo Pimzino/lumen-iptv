@@ -1,0 +1,131 @@
+<UserControl x:Class="Lumen.App.Views.Settings.IntegrationsSettingsSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,16,24">
+
+      <!-- ============ Trakt ============ -->
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Trakt}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B24}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_TraktBody}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+
+          <!-- Disconnected: API-app credentials + device sign-in -->
+          <StackPanel Visibility="{Binding IsTraktConnected, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+            <TextBox Style="{StaticResource Lumen.TextBox}"
+                     ctl:LumenUi.Label="{x:Static res:Strings.Settings_TraktClientId}"
+                     Text="{Binding TraktClientId, UpdateSourceTrigger=LostFocus}"
+                     HorizontalAlignment="Stretch"
+                     Margin="{StaticResource Lumen.Margin.B8}" />
+            <TextBox Style="{StaticResource Lumen.TextBox}"
+                     ctl:LumenUi.Label="{x:Static res:Strings.Settings_TraktClientSecret}"
+                     Text="{Binding TraktClientSecret, UpdateSourceTrigger=LostFocus}"
+                     HorizontalAlignment="Stretch"
+                     Margin="{StaticResource Lumen.Margin.B8}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Text="{x:Static res:Strings.Settings_TraktAppHint}"
+                       TextWrapping="Wrap"
+                       Margin="{StaticResource Lumen.Margin.B16}" />
+            <StackPanel Orientation="Horizontal">
+              <Button Style="{StaticResource Lumen.Button.Primary}"
+                      Command="{Binding ConnectTraktCommand}"
+                      Content="{x:Static res:Strings.Settings_TraktConnect}"
+                      Margin="{StaticResource Lumen.Margin.R12}"
+                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
+              <Button Style="{StaticResource Lumen.Button.Ghost}"
+                      Command="{Binding CancelTraktConnectCommand}"
+                      Content="{x:Static res:Strings.Common_Cancel}"
+                      Margin="{StaticResource Lumen.Margin.R12}"
+                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.BoolToVisibility}}" />
+              <Button Style="{StaticResource Lumen.Button.Secondary}"
+                      Command="{Binding OpenTraktActivateCommand}"
+                      Content="{x:Static res:Strings.Settings_TraktOpenActivate}"
+                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.BoolToVisibility}}" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                       Text="{Binding TraktConnectCode}"
+                       Margin="{StaticResource Lumen.Margin.T16}"
+                       Visibility="{Binding TraktConnectCode, Converter={StaticResource Lumen.NullToCollapsed}}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Text="{Binding TraktConnectStatus}"
+                       Margin="{StaticResource Lumen.Margin.T4}"
+                       Visibility="{Binding TraktConnectStatus, Converter={StaticResource Lumen.NullToCollapsed}}" />
+          </StackPanel>
+
+          <!-- Connected: account, toggles, manual sync -->
+          <StackPanel Visibility="{Binding IsTraktConnected, Converter={StaticResource Lumen.BoolToVisibility}}">
+            <Grid Margin="{StaticResource Lumen.Margin.B16}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                         Text="{Binding TraktConnectedLabel}"
+                         VerticalAlignment="Center" />
+              <Button Grid.Column="1"
+                      Style="{StaticResource Lumen.Button.DangerGhost}"
+                      Command="{Binding DisconnectTraktCommand}"
+                      Content="{x:Static res:Strings.Settings_TraktDisconnect}" />
+            </Grid>
+            <CheckBox Style="{StaticResource Lumen.Toggle}"
+                      Content="{x:Static res:Strings.Settings_TraktScrobbleToggle}"
+                      IsChecked="{Binding TraktScrobbleEnabled}"
+                      Margin="{StaticResource Lumen.Margin.B8}" />
+            <CheckBox Style="{StaticResource Lumen.Toggle}"
+                      Content="{x:Static res:Strings.Settings_TraktSyncToggle}"
+                      IsChecked="{Binding TraktSyncEnabled}"
+                      Margin="{StaticResource Lumen.Margin.B8}" />
+            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                       Text="{x:Static res:Strings.Settings_TraktUnwatchHint}"
+                       TextWrapping="Wrap"
+                       Margin="{StaticResource Lumen.Margin.B16}" />
+            <StackPanel Orientation="Horizontal">
+              <Button Style="{StaticResource Lumen.Button.Secondary}"
+                      Command="{Binding TraktSyncNowCommand}"
+                      Content="{x:Static res:Strings.Settings_TraktSyncNow}"
+                      IsEnabled="{Binding IsTraktSyncing, Converter={StaticResource Lumen.InverseBool}}"
+                      Margin="{StaticResource Lumen.Margin.R12}" />
+              <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                         Text="{Binding TraktLastSyncLabel}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- ============ Artwork ============ -->
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Artwork}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_ArtworkOnline}"
+                    IsChecked="{Binding ArtworkOnline}"
+                    Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_ArtworkOnlineHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Settings_ArtworkTmdbKey}"
+                   Text="{Binding ArtworkTmdbKey, UpdateSourceTrigger=LostFocus}"
+                   IsEnabled="{Binding ArtworkOnline}"
+                   HorizontalAlignment="Stretch"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_ArtworkTmdbKeyHint}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

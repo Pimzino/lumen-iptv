@@ -2,566 +2,85 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:Lumen.App.Controls"
-             xmlns:res="clr-namespace:Lumen.App.Resources">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel MaxWidth="760"
+             xmlns:res="clr-namespace:Lumen.App.Resources"
+             xmlns:settings="clr-namespace:Lumen.App.Views.Settings">
+  <Grid Margin="{StaticResource Lumen.Pad.Page}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0"
+               Style="{StaticResource Lumen.Text.Display}"
+               Text="{x:Static res:Strings.Settings_Title}"
+               Margin="{StaticResource Lumen.Margin.B24}" />
+
+    <!-- Initial page-load skeleton (data is fetched on navigation). -->
+    <StackPanel Grid.Row="1"
+                MaxWidth="760"
                 HorizontalAlignment="Left"
-                Margin="{StaticResource Lumen.Pad.Page}">
-
-      <TextBlock Style="{StaticResource Lumen.Text.Display}"
-                 Text="{x:Static res:Strings.Settings_Title}"
-                 Margin="{StaticResource Lumen.Margin.B24}" />
-
-      <!-- Loading skeleton (initial page load only) -->
-      <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
-        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
-                           Margin="{StaticResource Lumen.Margin.B12}" />
-        <ctl:SkeletonBlock Height="120" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B32}" />
-        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
-                           Margin="{StaticResource Lumen.Margin.B12}" />
-        <ctl:SkeletonBlock Height="160" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B32}" />
-        <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
-                           Margin="{StaticResource Lumen.Margin.B12}" />
-        <ctl:SkeletonBlock Height="120" CornerRadius="12" />
-      </StackPanel>
-
-      <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
-
-      <!-- ============ Profiles ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Profiles}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <ItemsControl ItemsSource="{Binding Profiles}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Grid Margin="{StaticResource Lumen.Margin.B8}">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <Border Width="36" Height="36" CornerRadius="18"
-                          Background="{Binding AvatarColor}"
-                          VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Monogram}"
-                               FontFamily="{StaticResource Lumen.Font.Text}"
-                               FontSize="{StaticResource Lumen.FontSize.Body}"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource Lumen.Brush.Text.OnAccent}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Grid.Column="1"
-                              VerticalAlignment="Center"
-                              Margin="{StaticResource Lumen.Margin.L12}">
-                    <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}" Text="{Binding Name}" />
-                    <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="{Binding KindLabel}" />
-                  </StackPanel>
-                  <ContentControl Grid.Column="2"
-                                  Style="{StaticResource Lumen.Badge.New}"
-                                  Content="{x:Static res:Strings.Settings_ProfileActive}"
-                                  Margin="{StaticResource Lumen.Margin.R12}"
-                                  Visibility="{Binding IsActive, Converter={StaticResource Lumen.BoolToVisibility}}" />
-                  <Button Grid.Column="3"
-                          Style="{StaticResource Lumen.Button.Ghost}"
-                          Content="{x:Static res:Strings.Settings_ProfileSwitch}"
-                          Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                          CommandParameter="{Binding}"
-                          Margin="{StaticResource Lumen.Margin.R8}"
-                          Visibility="{Binding IsActive, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
-                  <Button Grid.Column="4"
-                          Style="{StaticResource Lumen.Button.Ghost}"
-                          Content="{x:Static res:Strings.Common_Edit}"
-                          Command="{Binding DataContext.EditProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                          CommandParameter="{Binding}"
-                          Margin="{StaticResource Lumen.Margin.R8}" />
-                  <Button Grid.Column="5"
-                          Style="{StaticResource Lumen.Button.Ghost}"
-                          Content="{x:Static res:Strings.Common_Remove}"
-                          Command="{Binding DataContext.RemoveProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                          CommandParameter="{Binding}" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Button Style="{StaticResource Lumen.Button.Secondary}"
-                  Content="{x:Static res:Strings.Shell_AddProfile}"
-                  Command="{Binding AddProfileCommand}"
-                  HorizontalAlignment="Left"
-                  Margin="{StaticResource Lumen.Margin.T8}" />
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Account (Xtream only) ============ -->
-      <StackPanel Visibility="{Binding IsCurrentProfileXtream, Converter={StaticResource Lumen.BoolToVisibility}}">
-        <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                   Text="{x:Static res:Strings.Settings_Account}"
-                   Margin="{StaticResource Lumen.Margin.B12}" />
-        <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-          <StackPanel>
-
-            <!-- Loading -->
-            <ctl:SkeletonBlock Height="150" CornerRadius="8"
-                               Visibility="{Binding IsAccountLoading, Converter={StaticResource Lumen.BoolToVisibility}}" />
-
-            <!-- Fetch failed -->
-            <StackPanel Orientation="Horizontal"
-                        Visibility="{Binding AccountLoadFailed, Converter={StaticResource Lumen.BoolToVisibility}}">
-              <TextBlock Style="{StaticResource Lumen.Text.Body}"
-                         Foreground="{StaticResource Lumen.Brush.Error}"
-                         Text="{x:Static res:Strings.Settings_AccountLoadFailed}"
-                         VerticalAlignment="Center"
-                         Margin="{StaticResource Lumen.Margin.R12}" />
-              <Button Style="{StaticResource Lumen.Button.Ghost}"
-                      Content="{x:Static res:Strings.Common_Refresh}"
-                      Command="{Binding RefreshAccountCommand}" />
-            </StackPanel>
-
-            <!-- Details -->
-            <StackPanel Visibility="{Binding AccountReady, Converter={StaticResource Lumen.BoolToVisibility}}">
-
-              <!-- Status -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountStatus}" />
-                <TextBlock Grid.Column="1" Text="{Binding AccountStatus}">
-                  <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource Lumen.Text.BodyStrong}">
-                      <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Success}" />
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding AccountStatusIsHealthy}" Value="False">
-                          <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Error}" />
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </TextBlock.Style>
-                </TextBlock>
-              </Grid>
-
-              <!-- Subscription expiry -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountExpiry}" />
-                <StackPanel Grid.Column="1">
-                  <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="{Binding ExpiryText}" />
-                  <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                             Foreground="{StaticResource Lumen.Brush.Accent}"
-                             Text="{x:Static res:Strings.Settings_AccountExpiresSoonWarning}"
-                             Margin="{StaticResource Lumen.Margin.T4}"
-                             Visibility="{Binding ShowExpirySoonWarning, Converter={StaticResource Lumen.BoolToVisibility}}" />
-                </StackPanel>
-              </Grid>
-
-              <!-- Connections -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountConnections}" />
-                <StackPanel Grid.Column="1">
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Lumen.Text.Body}" Text="{Binding ConnectionsText}" />
-                    <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                               Text="{Binding ConnectionsAvailableText}"
-                               Margin="{StaticResource Lumen.Margin.L8}"
-                               Visibility="{Binding ConnectionsAvailableText, Converter={StaticResource Lumen.NullToCollapsed}}" />
-                  </StackPanel>
-                  <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                             Foreground="{StaticResource Lumen.Brush.Error}"
-                             Text="{x:Static res:Strings.Settings_AccountAllConnectionsWarning}"
-                             TextWrapping="Wrap"
-                             Margin="{StaticResource Lumen.Margin.T4}"
-                             Visibility="{Binding ShowConnectionsWarning, Converter={StaticResource Lumen.BoolToVisibility}}" />
-                </StackPanel>
-              </Grid>
-
-              <!-- Trial -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountTrial}" />
-                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding TrialText}" />
-              </Grid>
-
-              <!-- Member since -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountCreated}" />
-                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding CreatedText}" />
-              </Grid>
-
-              <!-- Allowed formats -->
-              <Grid Margin="{StaticResource Lumen.Margin.B12}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountFormats}" />
-                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}"
-                           Text="{Binding AllowedFormatsText}" TextWrapping="Wrap" />
-              </Grid>
-
-              <!-- Server time -->
-              <Grid Margin="{StaticResource Lumen.Margin.B16}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="190" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                           Text="{x:Static res:Strings.Settings_AccountServerTime}" />
-                <TextBlock Grid.Column="1" Style="{StaticResource Lumen.Text.Body}" Text="{Binding ServerTimeText}" />
-              </Grid>
-
-              <Button Style="{StaticResource Lumen.Button.Ghost}"
-                      Content="{x:Static res:Strings.Common_Refresh}"
-                      Command="{Binding RefreshAccountCommand}"
-                      HorizontalAlignment="Left" />
-            </StackPanel>
-          </StackPanel>
-        </Border>
-      </StackPanel>
-
-      <!-- ============ Guide ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Epg}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                     Text="{Binding EpgCounts}"
-                     Margin="{StaticResource Lumen.Margin.B12}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Foreground="{StaticResource Lumen.Brush.Accent}"
-                     Text="{Binding EpgProgress}"
-                     Margin="{StaticResource Lumen.Margin.B12}"
-                     Visibility="{Binding EpgProgress, Converter={StaticResource Lumen.NullToCollapsed}}" />
-          <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.B16}">
-            <Button Style="{StaticResource Lumen.Button.Secondary}"
-                    Content="{x:Static res:Strings.Settings_EpgRefreshNow}"
-                    Command="{Binding RefreshEpgCommand}"
-                    IsEnabled="{Binding IsEpgRefreshing, Converter={StaticResource Lumen.InverseBool}}"
-                    Margin="{StaticResource Lumen.Margin.R12}" />
-            <Button Style="{StaticResource Lumen.Button.Ghost}"
-                    Content="{x:Static res:Strings.Settings_CatalogRefreshNow}"
-                    Command="{Binding RefreshCatalogCommand}"
-                    IsEnabled="{Binding IsCatalogRefreshing, Converter={StaticResource Lumen.InverseBool}}" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{StaticResource Lumen.Text.Body}"
-                       Text="{x:Static res:Strings.Settings_EpgInterval}"
-                       VerticalAlignment="Center"
-                       Margin="{StaticResource Lumen.Margin.R16}" />
-            <ComboBox Width="200" SelectedIndex="{Binding EpgIntervalIndex}">
-              <ComboBoxItem Content="{x:Static res:Strings.Settings_EpgInterval6h}" />
-              <ComboBoxItem Content="{x:Static res:Strings.Settings_EpgInterval12h}" />
-              <ComboBoxItem Content="{x:Static res:Strings.Settings_EpgInterval24h}" />
-              <ComboBoxItem Content="{x:Static res:Strings.Settings_EpgIntervalManual}" />
-            </ComboBox>
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Channel mapping ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_ChannelMapping}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                     Text="{Binding MappingSummary}"
-                     Margin="{StaticResource Lumen.Margin.B12}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Text="{x:Static res:Strings.Settings_ChannelMappingBody}"
-                     TextWrapping="Wrap"
-                     Margin="{StaticResource Lumen.Margin.B16}"
-                     Visibility="{Binding HasUnmappedChannels, Converter={StaticResource Lumen.BoolToVisibility}}" />
-          <TextBox Style="{StaticResource Lumen.SearchField}"
-                   ctl:LumenUi.Label="{x:Static res:Strings.Filter_ChannelsPlaceholder}"
-                   Text="{Binding MappingFilterText, UpdateSourceTrigger=PropertyChanged}"
-                   MaxWidth="360"
-                   HorizontalAlignment="Left"
-                   Margin="{StaticResource Lumen.Margin.B12}"
-                   Visibility="{Binding HasUnmappedChannels, Converter={StaticResource Lumen.BoolToVisibility}}"
-                   AutomationProperties.Name="{x:Static res:Strings.Filter_ChannelsPlaceholder}" />
-          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                     Text="{x:Static res:Strings.Filter_NoMatches}"
-                     Margin="{StaticResource Lumen.Margin.B8}"
-                     Visibility="{Binding MappingFilterHasNoMatches, Converter={StaticResource Lumen.BoolToVisibility}}" />
-          <!-- Virtualized: a large playlist can leave thousands of channels unmatched. Without
-               virtualization the ItemsControl realizes a ComboBox per row up front and freezes the
-               UI thread. VirtualizingStackPanel + CanContentScroll realizes only the visible rows. -->
-          <ItemsControl ItemsSource="{Binding UnmappedChannels}"
-                        MaxHeight="360"
-                        VirtualizingPanel.IsVirtualizing="True"
-                        VirtualizingPanel.VirtualizationMode="Recycling"
-                        ScrollViewer.CanContentScroll="True"
-                        Visibility="{Binding HasUnmappedChannels, Converter={StaticResource Lumen.BoolToVisibility}}">
-            <ItemsControl.Template>
-              <ControlTemplate TargetType="ItemsControl">
-                <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto">
-                  <ItemsPresenter />
-                </ScrollViewer>
-              </ControlTemplate>
-            </ItemsControl.Template>
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <VirtualizingStackPanel />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Grid Margin="{StaticResource Lumen.Margin.B8}">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="240" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Style="{StaticResource Lumen.Text.Body}"
-                             Text="{Binding Name}"
-                             TextTrimming="CharacterEllipsis"
-                             VerticalAlignment="Center" />
-                  <ComboBox Grid.Column="1"
-                            ItemsSource="{Binding Options}"
-                            SelectedValue="{Binding SelectedXmltvId, Mode=TwoWay}"
-                            SelectedValuePath="XmltvId"
-                            DisplayMemberPath="Display"
-                            ctl:LumenUi.ShowPopupFilter="True"
-                            ctl:LumenUi.PopupFilterText="{Binding OptionsFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                            AutomationProperties.Name="Guide channel" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Playback ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Playback}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <CheckBox Style="{StaticResource Lumen.Toggle}"
-                    Content="{x:Static res:Strings.Settings_PreferHls}"
-                    IsChecked="{Binding PreferHls}"
-                    Margin="{StaticResource Lumen.Margin.B16}" />
-          <CheckBox Style="{StaticResource Lumen.Toggle}"
-                    Content="{x:Static res:Strings.Settings_HardwareAcceleration}"
-                    IsChecked="{Binding HardwareAcceleration}"
-                    Margin="{StaticResource Lumen.Margin.B16}" />
-          <TextBox Style="{StaticResource Lumen.TextBox}"
-                   ctl:LumenUi.Label="{x:Static res:Strings.Settings_StreamUserAgent}"
-                   Text="{Binding StreamUserAgent, UpdateSourceTrigger=LostFocus}"
-                   HorizontalAlignment="Stretch"
-                   Margin="{StaticResource Lumen.Margin.B8}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Text="{x:Static res:Strings.Settings_StreamUserAgentHint}"
-                     TextWrapping="Wrap"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{StaticResource Lumen.Text.Body}"
-                       Text="{x:Static res:Strings.Settings_ParentalControls}"
-                       VerticalAlignment="Center"
-                       Margin="{StaticResource Lumen.Margin.R12}" />
-            <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
-                            Content="{x:Static res:Strings.Common_ComingSoon}" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Artwork ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Artwork}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <CheckBox Style="{StaticResource Lumen.Toggle}"
-                    Content="{x:Static res:Strings.Settings_ArtworkOnline}"
-                    IsChecked="{Binding ArtworkOnline}"
-                    Margin="{StaticResource Lumen.Margin.B8}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Text="{x:Static res:Strings.Settings_ArtworkOnlineHint}"
-                     TextWrapping="Wrap"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-          <TextBox Style="{StaticResource Lumen.TextBox}"
-                   ctl:LumenUi.Label="{x:Static res:Strings.Settings_ArtworkTmdbKey}"
-                   Text="{Binding ArtworkTmdbKey, UpdateSourceTrigger=LostFocus}"
-                   IsEnabled="{Binding ArtworkOnline}"
-                   HorizontalAlignment="Stretch"
-                   Margin="{StaticResource Lumen.Margin.B8}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Text="{x:Static res:Strings.Settings_ArtworkTmdbKeyHint}"
-                     TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Trakt ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Trakt}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     Text="{x:Static res:Strings.Settings_TraktBody}"
-                     TextWrapping="Wrap"
-                     Margin="{StaticResource Lumen.Margin.B16}" />
-
-          <!-- Disconnected: API-app credentials + device sign-in -->
-          <StackPanel Visibility="{Binding IsTraktConnected, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
-            <TextBox Style="{StaticResource Lumen.TextBox}"
-                     ctl:LumenUi.Label="{x:Static res:Strings.Settings_TraktClientId}"
-                     Text="{Binding TraktClientId, UpdateSourceTrigger=LostFocus}"
-                     HorizontalAlignment="Stretch"
-                     Margin="{StaticResource Lumen.Margin.B8}" />
-            <TextBox Style="{StaticResource Lumen.TextBox}"
-                     ctl:LumenUi.Label="{x:Static res:Strings.Settings_TraktClientSecret}"
-                     Text="{Binding TraktClientSecret, UpdateSourceTrigger=LostFocus}"
-                     HorizontalAlignment="Stretch"
-                     Margin="{StaticResource Lumen.Margin.B8}" />
-            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                       Text="{x:Static res:Strings.Settings_TraktAppHint}"
-                       TextWrapping="Wrap"
-                       Margin="{StaticResource Lumen.Margin.B16}" />
-            <StackPanel Orientation="Horizontal">
-              <Button Style="{StaticResource Lumen.Button.Primary}"
-                      Command="{Binding ConnectTraktCommand}"
-                      Content="{x:Static res:Strings.Settings_TraktConnect}"
-                      Margin="{StaticResource Lumen.Margin.R12}"
-                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.InverseBoolToVisibility}}" />
-              <Button Style="{StaticResource Lumen.Button.Secondary}"
-                      Command="{Binding CancelTraktConnectCommand}"
-                      Content="{x:Static res:Strings.Common_Cancel}"
-                      Margin="{StaticResource Lumen.Margin.R12}"
-                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.BoolToVisibility}}" />
-              <Button Style="{StaticResource Lumen.Button.Ghost}"
-                      Command="{Binding OpenTraktActivateCommand}"
-                      Content="{x:Static res:Strings.Settings_TraktOpenActivate}"
-                      Visibility="{Binding IsTraktConnecting, Converter={StaticResource Lumen.BoolToVisibility}}" />
-            </StackPanel>
-            <TextBlock Style="{StaticResource Lumen.Text.Title}"
-                       Text="{Binding TraktConnectCode}"
-                       Margin="{StaticResource Lumen.Margin.T16}"
-                       Visibility="{Binding TraktConnectCode, Converter={StaticResource Lumen.NullToCollapsed}}" />
-            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                       Text="{Binding TraktConnectStatus}"
-                       Margin="{StaticResource Lumen.Margin.T4}"
-                       Visibility="{Binding TraktConnectStatus, Converter={StaticResource Lumen.NullToCollapsed}}" />
-          </StackPanel>
-
-          <!-- Connected: account, toggles, manual sync -->
-          <StackPanel Visibility="{Binding IsTraktConnected, Converter={StaticResource Lumen.BoolToVisibility}}">
-            <Grid Margin="{StaticResource Lumen.Margin.B16}">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
-                         Text="{Binding TraktConnectedLabel}"
-                         VerticalAlignment="Center" />
-              <Button Grid.Column="1"
-                      Style="{StaticResource Lumen.Button.Ghost}"
-                      Command="{Binding DisconnectTraktCommand}"
-                      Content="{x:Static res:Strings.Settings_TraktDisconnect}" />
-            </Grid>
-            <CheckBox Style="{StaticResource Lumen.Toggle}"
-                      Content="{x:Static res:Strings.Settings_TraktScrobbleToggle}"
-                      IsChecked="{Binding TraktScrobbleEnabled}"
-                      Margin="{StaticResource Lumen.Margin.B8}" />
-            <CheckBox Style="{StaticResource Lumen.Toggle}"
-                      Content="{x:Static res:Strings.Settings_TraktSyncToggle}"
-                      IsChecked="{Binding TraktSyncEnabled}"
-                      Margin="{StaticResource Lumen.Margin.B8}" />
-            <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                       Text="{x:Static res:Strings.Settings_TraktUnwatchHint}"
-                       TextWrapping="Wrap"
-                       Margin="{StaticResource Lumen.Margin.B16}" />
-            <StackPanel Orientation="Horizontal">
-              <Button Style="{StaticResource Lumen.Button.Secondary}"
-                      Command="{Binding TraktSyncNowCommand}"
-                      Content="{x:Static res:Strings.Settings_TraktSyncNow}"
-                      IsEnabled="{Binding IsTraktSyncing, Converter={StaticResource Lumen.InverseBool}}"
-                      Margin="{StaticResource Lumen.Margin.R12}" />
-              <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                         Text="{Binding TraktLastSyncLabel}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Storage ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Storage}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel>
-          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
-                     Text="{Binding CacheSummary}"
-                     Margin="{StaticResource Lumen.Margin.B12}" />
-          <Button Style="{StaticResource Lumen.Button.Secondary}"
-                  Content="{x:Static res:Strings.Settings_ClearImageCache}"
-                  Command="{Binding ClearImageCacheCommand}"
-                  HorizontalAlignment="Left" />
-        </StackPanel>
-      </Border>
-
-      <!-- ============ Appearance ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_Theme}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B32}">
-        <StackPanel Orientation="Horizontal">
-          <ComboBox Width="200" SelectedIndex="0" IsEnabled="False" Margin="{StaticResource Lumen.Margin.R12}">
-            <ComboBoxItem Content="{x:Static res:Strings.Settings_ThemeDark}" />
-          </ComboBox>
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     VerticalAlignment="Center"
-                     Margin="{StaticResource Lumen.Margin.R8}"
-                     Text="{x:Static res:Strings.Settings_ThemeLight}" />
-          <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
-                          Content="{x:Static res:Strings.Common_ComingSoon}"
-                          VerticalAlignment="Center" />
-        </StackPanel>
-      </Border>
-
-      <!-- ============ About ============ -->
-      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
-                 Text="{x:Static res:Strings.Settings_About}"
-                 Margin="{StaticResource Lumen.Margin.B12}" />
-      <Border Style="{StaticResource Lumen.Card}" Margin="{StaticResource Lumen.Margin.B48}">
-        <StackPanel>
-          <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
-                     Text="{Binding VersionLine}"
-                     Margin="{StaticResource Lumen.Margin.B8}" />
-          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
-                     TextWrapping="Wrap"
-                     Text="{x:Static res:Strings.Settings_Licenses}" />
-        </StackPanel>
-      </Border>
-
-      </StackPanel>
+                Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}">
+      <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                         Margin="{StaticResource Lumen.Margin.B12}" />
+      <ctl:SkeletonBlock Height="120" CornerRadius="12" Margin="{StaticResource Lumen.Margin.B32}" />
+      <ctl:SkeletonBlock Width="140" Height="18" HorizontalAlignment="Left"
+                         Margin="{StaticResource Lumen.Margin.B12}" />
+      <ctl:SkeletonBlock Height="160" CornerRadius="12" />
     </StackPanel>
-  </ScrollViewer>
+
+    <!-- Tabbed settings: a fixed sidebar of categories, each hosting one section view. -->
+    <TabControl Grid.Row="1"
+                Style="{StaticResource Lumen.SettingsTabs}"
+                SelectedIndex="{Binding SelectedSectionIndex}"
+                Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Profile}"
+               Header="{x:Static res:Strings.SettingsNav_Account}">
+        <settings:AccountSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Play}"
+               Header="{x:Static res:Strings.SettingsNav_Playback}">
+        <settings:PlaybackSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Guide}"
+               Header="{x:Static res:Strings.SettingsNav_Guide}">
+        <settings:GuideSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Link}"
+               AutomationProperties.Name="{x:Static res:Strings.SettingsNav_Integrations}">
+        <!-- Header carries a "connected" dot so Trakt status is visible without opening the tab. -->
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="{x:Static res:Strings.SettingsNav_Integrations}" VerticalAlignment="Center" />
+            <Ellipse Width="7" Height="7"
+                     Fill="{StaticResource Lumen.Brush.Success}"
+                     VerticalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.L8}"
+                     Visibility="{Binding IsTraktConnected, Converter={StaticResource Lumen.BoolToVisibility}}" />
+          </StackPanel>
+        </TabItem.Header>
+        <settings:IntegrationsSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Storage}"
+               Header="{x:Static res:Strings.SettingsNav_Storage}">
+        <settings:StorageSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Appearance}"
+               Header="{x:Static res:Strings.SettingsNav_Appearance}">
+        <settings:AppearanceSettingsSection />
+      </TabItem>
+
+      <TabItem Tag="{StaticResource Lumen.Icon.Info}"
+               Header="{x:Static res:Strings.SettingsNav_About}">
+        <settings:AboutSettingsSection />
+      </TabItem>
+
+    </TabControl>
+
+  </Grid>
 </UserControl>

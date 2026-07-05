@@ -1,0 +1,44 @@
+<UserControl x:Class="Lumen.App.Views.Settings.PlaybackSettingsSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,16,24">
+
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Playback}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_PreferHls}"
+                    IsChecked="{Binding PreferHls}"
+                    Margin="{StaticResource Lumen.Margin.B16}" />
+          <CheckBox Style="{StaticResource Lumen.Toggle}"
+                    Content="{x:Static res:Strings.Settings_HardwareAcceleration}"
+                    IsChecked="{Binding HardwareAcceleration}"
+                    Margin="{StaticResource Lumen.Margin.B16}" />
+          <TextBox Style="{StaticResource Lumen.TextBox}"
+                   ctl:LumenUi.Label="{x:Static res:Strings.Settings_StreamUserAgent}"
+                   Text="{Binding StreamUserAgent, UpdateSourceTrigger=LostFocus}"
+                   HorizontalAlignment="Stretch"
+                   Margin="{StaticResource Lumen.Margin.B8}" />
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     Text="{x:Static res:Strings.Settings_StreamUserAgentHint}"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource Lumen.Margin.B16}" />
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Style="{StaticResource Lumen.Text.Body}"
+                       Text="{x:Static res:Strings.Settings_ParentalControls}"
+                       VerticalAlignment="Center"
+                       Margin="{StaticResource Lumen.Margin.R12}" />
+            <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
+                            Content="{x:Static res:Strings.Common_ComingSoon}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

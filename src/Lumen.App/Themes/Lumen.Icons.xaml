@@ -47,6 +47,8 @@
   <sys:String x:Key="Lumen.Icon.OpenFile">&#xE8E5;</sys:String>
   <sys:String x:Key="Lumen.Icon.Link">&#xE71B;</sys:String>
   <sys:String x:Key="Lumen.Icon.Profile">&#xE77B;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Storage">&#xEDA2;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Appearance">&#xE790;</sys:String>
   <sys:String x:Key="Lumen.Icon.Clock">&#xE823;</sys:String>
   <sys:String x:Key="Lumen.Icon.Reminder">&#xEA8F;</sys:String>
   <sys:String x:Key="Lumen.Icon.JumpToNow">&#xE8AF;</sys:String>

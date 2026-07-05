@@ -126,14 +126,28 @@
     </Style.Triggers>
   </Style>
 
+  <!-- Tertiary/inline action. Shares the standard control padding so it lines up with Primary and
+       Secondary when they sit in the same row. -->
   <Style x:Key="Lumen.Button.Ghost" TargetType="Button" BasedOn="{StaticResource Lumen.Button.Base}">
     <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
-    <Setter Property="Padding" Value="{StaticResource Lumen.Pad.ControlCompact}" />
     <Style.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
         <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.Primary}" />
       </Trigger>
     </Style.Triggers>
+  </Style>
+
+  <!-- Destructive filled action: the red counterpart to Primary. Used for the confirm-dialog
+       action of an irreversible operation (e.g. "Remove profile"). -->
+  <Style x:Key="Lumen.Button.Danger" TargetType="Button" BasedOn="{StaticResource Lumen.Button.Base}">
+    <Setter Property="Background" Value="{StaticResource Lumen.Brush.Error}" />
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Text.OnAccent}" />
+  </Style>
+
+  <!-- Low-emphasis destructive action: a Ghost with red text, for inline destructive controls
+       (Remove, Disconnect, Clear cache) that should read as dangerous without shouting. -->
+  <Style x:Key="Lumen.Button.DangerGhost" TargetType="Button" BasedOn="{StaticResource Lumen.Button.Base}">
+    <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Error}" />
   </Style>
 
   <!-- Square icon button; set Content to a Lumen.Icon.* glyph. Works on Button and ToggleButton. -->

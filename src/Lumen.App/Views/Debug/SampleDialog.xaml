@@ -16,7 +16,7 @@
               Content="Cancel"
               IsCancel="True"
               Margin="{StaticResource Lumen.Margin.R8}" />
-      <Button Style="{StaticResource Lumen.Button.Primary}"
+      <Button Style="{StaticResource Lumen.Button.Danger}"
               Content="Remove"
               IsDefault="True"
               Click="OnConfirmClick" />

@@ -10,6 +10,7 @@
     <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Lists.xaml" />
     <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Surfaces.xaml" />
     <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Shell.xaml" />
+    <ResourceDictionary Source="/Themes/Controls/Lumen.Controls.Tabs.xaml" />
   </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

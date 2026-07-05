@@ -69,6 +69,8 @@
           <Button Style="{StaticResource Lumen.Button.Primary}" Content="Watch now" Margin="{StaticResource Lumen.Margin.R12}" />
           <Button Style="{StaticResource Lumen.Button.Secondary}" Content="Add profile" Margin="{StaticResource Lumen.Margin.R12}" />
           <Button Style="{StaticResource Lumen.Button.Ghost}" Content="Cancel" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.Danger}" Content="Remove" Margin="{StaticResource Lumen.Margin.R12}" />
+          <Button Style="{StaticResource Lumen.Button.DangerGhost}" Content="Disconnect" Margin="{StaticResource Lumen.Margin.R24}" />
           <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Play}" Margin="{StaticResource Lumen.Margin.R12}" />
           <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Favorites}" Margin="{StaticResource Lumen.Margin.R12}" />
           <Button Style="{StaticResource Lumen.Button.Icon}" Content="{StaticResource Lumen.Icon.Settings}" Margin="{StaticResource Lumen.Margin.R24}" />

@@ -128,6 +128,15 @@ public static class Strings
     public static string Home_AgoDaysFormat => Get(nameof(Home_AgoDaysFormat));
 
     public static string Settings_Title => Get(nameof(Settings_Title));
+
+    // Settings sidebar navigation labels.
+    public static string SettingsNav_Account => Get(nameof(SettingsNav_Account));
+    public static string SettingsNav_Playback => Get(nameof(SettingsNav_Playback));
+    public static string SettingsNav_Guide => Get(nameof(SettingsNav_Guide));
+    public static string SettingsNav_Integrations => Get(nameof(SettingsNav_Integrations));
+    public static string SettingsNav_Storage => Get(nameof(SettingsNav_Storage));
+    public static string SettingsNav_Appearance => Get(nameof(SettingsNav_Appearance));
+    public static string SettingsNav_About => Get(nameof(SettingsNav_About));
     public static string Settings_Profiles => Get(nameof(Settings_Profiles));
     public static string Settings_ProfileActive => Get(nameof(Settings_ProfileActive));
     public static string Settings_ProfileSwitch => Get(nameof(Settings_ProfileSwitch));

@@ -1,0 +1,25 @@
+<UserControl x:Class="Lumen.App.Views.Settings.StorageSettingsSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,16,24">
+
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Storage}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{Binding CacheSummary}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <Button Style="{StaticResource Lumen.Button.DangerGhost}"
+                  Content="{x:Static res:Strings.Settings_ClearImageCache}"
+                  Command="{Binding ClearImageCacheCommand}"
+                  HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

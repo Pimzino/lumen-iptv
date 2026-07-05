@@ -252,6 +252,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     [ObservableProperty]
     private string _cacheSummary = string.Empty;
 
+    /// <summary>Selected settings tab (0 = Account); persists the active pane across navigations.</summary>
+    [ObservableProperty]
+    private int _selectedSectionIndex;
+
     // ------------------------------------------------------------------ Account (Xtream)
 
     /// <summary>Gates the whole Account card — hidden for M3U profiles.</summary>

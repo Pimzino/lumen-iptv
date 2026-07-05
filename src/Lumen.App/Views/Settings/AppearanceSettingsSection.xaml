@@ -1,0 +1,28 @@
+<UserControl x:Class="Lumen.App.Views.Settings.AppearanceSettingsSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,16,24">
+
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Theme}"
+                 Margin="{StaticResource Lumen.Margin.B12}" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel Orientation="Horizontal">
+          <ComboBox Width="200" SelectedIndex="0" IsEnabled="False" Margin="{StaticResource Lumen.Margin.R12}">
+            <ComboBoxItem Content="{x:Static res:Strings.Settings_ThemeDark}" />
+          </ComboBox>
+          <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                     VerticalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.R8}"
+                     Text="{x:Static res:Strings.Settings_ThemeLight}" />
+          <ContentControl Style="{StaticResource Lumen.Badge.Quality}"
+                          Content="{x:Static res:Strings.Common_ComingSoon}"
+                          VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

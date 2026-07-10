@@ -124,6 +124,16 @@ TMDB when the user pasted a credential (v3 key or v4 token, detected by shape), 
 iTunes (movies) / TVMaze (series) otherwise. `TitleCleaner` (Core) reduces messy IPTV names
 ("EN| The.Matrix.(1999) [4K]") to a searchable title + year; `ArtworkMatcher` scores candidates
 and rejects anything below a confidence threshold — a wrong poster is worse than no poster.
+A "gap" is more than a missing URL: panels leak PHP-serialized fragments
+(`s:308:/images/…jpeg`) into cover fields, and some host posters on image servers that are
+simply dead. `WebUrl` (Core) drops non-http values at the Xtream mapper so junk never lands in
+the catalog, and grids resolve every card through `ResolvePosterAsync`, which trusts the
+provider URL only after its host proves it serves images (one probe per host per page — a
+success vouches for the host for 10 minutes, and `ImageDiskCache` marks a host down for 5
+minutes on a connection-level failure so a dead server costs one connect timeout, not one per
+poster). Posters that can't load fall back to the same external lookup as missing ones; the
+detail page probes its exact hero URL and writes the resolved poster back onto the item so
+plays, downloads, and watch-history stamps don't propagate a dead link.
 Every lookup, including "found nothing", lands in the `artwork_cache` SQLite table keyed by
 kind + normalized title + year, so a title is resolved online once per install; negative entries
 retry after 7 days and are flushed when a TMDB key is first configured. Lookups run behind a

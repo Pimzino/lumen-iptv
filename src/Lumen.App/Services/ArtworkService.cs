@@ -24,13 +24,21 @@ public sealed class ArtworkService
 
     private static readonly TimeSpan NegativeTtl = TimeSpan.FromDays(7);
 
+    /// <summary>Poster probes must never hold a page hostage to a slow host.</summary>
+    private static readonly TimeSpan PosterProbeTimeout = TimeSpan.FromSeconds(8);
+
+    /// <summary>How long one successful download vouches for a host's other posters.</summary>
+    private static readonly TimeSpan HostAliveTtl = TimeSpan.FromMinutes(10);
+
     private readonly IReadOnlyList<IArtworkProvider> _providers;
     private readonly IArtworkCacheRepository _cache;
     private readonly ISettingsRepository _settings;
     private readonly IEpgRepository _epg;
+    private readonly IImageCache _images;
     private readonly IClock _clock;
     private readonly SemaphoreSlim _networkGate = new(2);
     private readonly ConcurrentDictionary<(ContentKind Kind, string Key, int Year), Task<ArtworkResult?>> _inFlight = new();
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _aliveHosts = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _loadGate = new(1);
 
     private volatile bool _loaded;
@@ -42,12 +50,14 @@ public sealed class ArtworkService
         IArtworkCacheRepository cache,
         ISettingsRepository settings,
         IEpgRepository epg,
+        IImageCache images,
         IClock clock)
     {
         _providers = providers.ToList();
         _cache = cache;
         _settings = settings;
         _epg = epg;
+        _images = images;
         _clock = clock;
     }
 
@@ -69,6 +79,70 @@ public sealed class ArtworkService
         if (keyChanged)
         {
             _ = _cache.ClearNegativeAsync(CancellationToken.None);
+        }
+    }
+
+    /// <summary>
+    /// Resolves the poster a card should display. The provider's own URL wins when it is
+    /// well-formed and its host serves images; panel junk (php-serialized fragments,
+    /// relative paths) and posters on dead hosts fall back to external artwork. Null means
+    /// no poster exists anywhere — callers keep their monogram.
+    /// </summary>
+    /// <param name="probeExactUrl">
+    /// Download this exact URL rather than trusting a recent success from the same host.
+    /// Detail pages use it for their hero image (which the view is about to render anyway);
+    /// grids leave it off so a healthy host costs one probe per page, not one per card.
+    /// </param>
+    public async Task<string?> ResolvePosterAsync(
+        ContentKind kind,
+        string? providerPosterUrl,
+        string rawName,
+        int? knownYear,
+        bool probeExactUrl,
+        CancellationToken cancellationToken)
+    {
+        var usable = WebUrl.IsHttp(providerPosterUrl);
+
+        await EnsureLoadedAsync(cancellationToken).ConfigureAwait(false);
+        if (!IsEnabled)
+        {
+            // No fallback available, so probing would only duplicate the view's own fetch.
+            return usable ? providerPosterUrl : null;
+        }
+
+        if (usable)
+        {
+            var authority = new Uri(providerPosterUrl!).Authority;
+            if (!probeExactUrl &&
+                _aliveHosts.TryGetValue(authority, out var aliveAt) &&
+                _clock.UtcNow - aliveAt < HostAliveTtl)
+            {
+                return providerPosterUrl;
+            }
+
+            if (await ProbeAsync(providerPosterUrl!, cancellationToken).ConfigureAwait(false))
+            {
+                _aliveHosts[authority] = _clock.UtcNow;
+                return providerPosterUrl;
+            }
+        }
+
+        var art = await GetArtworkAsync(kind, rawName, knownYear, cancellationToken).ConfigureAwait(false);
+        return art?.PosterUrl;
+    }
+
+    /// <summary>True when the image downloaded (or was already cached) within the probe budget.</summary>
+    private async Task<bool> ProbeAsync(string url, CancellationToken cancellationToken)
+    {
+        using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        probeCts.CancelAfter(PosterProbeTimeout);
+        try
+        {
+            return await _images.GetLocalPathAsync(url, probeCts.Token).ConfigureAwait(false) is not null;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false; // budget elapsed — the abandoned download still lands in the cache
         }
     }
 

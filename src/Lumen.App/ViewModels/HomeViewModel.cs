@@ -445,16 +445,13 @@ public sealed partial class HomeViewModel : ObservableObject, INavigationAware,
         {
             foreach (var card in cards)
             {
-                if (!string.IsNullOrWhiteSpace(card.PosterUrl))
-                {
-                    continue;
-                }
-
                 cancellationToken.ThrowIfCancellationRequested();
-                var art = await _artwork.GetArtworkAsync(kind, card.Item.Name, card.Item.Year, cancellationToken);
-                if (art?.PosterUrl is { } poster)
+                var resolved = await _artwork.ResolvePosterAsync(
+                    kind, card.PosterUrl, card.Item.Name, card.Item.Year,
+                    probeExactUrl: false, cancellationToken);
+                if (!string.Equals(resolved, card.PosterUrl, StringComparison.Ordinal))
                 {
-                    card.PosterUrl = poster;
+                    card.PosterUrl = resolved;
                 }
             }
         }

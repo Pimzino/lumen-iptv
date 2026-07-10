@@ -124,16 +124,18 @@ public sealed partial class FavoritesViewModel : ObservableObject, INavigationAw
         {
             foreach (var card in Movies.Concat(Series).ToList())
             {
-                if (!string.IsNullOrWhiteSpace(card.ImageUrl) || card.VodItem is not { } item)
+                if (card.VodItem is not { } item)
                 {
                     continue;
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var art = await _artwork.GetArtworkAsync(card.Kind, item.Name, item.Year, cancellationToken);
-                if (art?.PosterUrl is { } poster)
+                var resolved = await _artwork.ResolvePosterAsync(
+                    card.Kind, card.ImageUrl, item.Name, item.Year,
+                    probeExactUrl: false, cancellationToken);
+                if (!string.Equals(resolved, card.ImageUrl, StringComparison.Ordinal))
                 {
-                    card.ImageUrl = poster;
+                    card.ImageUrl = resolved;
                 }
             }
         }

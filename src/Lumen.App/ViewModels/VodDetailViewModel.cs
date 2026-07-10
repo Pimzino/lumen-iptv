@@ -301,25 +301,33 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
     private async Task EnrichArtworkAsync(VodItem item, CancellationToken cancellationToken)
     {
-        if (PosterUrl is not null && _hasProviderBackdrop)
-        {
-            return;
-        }
-
         try
         {
-            var art = await _artwork.GetArtworkAsync(item.Kind, item.Name, item.Year, cancellationToken);
-            if (art is null || !ReferenceEquals(_item, item))
+            // Exact-URL probe: this is the hero image and the view fetches it regardless,
+            // so a dead or junk provider poster is swapped for external artwork.
+            var resolvedPoster = await _artwork.ResolvePosterAsync(
+                item.Kind, PosterUrl, item.Name, item.Year,
+                probeExactUrl: true, cancellationToken);
+            if (!ReferenceEquals(_item, item))
             {
                 return;
             }
 
-            if (PosterUrl is null && art.PosterUrl is not null)
+            if (!string.Equals(resolvedPoster, PosterUrl, StringComparison.Ordinal))
             {
-                PosterUrl = art.PosterUrl;
+                PosterUrl = resolvedPoster;
+                // Plays, downloads, and watch-history stamps read the model's poster —
+                // keep it in step so they don't propagate the dead provider URL.
+                item.PosterUrl = resolvedPoster;
             }
 
-            if (!_hasProviderBackdrop && art.BackdropUrl is not null)
+            if (_hasProviderBackdrop)
+            {
+                return;
+            }
+
+            var art = await _artwork.GetArtworkAsync(item.Kind, item.Name, item.Year, cancellationToken);
+            if (art?.BackdropUrl is not null && ReferenceEquals(_item, item))
             {
                 BackdropUrl = art.BackdropUrl;
             }

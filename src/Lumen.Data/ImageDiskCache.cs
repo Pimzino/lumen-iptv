@@ -10,11 +10,14 @@ namespace Lumen.Data;
 /// <summary>
 /// Disk cache for logos and posters keyed by URL hash. Concurrent requests for the same
 /// URL share one download; failures are negatively cached briefly; total size is kept
-/// under a cap by evicting least-recently-used files.
+/// under a cap by evicting least-recently-used files. Hosts that fail at the connection
+/// level are marked down for a few minutes so a dead image server costs one connect
+/// timeout, not one per poster.
 /// </summary>
 public sealed class ImageDiskCache : IImageCache
 {
     private static readonly TimeSpan FailureCacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan HostFailureCacheDuration = TimeSpan.FromMinutes(5);
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ImageDiskCache> _logger;
@@ -23,6 +26,7 @@ public sealed class ImageDiskCache : IImageCache
     private readonly long _maxBytes;
     private readonly ConcurrentDictionary<string, Task<string?>> _inflight = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, DateTimeOffset> _recentFailures = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _downHosts = new(StringComparer.OrdinalIgnoreCase);
     private int _writesSinceSweep;
     private int _sweepRunning;
 
@@ -62,6 +66,13 @@ public sealed class ImageDiskCache : IImageCache
 
         if (_recentFailures.TryGetValue(url, out var failedAt) &&
             DateTimeOffset.UtcNow - failedAt < FailureCacheDuration)
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var parsed) &&
+            _downHosts.TryGetValue(parsed.Authority, out var hostFailedAt) &&
+            DateTimeOffset.UtcNow - hostFailedAt < HostFailureCacheDuration)
         {
             return null;
         }
@@ -117,8 +128,9 @@ public sealed class ImageDiskCache : IImageCache
     {
         try
         {
+            var uri = new Uri(url);
             var client = _httpClientFactory.CreateClient(_httpClientName);
-            var bytes = await client.GetByteArrayAsync(new Uri(url)).ConfigureAwait(false);
+            var bytes = await client.GetByteArrayAsync(uri).ConfigureAwait(false);
             if (bytes.Length == 0)
             {
                 throw new InvalidOperationException("Empty response.");
@@ -128,6 +140,7 @@ public sealed class ImageDiskCache : IImageCache
             var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             await File.WriteAllBytesAsync(temp, bytes).ConfigureAwait(false);
             File.Move(temp, path, overwrite: true);
+            _downHosts.TryRemove(uri.Authority, out _);
 
             if (Interlocked.Increment(ref _writesSinceSweep) % 50 == 0)
             {
@@ -140,10 +153,31 @@ public sealed class ImageDiskCache : IImageCache
                                        or InvalidOperationException or UriFormatException)
         {
             _recentFailures[url] = DateTimeOffset.UtcNow;
+            if (IsHostLevelFailure(ex) && Uri.TryCreate(url, UriKind.Absolute, out var failedUri))
+            {
+                _downHosts[failedUri.Authority] = DateTimeOffset.UtcNow;
+            }
+
             _logger.LogDebug(ex, "Image download failed for {Url}", url);
             return null;
         }
     }
+
+    /// <summary>
+    /// Failures that condemn the whole host rather than one image. Downloads run detached
+    /// (no caller token), so a TaskCanceledException here is always the client timeout.
+    /// </summary>
+    private static bool IsHostLevelFailure(Exception ex) => ex switch
+    {
+        HttpRequestException
+        {
+            HttpRequestError: HttpRequestError.ConnectionError
+                or HttpRequestError.NameResolutionError
+                or HttpRequestError.SecureConnectionError,
+        } => true,
+        TaskCanceledException => true,
+        _ => false,
+    };
 
     private void SweepIfOverBudget()
     {
@@ -162,7 +196,7 @@ public sealed class ImageDiskCache : IImageCache
             var files = Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories)
                 .Select(f => new FileInfo(f))
                 .ToList();
-            var total = files.Sum(f => f.Length);
+            var total = files.Sum(LengthOrZero);
             if (total <= _maxBytes)
             {
                 return;
@@ -176,7 +210,7 @@ public sealed class ImageDiskCache : IImageCache
                     break;
                 }
 
-                total -= file.Length;
+                total -= LengthOrZero(file);
                 TryDelete(file.FullName);
             }
 
@@ -185,6 +219,19 @@ public sealed class ImageDiskCache : IImageCache
         finally
         {
             Interlocked.Exchange(ref _sweepRunning, 0);
+        }
+    }
+
+    /// <summary>In-flight .tmp files can vanish between enumeration and stat.</summary>
+    private static long LengthOrZero(FileInfo file)
+    {
+        try
+        {
+            return file.Length;
+        }
+        catch (IOException)
+        {
+            return 0;
         }
     }
 

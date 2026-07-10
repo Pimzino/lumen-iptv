@@ -62,6 +62,39 @@ public sealed class ImageDiskCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task ConnectionFailure_MarksWholeHostDown()
+    {
+        var cache = CreateCache(() => throw new HttpRequestException(
+            HttpRequestError.ConnectionError, "connection refused"));
+
+        var first = await cache.GetLocalPathAsync("http://dead.example.com/a.png", CancellationToken.None);
+        var second = await cache.GetLocalPathAsync("http://dead.example.com/b.png", CancellationToken.None);
+
+        first.Should().BeNull();
+        second.Should().BeNull();
+        _downloads.Should().Be(1, "one refused connection condemns the host, not just the URL");
+    }
+
+    [Fact]
+    public async Task StatusFailure_DoesNotCondemnTheHost()
+    {
+        var responses = 0;
+        var cache = CreateCache(() => ++responses == 1
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(Encoding.UTF8.GetBytes("fake-image-bytes")),
+            });
+
+        var missing = await cache.GetLocalPathAsync("http://img.example.com/missing.png", CancellationToken.None);
+        var present = await cache.GetLocalPathAsync("http://img.example.com/present.png", CancellationToken.None);
+
+        missing.Should().BeNull();
+        present.Should().NotBeNull("a 404 is about one image, not the server");
+        _downloads.Should().Be(2);
+    }
+
+    [Fact]
     public async Task NonHttpUrls_AreRejectedWithoutDownloading()
     {
         var cache = CreateCache();

@@ -367,16 +367,16 @@ public abstract partial class VodLibraryViewModel : ObservableObject, INavigatio
         {
             foreach (var card in cards)
             {
-                if (!string.IsNullOrWhiteSpace(card.PosterUrl))
-                {
-                    continue;
-                }
-
                 cancellationToken.ThrowIfCancellationRequested();
-                var art = await _artwork.GetArtworkAsync(Kind, card.Item.Name, card.Item.Year, cancellationToken);
-                if (art?.PosterUrl is { } poster)
+
+                // Junk or unreachable provider posters resolve to external artwork; healthy
+                // ones come back unchanged (one host probe per page, not one per card).
+                var resolved = await _artwork.ResolvePosterAsync(
+                    Kind, card.PosterUrl, card.Item.Name, card.Item.Year,
+                    probeExactUrl: false, cancellationToken);
+                if (!string.Equals(resolved, card.PosterUrl, StringComparison.Ordinal))
                 {
-                    card.PosterUrl = poster;
+                    card.PosterUrl = resolved;
                 }
             }
         }

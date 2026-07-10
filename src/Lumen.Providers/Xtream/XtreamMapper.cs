@@ -1,3 +1,4 @@
+using Lumen.Core;
 using Lumen.Core.Models;
 
 namespace Lumen.Providers.Xtream;
@@ -39,7 +40,7 @@ public static class XtreamMapper
             ProviderStreamId = dto.StreamId,
             Number = dto.Number,
             Name = dto.Name,
-            LogoUrl = NullIfBlank(dto.StreamIcon),
+            LogoUrl = WebUrl.NullIfNotHttp(dto.StreamIcon),
             EpgChannelId = NullIfBlank(dto.EpgChannelId),
             HasArchive = dto.HasArchive == true,
             ArchiveDays = dto.HasArchive == true ? Math.Max(0, dto.ArchiveDurationDays ?? 0) : 0,
@@ -67,7 +68,7 @@ public static class XtreamMapper
             ProviderItemId = dto.StreamId,
             CategoryId = ResolveCategory(dto.CategoryId, categoryIdsByProviderId),
             Name = dto.Name,
-            PosterUrl = NullIfBlank(dto.StreamIcon),
+            PosterUrl = WebUrl.NullIfNotHttp(dto.StreamIcon),
             Rating = dto.Rating,
             ProviderAddedUtc = dto.AddedUnix,
             ContainerExtension = NullIfBlank(dto.ContainerExtension),
@@ -94,7 +95,7 @@ public static class XtreamMapper
             ProviderItemId = dto.SeriesId,
             CategoryId = ResolveCategory(dto.CategoryId, categoryIdsByProviderId),
             Name = dto.Name,
-            PosterUrl = NullIfBlank(dto.Cover),
+            PosterUrl = WebUrl.NullIfNotHttp(dto.Cover),
             Rating = dto.Rating,
             ProviderAddedUtc = dto.LastModifiedUnix,
             Year = YearOf(dto.ReleaseDate),
@@ -112,7 +113,7 @@ public static class XtreamMapper
             Director = NullIfBlank(info?.Director),
             Cast = NullIfBlank(info?.Cast) ?? NullIfBlank(info?.Actors),
             DurationSeconds = info?.DurationSeconds,
-            BackdropUrl = info?.BackdropPath?.FirstOrDefault(),
+            BackdropUrl = info?.BackdropPath?.FirstOrDefault(WebUrl.IsHttp),
             TrailerUrl = ToTrailerUrl(info?.YoutubeTrailer),
             Rating = info?.Rating,
             ReleaseDate = NullIfBlank(info?.ReleaseDate),
@@ -142,7 +143,7 @@ public static class XtreamMapper
                     Number = e.EpisodeNumber ?? 0,
                     Plot = NullIfBlank(e.Info?.Plot),
                     DurationSeconds = e.Info?.DurationSeconds,
-                    PosterUrl = NullIfBlank(e.Info?.MovieImage),
+                    PosterUrl = WebUrl.NullIfNotHttp(e.Info?.MovieImage),
                     ContainerExtension = NullIfBlank(e.ContainerExtension),
                     Rating = e.Info?.Rating,
                     AirDate = NullIfBlank(e.Info?.ReleaseDate),
@@ -164,7 +165,7 @@ public static class XtreamMapper
             Director = NullIfBlank(dto.Info?.Director),
             Rating = dto.Info?.Rating,
             ReleaseDate = NullIfBlank(dto.Info?.ReleaseDate),
-            BackdropUrl = dto.Info?.BackdropPath?.FirstOrDefault(),
+            BackdropUrl = dto.Info?.BackdropPath?.FirstOrDefault(WebUrl.IsHttp),
             TmdbId = dto.Info?.TmdbId ?? dto.Info?.Tmdb,
             ImdbId = NullIfBlank(dto.Info?.ImdbId),
             Seasons = seasons,

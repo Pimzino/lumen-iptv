@@ -79,6 +79,8 @@ public sealed partial class ShellViewModel : ObservableObject,
             new RailItem("movies", "", Strings.Nav_Movies),
             new RailItem("series", "", Strings.Nav_Series),
             new RailItem("favorites", "", Strings.Nav_Favorites),
+            new RailItem("downloads", "", Strings.Nav_Downloads),
+            new RailItem("recordings", "", Strings.Nav_Recordings),
             new RailItem("settings", "", Strings.Nav_Settings),
         ];
 
@@ -258,6 +260,12 @@ public sealed partial class ShellViewModel : ObservableObject,
                 break;
             case "favorites":
                 Navigation.NavigateTo<FavoritesViewModel>();
+                break;
+            case "downloads":
+                Navigation.NavigateTo<DownloadsViewModel>();
+                break;
+            case "recordings":
+                Navigation.NavigateTo<RecordingsViewModel>();
                 break;
             case "settings":
                 Navigation.NavigateTo<SettingsViewModel>();

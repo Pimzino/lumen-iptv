@@ -33,3 +33,22 @@ public sealed record TraktSyncCompletedMessage;
 /// its Completed flag can set a watched tick but never clears one (the store merges).
 /// </summary>
 public sealed record WatchProgressSavedMessage(WatchHistoryEntry Entry);
+
+/// <summary>
+/// Sent on every download status transition (queued → downloading → completed/failed/paused).
+/// The Downloads page and the detail-page download buttons listen and update the affected row
+/// without re-querying.
+/// </summary>
+public sealed record DownloadStateChangedMessage(long DownloadId, string ItemKey, DownloadStatus Status);
+
+/// <summary>Sent when a download finishes; drives the optional completion toast.</summary>
+public sealed record DownloadCompletedMessage(DownloadItem Item);
+
+/// <summary>Sent when a download is removed; detail-page buttons reset to their "Download" state.</summary>
+public sealed record DownloadRemovedMessage(long DownloadId, string ItemKey);
+
+/// <summary>
+/// Sent on every live-recording transition (started, finalized, failed, removed). The Recordings
+/// page re-buckets its lists; the player overlay's Record toggle reflects the active capture.
+/// </summary>
+public sealed record RecordingStateChangedMessage(long RecordingId, DownloadStatus Status);

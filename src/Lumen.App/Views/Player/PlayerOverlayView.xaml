@@ -267,6 +267,55 @@
                 </StackPanel>
               </Button>
 
+              <!-- Record toggle (live only): captures this channel on a second connection. The dot
+                   burns red and the label ticks elapsed time while a capture runs. -->
+              <Button DockPanel.Dock="Left"
+                      Command="{Binding ToggleRecordCommand}"
+                      Visibility="{Binding Playback.IsVod, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource Lumen.Button.Ghost}">
+                    <Setter Property="ToolTip" Value="{x:Static res:Strings.Player_Record}" />
+                    <Setter Property="AutomationProperties.Name" Value="{x:Static res:Strings.Player_Record}" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Recordings.IsRecording}" Value="True">
+                        <Setter Property="ToolTip" Value="{x:Static res:Strings.Player_StopRecording}" />
+                        <Setter Property="AutomationProperties.Name" Value="{x:Static res:Strings.Player_StopRecording}" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+                <StackPanel Orientation="Horizontal">
+                  <Ellipse Width="8"
+                           Height="8"
+                           VerticalAlignment="Center"
+                           Margin="{StaticResource Lumen.Margin.R8}">
+                    <Ellipse.Style>
+                      <Style TargetType="Ellipse">
+                        <Setter Property="Fill" Value="{StaticResource Lumen.Brush.Text.Secondary}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Recordings.IsRecording}" Value="True">
+                            <Setter Property="Fill" Value="{StaticResource Lumen.Brush.Live}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Ellipse.Style>
+                  </Ellipse>
+                  <TextBlock VerticalAlignment="Center">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{x:Static res:Strings.Player_Record}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding Recordings.IsRecording}" Value="True">
+                            <Setter Property="Text"
+                                    Value="{Binding Recordings.ActiveRecording.RecordLabel, FallbackValue=REC}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </StackPanel>
+              </Button>
+
               <!-- right cluster -->
               <Button DockPanel.Dock="Right"
                       Style="{StaticResource Lumen.Button.Icon}"

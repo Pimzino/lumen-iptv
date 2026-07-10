@@ -234,6 +234,31 @@
                     <TextBlock Text="{Binding MarkWatchedLabel}" />
                   </StackPanel>
                 </Button>
+                <!-- Download for offline -->
+                <Button Style="{StaticResource Lumen.Button.Ghost}"
+                        Command="{Binding DownloadMovieCommand}"
+                        IsEnabled="{Binding IsMovieDownloadEnabled}"
+                        AutomationProperties.Name="{Binding MovieDownloadLabel}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                               FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                               VerticalAlignment="Center"
+                               Margin="{StaticResource Lumen.Margin.R8}">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Setter Property="Text" Value="{StaticResource Lumen.Icon.Downloads}" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding MovieDownload.IsCompleted}" Value="True">
+                              <Setter Property="Text" Value="{StaticResource Lumen.Icon.Check}" />
+                              <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{Binding MovieDownloadLabel}" />
+                  </StackPanel>
+                </Button>
               </StackPanel>
 
               <!-- Series action: resume the latest episode or start the next one -->
@@ -325,6 +350,22 @@
                   </Style>
                 </Button.Style>
               </Button>
+              <!-- Download every episode of the selected season -->
+              <Button Style="{StaticResource Lumen.Button.Ghost}"
+                      Command="{Binding DownloadSeasonCommand}"
+                      CommandParameter="{Binding SelectedSeason}"
+                      Margin="{StaticResource Lumen.Margin.L12}"
+                      Visibility="{Binding SelectedSeason, Converter={StaticResource Lumen.NullToCollapsed}}"
+                      AutomationProperties.Name="{x:Static res:Strings.Downloads_DownloadSeason}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{StaticResource Lumen.Icon.Downloads}"
+                             FontFamily="{StaticResource Lumen.Font.Icons}"
+                             FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                             VerticalAlignment="Center"
+                             Margin="{StaticResource Lumen.Margin.R8}" />
+                  <TextBlock Text="{x:Static res:Strings.Downloads_DownloadSeason}" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </Grid>
 
@@ -408,6 +449,7 @@
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
 
@@ -532,8 +574,38 @@
                                        Visibility="{Binding Plot, Converter={StaticResource Lumen.NullToCollapsed}}" />
                           </StackPanel>
 
-                          <!-- Watched toggle: muted until hovered or already watched -->
+                          <!-- Download for offline: muted until hovered, in progress, or downloaded -->
                           <Button Grid.Column="2"
+                                  Style="{StaticResource Lumen.Button.Icon}"
+                                  Command="{Binding DataContext.DownloadEpisodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}"
+                                  VerticalAlignment="Center"
+                                  Margin="{StaticResource Lumen.Margin.L12}"
+                                  ToolTip="{x:Static res:Strings.Downloads_Download}"
+                                  AutomationProperties.Name="{x:Static res:Strings.Downloads_Download}">
+                            <TextBlock FontFamily="{StaticResource Lumen.Font.Icons}"
+                                       FontSize="{StaticResource Lumen.FontSize.IconSmall}">
+                              <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                  <Setter Property="Text" Value="{StaticResource Lumen.Icon.Downloads}" />
+                                  <Setter Property="Opacity" Value="0.5" />
+                                  <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Download.IsInProgress}" Value="True">
+                                      <Setter Property="Opacity" Value="1" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Download.IsCompleted}" Value="True">
+                                      <Setter Property="Text" Value="{StaticResource Lumen.Icon.Check}" />
+                                      <Setter Property="Foreground" Value="{StaticResource Lumen.Brush.Accent}" />
+                                      <Setter Property="Opacity" Value="1" />
+                                    </DataTrigger>
+                                  </Style.Triggers>
+                                </Style>
+                              </TextBlock.Style>
+                            </TextBlock>
+                          </Button>
+
+                          <!-- Watched toggle: muted until hovered or already watched -->
+                          <Button Grid.Column="3"
                                   Command="{Binding DataContext.ToggleEpisodeWatchedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   CommandParameter="{Binding}"
                                   ToolTip="{Binding WatchedToggleTooltip}"

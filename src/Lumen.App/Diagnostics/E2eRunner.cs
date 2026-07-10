@@ -82,7 +82,7 @@ public static class E2eRunner
             report.AppendLine($"profiles={profiles.Count}");
 
             var pass =
-                xtreamCatalog.Channels == 5 && xtreamCatalog.Movies == 2 && xtreamCatalog.Series == 1 &&
+                xtreamCatalog.Channels == 5 && xtreamCatalog.Movies == 3 && xtreamCatalog.Series == 1 &&
                 m3uCatalog.Channels == 5 && m3uCatalog.Movies == 1 &&
                 xtreamEpg.Programmes > 0 && m3uEpg.Programmes > 0 &&
                 mappings.Count == 5 && withNow == 5 &&

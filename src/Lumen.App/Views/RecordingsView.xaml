@@ -1,0 +1,254 @@
+<UserControl x:Class="Lumen.App.Views.RecordingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <Grid Margin="{StaticResource Lumen.Pad.Page}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- ============ Header ============ -->
+    <Grid Grid.Row="0" Margin="{StaticResource Lumen.Margin.B16}">
+      <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                 Text="{x:Static res:Strings.Recordings_Title}"
+                 VerticalAlignment="Center" />
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              HorizontalAlignment="Right"
+              Command="{Binding OpenFolderCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Downloads_OpenFolder}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{StaticResource Lumen.Icon.OpenFile}"
+                     FontFamily="{StaticResource Lumen.Font.Icons}"
+                     FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                     VerticalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.R8}" />
+          <TextBlock Text="{x:Static res:Strings.Downloads_OpenFolder}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <!-- ============ Loading ============ -->
+    <ContentControl Grid.Row="1"
+                    Style="{StaticResource Lumen.Spinner}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+
+    <!-- ============ Empty ============ -->
+    <ContentControl Grid.Row="1"
+                    Style="{StaticResource Lumen.EmptyState}"
+                    ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Record}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0,0,0,64"
+                    Visibility="{Binding ShowEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{x:Static res:Strings.Recordings_Empty}"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center"
+                 MaxWidth="360" />
+    </ContentControl>
+
+    <!-- ============ Content ============ -->
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+      <StackPanel>
+
+        <!-- In progress / failed -->
+        <StackPanel Visibility="{Binding HasInProgress, Converter={StaticResource Lumen.BoolToVisibility}}"
+                    Margin="{StaticResource Lumen.Margin.B24}">
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{x:Static res:Strings.Recordings_InProgress}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <ItemsControl ItemsSource="{Binding InProgress}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="{StaticResource Lumen.Brush.Bg.Raised}"
+                        CornerRadius="{StaticResource Lumen.Radius.Card}"
+                        Padding="{StaticResource Lumen.Pad.12}"
+                        Margin="{StaticResource Lumen.Margin.B8}">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Channel logo / monogram -->
+                    <Border Width="64"
+                            Height="64"
+                            CornerRadius="{StaticResource Lumen.Radius.Control}"
+                            ClipToBounds="True"
+                            Background="{StaticResource Lumen.Brush.Accent.Subtle}"
+                            VerticalAlignment="Center">
+                      <Grid>
+                        <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                                   Text="{Binding Monogram}"
+                                   Foreground="{StaticResource Lumen.Brush.Accent}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        <Image ctl:ImageLoader.Url="{Binding LogoUrl}"
+                               ctl:ImageLoader.DecodeWidth="128"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                      </Grid>
+                    </Border>
+
+                    <!-- Channel, programme, status, elapsed -->
+                    <StackPanel Grid.Column="1"
+                                Margin="{StaticResource Lumen.Margin.L16}"
+                                VerticalAlignment="Center">
+                      <StackPanel Orientation="Horizontal">
+                        <!-- Red dot while capturing -->
+                        <Ellipse Width="8"
+                                 Height="8"
+                                 Fill="{StaticResource Lumen.Brush.Live}"
+                                 VerticalAlignment="Center"
+                                 Margin="{StaticResource Lumen.Margin.R8}"
+                                 Visibility="{Binding IsRecording, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                   Text="{Binding ChannelName}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                 Text="{Binding ProgrammeTitle}"
+                                 TextTrimming="CharacterEllipsis"
+                                 Margin="{StaticResource Lumen.Margin.T4}"
+                                 Visibility="{Binding ProgrammeTitle, Converter={StaticResource Lumen.NullToCollapsed}}" />
+                      <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.T4}">
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="{Binding StatusText}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Text="{Binding ElapsedText}"
+                                   Margin="{StaticResource Lumen.Margin.L12}"
+                                   Visibility="{Binding IsRecording, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Text="{Binding SizeText}"
+                                   Margin="{StaticResource Lumen.Margin.L12}" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <!-- Actions -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Style="{StaticResource Lumen.Button.Secondary}"
+                              Content="{x:Static res:Strings.Recordings_Stop}"
+                              Command="{Binding DataContext.StopCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Margin="{StaticResource Lumen.Margin.R8}"
+                              Visibility="{Binding IsRecording, Converter={StaticResource Lumen.BoolToVisibility}}"
+                              AutomationProperties.Name="{x:Static res:Strings.Recordings_Stop}" />
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Delete}"
+                              ToolTip="{x:Static res:Strings.Common_Remove}"
+                              AutomationProperties.Name="{x:Static res:Strings.Common_Remove}"
+                              Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding IsFailed, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Recorded -->
+        <StackPanel Visibility="{Binding HasCompleted, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{x:Static res:Strings.Recordings_Completed}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <ItemsControl ItemsSource="{Binding Completed}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="{StaticResource Lumen.Brush.Bg.Raised}"
+                        CornerRadius="{StaticResource Lumen.Radius.Card}"
+                        Padding="{StaticResource Lumen.Pad.12}"
+                        Margin="{StaticResource Lumen.Margin.B8}">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="64"
+                            Height="64"
+                            CornerRadius="{StaticResource Lumen.Radius.Control}"
+                            ClipToBounds="True"
+                            Background="{StaticResource Lumen.Brush.Accent.Subtle}"
+                            VerticalAlignment="Center">
+                      <Grid>
+                        <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                                   Text="{Binding Monogram}"
+                                   Foreground="{StaticResource Lumen.Brush.Accent}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        <Image ctl:ImageLoader.Url="{Binding LogoUrl}"
+                               ctl:ImageLoader.DecodeWidth="128"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                      </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1"
+                                Margin="{StaticResource Lumen.Margin.L16}"
+                                VerticalAlignment="Center">
+                      <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                 Text="{Binding Title}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                 Text="{Binding ChannelName}"
+                                 TextTrimming="CharacterEllipsis"
+                                 Margin="{StaticResource Lumen.Margin.T4}" />
+                      <StackPanel Orientation="Horizontal" Margin="{StaticResource Lumen.Margin.T4}">
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}" Text="{Binding StartedLabel}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Text="{Binding ElapsedText}"
+                                   Margin="{StaticResource Lumen.Margin.L12}" />
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Text="{Binding SizeText}"
+                                   Margin="{StaticResource Lumen.Margin.L12}" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Style="{StaticResource Lumen.Button.Primary}"
+                              Command="{Binding DataContext.PlayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Margin="{StaticResource Lumen.Margin.R8}"
+                              AutomationProperties.Name="{x:Static res:Strings.Downloads_PlayOffline}">
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Text="{StaticResource Lumen.Icon.Play}"
+                                     FontFamily="{StaticResource Lumen.Font.Icons}"
+                                     FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                                     VerticalAlignment="Center"
+                                     Margin="{StaticResource Lumen.Margin.R8}" />
+                          <TextBlock Text="{x:Static res:Strings.Downloads_PlayOffline}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Edit}"
+                              ToolTip="{x:Static res:Strings.Recordings_Rename}"
+                              AutomationProperties.Name="{x:Static res:Strings.Recordings_Rename}"
+                              Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}" />
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Delete}"
+                              ToolTip="{x:Static res:Strings.Common_Remove}"
+                              AutomationProperties.Name="{x:Static res:Strings.Common_Remove}"
+                              Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

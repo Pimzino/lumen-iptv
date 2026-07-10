@@ -26,20 +26,25 @@ public sealed partial class PlayerViewModel : ObservableObject,
     private readonly ISessionService _session;
     private readonly IMessenger _messenger;
     private readonly IClock _clock;
+    private readonly IToastService _toasts;
     private readonly DispatcherTimer _progressTimer;
     private readonly DispatcherTimer _bannerTimer;
 
     public PlayerViewModel(
         PlaybackService playback,
+        Services.Recordings.RecordingService recordings,
         IEpgRepository epgRepository,
         ISessionService session,
         IClock clock,
+        IToastService toasts,
         IMessenger messenger)
     {
         Playback = playback;
+        Recordings = recordings;
         _epgRepository = epgRepository;
         _session = session;
         _clock = clock;
+        _toasts = toasts;
         _messenger = messenger;
 
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -79,6 +84,9 @@ public sealed partial class PlayerViewModel : ObservableObject,
 
     /// <summary>Concrete playback service (INPC) for direct binding.</summary>
     public PlaybackService Playback { get; }
+
+    /// <summary>Live recording state (INPC) for the Record toggle's dot/label bindings.</summary>
+    public Services.Recordings.RecordingService Recordings { get; }
 
     // ---- overlay state ----
 
@@ -142,6 +150,65 @@ public sealed partial class PlayerViewModel : ObservableObject,
 
     /// <summary>Start of the programme currently airing — the live seek bar's left edge.</summary>
     public DateTimeOffset? NowProgrammeStartUtc => _nowProgramme?.Start;
+
+    /// <summary>
+    /// Record toggle (live only): starts capturing the current channel on its own connection, or
+    /// stops the running capture when it is this channel's. Recording another channel toasts —
+    /// v1 allows one capture at a time, and it is stoppable from the Recordings page too.
+    /// </summary>
+    [RelayCommand]
+    private async Task ToggleRecordAsync()
+    {
+        if (Playback.IsVod || Playback.CurrentChannel is not { } channel)
+        {
+            return;
+        }
+
+        if (Recordings.ActiveRecording is { } active)
+        {
+            if (active.Item.ChannelId == channel.Id)
+            {
+                await Recordings.StopRecordingAsync(active.Id);
+                _toasts.Show(
+                    active.IsCompleted
+                        ? Resources.Strings.Format(Resources.Strings.Toast_RecordingSavedFormat, active.ChannelName)
+                        : Resources.Strings.Format(
+                            Resources.Strings.Toast_RecordingFailedFormat, active.Error ?? active.ChannelName),
+                    active.IsCompleted ? ToastSeverity.Success : ToastSeverity.Error);
+            }
+            else
+            {
+                _toasts.Show(Resources.Strings.Format(
+                    Resources.Strings.Toast_RecordingBusyFormat, active.ChannelName));
+            }
+
+            return;
+        }
+
+        if (_session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var outcome = await Recordings.StartRecordingAsync(channel, NowTitle, profile.Id, CancellationToken.None);
+        switch (outcome.Status)
+        {
+            case Services.Recordings.RecordStartStatus.Started:
+                _toasts.Show(
+                    Resources.Strings.Format(Resources.Strings.Toast_RecordingStartedFormat, channel.Name),
+                    ToastSeverity.Success);
+                break;
+            case Services.Recordings.RecordStartStatus.Busy:
+                _toasts.Show(Resources.Strings.Format(
+                    Resources.Strings.Toast_RecordingBusyFormat, outcome.BusyChannelName ?? string.Empty));
+                break;
+            case Services.Recordings.RecordStartStatus.Unresolvable:
+                _toasts.Show(Resources.Strings.Toast_RecordingUnresolvable, ToastSeverity.Error);
+                break;
+            default:
+                break;
+        }
+    }
 
     [RelayCommand]
     private void ToggleMute() => Playback.IsMuted = !Playback.IsMuted;
@@ -386,8 +453,8 @@ public sealed partial class PlayerViewModel : ObservableObject,
 
     /// <summary>
     /// The player keyboard map (spec §4.4): Space play/pause, F fullscreen, M mute,
-    /// Esc back, Enter channel list. Arrows follow the content: live keeps the TV-remote
-    /// map (↑/↓ zap, ←/→ volume); VOD uses the media-player map (←/→ seek ±10s,
+    /// R record (live), Esc back, Enter channel list. Arrows follow the content: live keeps
+    /// the TV-remote map (↑/↓ zap, ←/→ volume); VOD uses the media-player map (←/→ seek ±10s,
     /// ↑/↓ volume — zapping has no meaning in a clip). Routed from both the overlay
     /// and the main window so focus quirks never eat a key.
     /// </summary>
@@ -408,6 +475,9 @@ public sealed partial class PlayerViewModel : ObservableObject,
                 return true;
             case System.Windows.Input.Key.M:
                 ToggleMute();
+                return true;
+            case System.Windows.Input.Key.R when !Playback.IsVod:
+                _ = ToggleRecordAsync();
                 return true;
             case System.Windows.Input.Key.Up:
                 if (Playback.IsVod)

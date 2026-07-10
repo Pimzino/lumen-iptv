@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Lumen.App.Resources;
 using Lumen.App.Services;
+using Lumen.App.Services.Downloads;
 using Lumen.App.Services.Playback;
 using Lumen.App.Services.Trakt;
 using Lumen.Core.Abstractions;
@@ -73,6 +74,10 @@ public sealed partial class EpisodeRow : ObservableObject
     public string WatchedToggleTooltip => IsWatched
         ? Strings.Vod_MarkEpisodeUnwatched
         : Strings.Vod_MarkEpisodeWatched;
+
+    /// <summary>The download for this episode, when one exists; drives the card's download button.</summary>
+    [ObservableProperty]
+    private DownloadRow? _download;
 }
 
 /// <summary>A season tab on a series detail page.</summary>
@@ -113,7 +118,8 @@ public sealed partial class SeasonGroup : ObservableObject
 /// resumes the most recently watched episode or advances to the next one.
 /// </summary>
 public sealed partial class VodDetailViewModel : ObservableObject, INavigationAware,
-    IRecipient<TraktSyncCompletedMessage>, IRecipient<WatchProgressSavedMessage>
+    IRecipient<TraktSyncCompletedMessage>, IRecipient<WatchProgressSavedMessage>,
+    IRecipient<DownloadStateChangedMessage>, IRecipient<DownloadRemovedMessage>
 {
     /// <summary>Progress beyond which an episode counts as watched and the next one is queued.</summary>
     private const double CompletedProgress = 0.95;
@@ -127,6 +133,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
     private readonly INavigationService _navigation;
     private readonly ArtworkService _artwork;
     private readonly TraktSyncService _traktSync;
+    private readonly Services.Downloads.DownloadService _downloads;
 
     private VodItem? _item;
     private MovieDetails? _movieDetails;
@@ -148,6 +155,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         INavigationService navigation,
         ArtworkService artwork,
         TraktSyncService traktSync,
+        Services.Downloads.DownloadService downloads,
         IMessenger messenger)
     {
         _vodService = vodService;
@@ -159,6 +167,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         _navigation = navigation;
         _artwork = artwork;
         _traktSync = traktSync;
+        _downloads = downloads;
         messenger.RegisterAll(this);
     }
 
@@ -191,6 +200,38 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
     [ObservableProperty]
     private bool _isFavorite;
+
+    /// <summary>The movie's download, when one exists; the Download button reflects its live state.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MovieDownloadLabel))]
+    [NotifyPropertyChangedFor(nameof(IsMovieDownloadEnabled))]
+    private DownloadRow? _movieDownload;
+
+    /// <summary>Download-button caption for a movie: "Download", "Downloading 42%", "Downloaded", etc.</summary>
+    public string MovieDownloadLabel => MovieDownload?.ButtonLabel ?? Strings.Downloads_Download;
+
+    /// <summary>The button is inert while queued/downloading; actionable otherwise.</summary>
+    public bool IsMovieDownloadEnabled => MovieDownload is null
+        || MovieDownload.Status is DownloadStatus.Completed or DownloadStatus.Failed or DownloadStatus.Paused;
+
+    partial void OnMovieDownloadChanged(DownloadRow? oldValue, DownloadRow? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.PropertyChanged -= OnMovieDownloadRowChanged;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.PropertyChanged += OnMovieDownloadRowChanged;
+        }
+    }
+
+    private void OnMovieDownloadRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(MovieDownloadLabel));
+        OnPropertyChanged(nameof(IsMovieDownloadEnabled));
+    }
 
     [ObservableProperty]
     private bool _canResume;
@@ -254,6 +295,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         IsWatched = false;
         WatchedLabel = null;
         SeriesProgress = 0;
+        MovieDownload = null;
         _rowsByKey = new Dictionary<string, EpisodeRow>(StringComparer.Ordinal);
 
         // The full player is an overlay — this page stays alive underneath it, so the row of
@@ -270,6 +312,12 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
         try
         {
+            // Load this profile's downloads so the movie/episode buttons reflect their state.
+            if (profile is not null)
+            {
+                await _downloads.EnsureLoadedAsync(profile.Id, cancellationToken);
+            }
+
             if (IsSeries)
             {
                 await LoadSeriesAsync(item, cancellationToken);
@@ -342,7 +390,14 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
         }
     }
 
-    public void OnNavigatedFrom() => _playback.PropertyChanged -= OnPlaybackPropertyChanged;
+    public void OnNavigatedFrom()
+    {
+        _playback.PropertyChanged -= OnPlaybackPropertyChanged;
+
+        // Unsubscribe from the service-owned download row so this transient page can be collected
+        // (the row lives in the DownloadService for the app's lifetime).
+        MovieDownload = null;
+    }
 
     /// <summary>Ticks the playing episode's bar (and the hero fraction) once a second.</summary>
     private void OnPlaybackPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -412,6 +467,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
 
             IsWatched = _resumeEntry?.Completed == true;
             WatchedLabel = BuildWatchedLabel(_resumeEntry);
+            MovieDownload = FindLoadedRow(profile.Id, ContentKind.Movie, item.ProviderItemId);
         }
 
         // Trakt may know this movie was watched elsewhere; check quietly after the page shows.
@@ -509,6 +565,7 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
                     row.IsWatched = entry.Completed;
                 }
 
+                row.Download = profile is null ? null : FindLoadedRow(profile.Id, ContentKind.Series, key);
                 _rowsByKey[key] = row;
                 return row;
             }).ToList();
@@ -1011,6 +1068,179 @@ public sealed partial class VodDetailViewModel : ObservableObject, INavigationAw
                 profile.Id, _item.Kind, _item.ProviderItemId, DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 CancellationToken.None);
             IsFavorite = true;
+        }
+    }
+
+    // ---- Downloads -------------------------------------------------------------------------
+
+    private DownloadRow? FindLoadedRow(long profileId, ContentKind kind, string itemKey) =>
+        _downloads.Downloads.FirstOrDefault(
+            r => r.Item.ProfileId == profileId && r.Kind == kind && r.ItemKey == itemKey);
+
+    /// <summary>True when the source is HLS (.m3u8) — recorded rather than downloaded as a file.</summary>
+    private static bool IsHlsSource(string? containerExtension, string? streamUrl)
+    {
+        if (string.Equals(containerExtension?.Trim().TrimStart('.'), "m3u8", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return streamUrl is not null
+            && streamUrl.Split('?')[0].EndsWith(".m3u8", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private DownloadRequest BuildMovieRequest(long profileId)
+    {
+        var container = _movieDetails?.ContainerExtension ?? _item!.ContainerExtension;
+        return new DownloadRequest(
+            ContentKind.Movie, _item!.ProviderItemId, null, _item.ProviderItemId, container, _item.StreamUrl,
+            _item.Name, _item.PosterUrl, null, null, IsHlsSource(container, _item.StreamUrl), profileId);
+    }
+
+    private DownloadRequest BuildEpisodeRequest(long profileId, EpisodeRow row)
+    {
+        var key = EpisodeKey(_item!, row.Episode);
+        return new DownloadRequest(
+            ContentKind.Series, key, _item!.ProviderItemId, row.Episode.ProviderEpisodeId,
+            row.Episode.ContainerExtension, null,
+            $"{_item.Name} · S{row.Episode.Season}E{row.Episode.Number}", _item.PosterUrl,
+            row.Episode.Season, row.Episode.Number, IsHlsSource(row.Episode.ContainerExtension, null), profileId);
+    }
+
+    /// <summary>Movie Download button: enqueue, resume, retry, or play the finished file.</summary>
+    [RelayCommand]
+    private async Task DownloadMovieAsync()
+    {
+        if (_item is null || IsSeries || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        if (MovieDownload is { } existing)
+        {
+            await ActOnExistingDownloadAsync(existing);
+            return;
+        }
+
+        MovieDownload = await _downloads.EnqueueAsync(BuildMovieRequest(profile.Id), CancellationToken.None);
+    }
+
+    /// <summary>Per-episode download button: enqueue, resume, retry, or play the finished file.</summary>
+    [RelayCommand]
+    private async Task DownloadEpisodeAsync(EpisodeRow? row)
+    {
+        if (row is null || _item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        if (row.Download is { } existing)
+        {
+            await ActOnExistingDownloadAsync(existing);
+            return;
+        }
+
+        row.Download = await _downloads.EnqueueAsync(BuildEpisodeRequest(profile.Id, row), CancellationToken.None);
+    }
+
+    /// <summary>Downloads every not-yet-downloaded (or failed) episode of a season.</summary>
+    [RelayCommand]
+    private async Task DownloadSeasonAsync(SeasonGroup? season)
+    {
+        if (season is null || _item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        foreach (var row in season.Episodes.Where(r => r.Download is null || r.Download.IsFailed))
+        {
+            row.Download = await _downloads.EnqueueAsync(BuildEpisodeRequest(profile.Id, row), CancellationToken.None);
+        }
+    }
+
+    private async Task ActOnExistingDownloadAsync(DownloadRow download)
+    {
+        switch (download.Status)
+        {
+            case DownloadStatus.Completed:
+                await PlayDownloadedAsync(download);
+                break;
+            case DownloadStatus.Failed:
+                _downloads.Retry(download.Id);
+                break;
+            case DownloadStatus.Paused:
+                _downloads.Resume(download.Id);
+                break;
+            default:
+                break; // queued/downloading — no action
+        }
+    }
+
+    private async Task PlayDownloadedAsync(DownloadRow download)
+    {
+        if (!download.CanPlay)
+        {
+            return;
+        }
+
+        double resume = 0;
+        if (_session.CurrentProfile is { } profile)
+        {
+            var entry = await _watchHistory.GetAsync(profile.Id, download.Kind, download.ItemKey, CancellationToken.None);
+            resume = entry?.PositionSeconds ?? 0;
+        }
+
+        var url = new Uri(download.FilePath).AbsoluteUri;
+        await _playback.PlayVodAsync(
+            new VodPlayRequest(
+                url, download.Kind, download.ItemKey, download.Title, download.PosterUrl, resume,
+                download.Season, download.EpisodeNumber),
+            CancellationToken.None);
+    }
+
+    /// <summary>A download for an item on this page may have started elsewhere — associate its row.</summary>
+    public void Receive(DownloadStateChangedMessage message)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.BeginInvoke(() => AssociateDownload(message.ItemKey));
+    }
+
+    public void Receive(DownloadRemovedMessage message)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.BeginInvoke(() => ClearDownload(message.DownloadId));
+    }
+
+    private void AssociateDownload(string itemKey)
+    {
+        if (_item is null || _session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        if (!IsSeries && itemKey == _item.ProviderItemId && MovieDownload is null)
+        {
+            MovieDownload = FindLoadedRow(profile.Id, ContentKind.Movie, itemKey);
+        }
+        else if (IsSeries && _rowsByKey.TryGetValue(itemKey, out var row) && row.Download is null)
+        {
+            row.Download = FindLoadedRow(profile.Id, ContentKind.Series, itemKey);
+        }
+    }
+
+    private void ClearDownload(long downloadId)
+    {
+        if (MovieDownload?.Id == downloadId)
+        {
+            MovieDownload = null;
+        }
+
+        foreach (var row in _rowsByKey.Values)
+        {
+            if (row.Download?.Id == downloadId)
+            {
+                row.Download = null;
+            }
         }
     }
 }

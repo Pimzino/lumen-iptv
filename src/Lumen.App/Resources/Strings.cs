@@ -37,6 +37,7 @@ public static class Strings
     public static string Nav_Series => Get(nameof(Nav_Series));
     public static string Nav_Search => Get(nameof(Nav_Search));
     public static string Nav_Favorites => Get(nameof(Nav_Favorites));
+    public static string Nav_Downloads => Get(nameof(Nav_Downloads));
     public static string Nav_Settings => Get(nameof(Nav_Settings));
 
     public static string Shell_Menu => Get(nameof(Shell_Menu));
@@ -260,6 +261,57 @@ public static class Strings
     public static string Vod_MarkEpisodeWatched => Get(nameof(Vod_MarkEpisodeWatched));
     public static string Vod_MarkEpisodeUnwatched => Get(nameof(Vod_MarkEpisodeUnwatched));
     public static string Home_ContinueWatchingResume => Get(nameof(Home_ContinueWatchingResume));
+
+    // Downloads (offline VOD).
+    public static string Downloads_Title => Get(nameof(Downloads_Title));
+    public static string Downloads_Empty => Get(nameof(Downloads_Empty));
+    public static string Downloads_InProgress => Get(nameof(Downloads_InProgress));
+    public static string Downloads_Completed => Get(nameof(Downloads_Completed));
+    public static string Downloads_Download => Get(nameof(Downloads_Download));
+    public static string Downloads_Downloading => Get(nameof(Downloads_Downloading));
+    public static string Downloads_DownloadingPercentFormat => Get(nameof(Downloads_DownloadingPercentFormat));
+    public static string Downloads_Queued => Get(nameof(Downloads_Queued));
+    public static string Downloads_Paused => Get(nameof(Downloads_Paused));
+    public static string Downloads_Downloaded => Get(nameof(Downloads_Downloaded));
+    public static string Downloads_Failed => Get(nameof(Downloads_Failed));
+    public static string Downloads_DownloadSeason => Get(nameof(Downloads_DownloadSeason));
+    public static string Downloads_Pause => Get(nameof(Downloads_Pause));
+    public static string Downloads_Resume => Get(nameof(Downloads_Resume));
+    public static string Downloads_PlayOffline => Get(nameof(Downloads_PlayOffline));
+    public static string Downloads_OpenFolder => Get(nameof(Downloads_OpenFolder));
+    public static string Downloads_RemoveTitle => Get(nameof(Downloads_RemoveTitle));
+    public static string Downloads_RemoveBodyFormat => Get(nameof(Downloads_RemoveBodyFormat));
+    public static string Toast_DownloadCompleteFormat => Get(nameof(Toast_DownloadCompleteFormat));
+    public static string Toast_DownloadFailedFormat => Get(nameof(Toast_DownloadFailedFormat));
+    public static string Settings_Downloads => Get(nameof(Settings_Downloads));
+    public static string Settings_DownloadsFormat => Get(nameof(Settings_DownloadsFormat));
+    public static string Settings_ClearDownloads => Get(nameof(Settings_ClearDownloads));
+    public static string Settings_ClearDownloadsBody => Get(nameof(Settings_ClearDownloadsBody));
+    public static string Toast_DownloadsCleared => Get(nameof(Toast_DownloadsCleared));
+
+    // Live TV recordings.
+    public static string Nav_Recordings => Get(nameof(Nav_Recordings));
+    public static string Recordings_Title => Get(nameof(Recordings_Title));
+    public static string Recordings_Empty => Get(nameof(Recordings_Empty));
+    public static string Recordings_InProgress => Get(nameof(Recordings_InProgress));
+    public static string Recordings_Saved => Get(nameof(Recordings_Saved));
+    public static string Recordings_Completed => Get(nameof(Recordings_Completed));
+    public static string Recordings_Stop => Get(nameof(Recordings_Stop));
+    public static string Recordings_RemoveTitle => Get(nameof(Recordings_RemoveTitle));
+    public static string Recordings_RemoveBodyFormat => Get(nameof(Recordings_RemoveBodyFormat));
+    public static string Recordings_Rename => Get(nameof(Recordings_Rename));
+    public static string Recordings_RenameTitle => Get(nameof(Recordings_RenameTitle));
+    public static string Player_Record => Get(nameof(Player_Record));
+    public static string Player_StopRecording => Get(nameof(Player_StopRecording));
+    public static string Toast_RecordingStartedFormat => Get(nameof(Toast_RecordingStartedFormat));
+    public static string Toast_RecordingSavedFormat => Get(nameof(Toast_RecordingSavedFormat));
+    public static string Toast_RecordingFailedFormat => Get(nameof(Toast_RecordingFailedFormat));
+    public static string Toast_RecordingBusyFormat => Get(nameof(Toast_RecordingBusyFormat));
+    public static string Toast_RecordingUnresolvable => Get(nameof(Toast_RecordingUnresolvable));
+    public static string Settings_Recordings => Get(nameof(Settings_Recordings));
+    public static string Settings_ClearRecordings => Get(nameof(Settings_ClearRecordings));
+    public static string Settings_ClearRecordingsBody => Get(nameof(Settings_ClearRecordingsBody));
+    public static string Toast_RecordingsCleared => Get(nameof(Toast_RecordingsCleared));
 
     public static string Settings_Trakt => Get(nameof(Settings_Trakt));
     public static string Settings_TraktBody => Get(nameof(Settings_TraktBody));

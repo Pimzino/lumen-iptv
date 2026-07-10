@@ -259,6 +259,20 @@ public partial class App : Application
                 return;
             }
 
+            if (args.Contains("--e2e-download"))
+            {
+                var outFile = ArgValue(args, "--out") ?? Path.Combine(AppPaths.DataRoot, "e2e-download.txt");
+                Shutdown(await Diagnostics.E2eDownloadRunner.RunAsync(_host.Services, outFile));
+                return;
+            }
+
+            if (args.Contains("--e2e-record"))
+            {
+                var outFile = ArgValue(args, "--out") ?? Path.Combine(AppPaths.DataRoot, "e2e-record.txt");
+                Shutdown(await Diagnostics.E2eRecordRunner.RunAsync(_host.Services, outFile));
+                return;
+            }
+
             if (args.Contains("--search-bench"))
             {
                 var outFile = ArgValue(args, "--out") ?? Path.Combine(AppPaths.DataRoot, "search-bench.txt");
@@ -549,6 +563,24 @@ public partial class App : Application
             sp.GetRequiredService<Services.Playback.PlaybackService>());
         services.AddSingleton<Services.PlaybackServiceNavigator>();
         services.AddSingleton<Services.VodService>();
+
+        // Offline downloads: two strategies behind one queue. The service is a singleton VMs bind
+        // to AND a hosted service (startup resume) — the same instance, like PlaybackService.
+        services.AddSingleton<Services.Downloads.ProgressiveDownloader>();
+        services.AddSingleton<Services.Downloads.HlsRecorder>();
+        services.AddSingleton<Services.Downloads.DownloadService>();
+        services.AddHostedService(sp => sp.GetRequiredService<Services.Downloads.DownloadService>());
+
+        // Streamed movie bodies run far longer than HttpClient's 100s default; cancellation and the
+        // stall watchdog bound them instead.
+        services.AddHttpClient("downloads", client => client.Timeout = System.Threading.Timeout.InfiniteTimeSpan);
+
+        // Live TV recording: one capture at a time on its own connection; hosted for the
+        // startup reconciliation of crash-interrupted recordings.
+        services.AddSingleton<Services.Recordings.LiveTsRecorder>();
+        services.AddSingleton<Services.Recordings.RecordingService>();
+        services.AddHostedService(sp => sp.GetRequiredService<Services.Recordings.RecordingService>());
+
         services.AddSingleton<Services.AccountService>();
         services.AddSingleton<Services.SupportService>();
         services.AddSingleton<Services.UpdateService>();
@@ -579,6 +611,8 @@ public partial class App : Application
         services.AddTransient<SeriesViewModel>();
         services.AddSingleton<SearchViewModel>();
         services.AddTransient<FavoritesViewModel>();
+        services.AddTransient<DownloadsViewModel>();
+        services.AddTransient<RecordingsViewModel>();
         services.AddTransient<VodDetailViewModel>();
     }
 

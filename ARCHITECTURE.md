@@ -173,6 +173,43 @@ table, so episode reconciliation runs when a series' details load (the only mome
 season/episode numbers meet provider episode ids); `TraktSyncScheduler` (hosted, EPG-scheduler
 shape) syncs every 6 hours and pages listen for `TraktSyncCompletedMessage`.
 
+## Offline downloads
+
+`DownloadService` (singleton + hosted, like `PlaybackService`) owns one queue over two strategies
+behind `IVodDownloader`. `ProgressiveDownloader` streams direct files (mp4/mkv/…) over HTTP with
+Range resume — 206 appends to the partial, a range-ignoring 200 truncates and restarts, 416 resets;
+the decision is the pure `DownloadResume` helper (Core) so it unit-tests without HTTP.
+`HlsRecorder` captures `.m3u8` VOD through a **dedicated headless LibVLC** `sout` pipeline
+(`SoutString`, Core) into an interruption-safe `.ts` — LibVLC 3.x has no record API, and the shared
+playback player is never touched. Strategy is chosen at enqueue from the container extension, with
+a runtime handoff when a nominally-progressive URL answers with an HLS playlist. Jobs re-resolve
+their stream URL at run time from the *stored* profile (credentialed URLs are never persisted) and
+send the profile's stream User-Agent. Files land under `%LocalAppData%\Lumen\downloads\{profileId}`
+via temp-then-atomic-move; rows live in the `downloads` table, where `progress_permille` unifies
+byte-based (progressive) and time-based (HLS) progress for the UI. Interrupted jobs resume on
+startup (progressive, via the `.part` + Range) or restart (HLS). Completed items play through the
+normal VOD path as `file://` MRLs with the **same watch-history `ItemKey`** as online playback, so
+resume/watched/Trakt carry across online↔offline untouched. Removing a profile deletes its download
+folder before the row cascade.
+
+## Live TV recording
+
+`RecordingService` (singleton + hosted) captures the current live channel to a local `.ts` via
+`LiveTsRecorder` — the same dedicated-headless-LibVLC `sout` pipeline as the HLS downloader, but
+with **live semantics: stop means finalize**. A live moment can't be re-fetched, so the user's
+Stop, app exit, a mid-capture stream drop, a 60 s stall, and the 6 h safety cap all flush the
+muxer and keep the file; only a stream that never starts (or captured nothing) fails. The capture
+runs on its **own provider connection** — resolved through `PlaybackService.TryResolveLiveMedia`
+so URL/User-Agent/referrer match playback exactly — which means recording survives zapping,
+browsing, and the mini player, but can exceed a `max_connections=1` account (surfaced as a failed
+row + toast, not pre-checked). One capture at a time in v1; the `Queued` status is reserved for a
+future scheduled DVR. Rows live in the `recordings` table; crash-interrupted captures are
+reconciled at startup (a surviving partial is finalized as Completed, never re-recorded). The
+player overlay's Record toggle (live only, `R`) burns red and ticks elapsed time; the Recordings
+page stops, plays, and removes captures. Playback uses `file://` +
+`ContentKind.Live`/`"rec:{id}"` keys — watch-history resume works, and Trakt ignores Live
+entirely (scrobbler and push both skip it).
+
 ## Signature effect — ambient glow
 
 `AmbientColor` downsamples an image to 16×16, averages its saturated pixels, and normalizes the
@@ -205,11 +242,16 @@ Headless modes on the app exe drive the phase gates without a human:
 `--e2e`/`--e2e-verify` (onboarding + restart persistence), `--e2e-play` (play/zap/reconnect,
 plus the live watch-history write behind "Recently watched"),
 `--e2e-fullscreen` (enter/exit/re-enter full player through the live window chrome — guards the
-frozen-`WindowChrome` class of crash), `--e2e-resume` (VOD resume), `--scroll-bench` (10k-channel
+frozen-`WindowChrome` class of crash), `--e2e-resume` (VOD resume), `--e2e-download` (progressive
+download with idempotent enqueue, HLS sout recording, and offline `file://` playback),
+`--e2e-record` (live capture on a second connection: busy guard, stop-finalize, offline playback,
+removal), `--scroll-bench` (10k-channel
 list), `--guide-bench` (500×7-day guide + timezone), `--search-bench` (search latency), `--soak`
 (memory), `--glow-probe` (ambient color), and `--shot-shell`/`--gallery-shot` (screenshots).
-`tools/Lumen.DevServer` emulates an Xtream portal + M3U playlist + XMLTV feed + seekable media for
-these runs. The `LUMEN_DATA_ROOT` environment variable points any run at an alternate data root, so
+`tools/Lumen.DevServer` emulates an Xtream portal + M3U playlist + XMLTV feed + seekable media —
+including Range-honoring (206) movie files, a generated HLS VOD fixture, and an endless live
+MPEG-TS channel (103) for the recording gate (all TS built in code; `--selftest` structurally
+validates it) — for these runs. The `LUMEN_DATA_ROOT` environment variable points any run at an alternate data root, so
 gates stay hermetic on a machine whose `%LocalAppData%\Lumen` holds a real library; window-showing
 capture runs accept `--shot-size WxH` to lay out long scrolling pages in full for design review. Gates that show a window (`--e2e-fullscreen`, `--shot-shell`) exercise the real Style
 and triggers — the layer a ViewModel-only test can't reach — so window-chrome regressions are caught

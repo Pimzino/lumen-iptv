@@ -13,6 +13,8 @@
   <sys:String x:Key="Lumen.Icon.Search">&#xE721;</sys:String>
   <sys:String x:Key="Lumen.Icon.Favorites">&#xE734;</sys:String>
   <sys:String x:Key="Lumen.Icon.FavoritesFilled">&#xE735;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Downloads">&#xE896;</sys:String>
+  <sys:String x:Key="Lumen.Icon.Record">&#xE7C8;</sys:String>
   <sys:String x:Key="Lumen.Icon.Settings">&#xE713;</sys:String>
   <sys:String x:Key="Lumen.Icon.Back">&#xE72B;</sys:String>
   <sys:String x:Key="Lumen.Icon.Menu">&#xE700;</sys:String>

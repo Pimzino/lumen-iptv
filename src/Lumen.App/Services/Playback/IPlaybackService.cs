@@ -54,6 +54,12 @@ public sealed record VodPlayRequest(
     int? Season = null,
     int? EpisodeNumber = null);
 
+/// <summary>
+/// A resolved live stream request: URL plus the HTTP identity headers a connection must present.
+/// Consumed by the live recorder to open its own connection with playback-identical settings.
+/// </summary>
+public sealed record LiveMediaRequest(string Url, string UserAgent, string? Referrer);
+
 /// <summary>Video aspect handling modes cycled by the player overlay.</summary>
 public enum AspectMode
 {

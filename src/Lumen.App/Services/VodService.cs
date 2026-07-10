@@ -47,16 +47,34 @@ public sealed class VodService
         return info is null ? null : XtreamMapper.ToSeriesDetails(info);
     }
 
-    /// <summary>Builds the stream URL for a movie. Null when it can't be resolved.</summary>
-    public string? ResolveMovieUrl(VodItem item, string? containerExtension)
+    /// <summary>Builds the stream URL for a movie under the active profile. Null when unresolved.</summary>
+    public string? ResolveMovieUrl(VodItem item, string? containerExtension) =>
+        ResolveMovieUrl(_session.CurrentProfile, item, containerExtension);
+
+    /// <summary>
+    /// Builds the stream URL for a movie under a specific profile — used by the download engine,
+    /// which resolves a queued job against its <b>stored</b> profile rather than the active one.
+    /// </summary>
+    public string? ResolveMovieUrl(Profile? profile, VodItem item, string? containerExtension)
     {
         ArgumentNullException.ThrowIfNull(item);
-        if (!string.IsNullOrWhiteSpace(item.StreamUrl))
+        return ResolveMovieUrl(
+            profile, item.ProviderItemId, containerExtension ?? item.ContainerExtension, item.StreamUrl);
+    }
+
+    /// <summary>
+    /// Core movie URL builder (single source of truth): an M3U-direct URL wins; otherwise the
+    /// profile's Xtream credentials build the endpoint. Credentials are decrypted on demand and
+    /// never persisted in the resolved URL.
+    /// </summary>
+    public string? ResolveMovieUrl(
+        Profile? profile, string providerItemId, string? containerExtension, string? m3uStreamUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(m3uStreamUrl))
         {
-            return item.StreamUrl;
+            return m3uStreamUrl;
         }
 
-        var profile = _session.CurrentProfile;
         if (profile is null || _session.GetXtreamCredentials(profile) is not { } credentials)
         {
             return null;
@@ -64,14 +82,23 @@ public sealed class VodService
 
         return XtreamUrls.Movie(
             credentials.Server, credentials.Username, credentials.Password,
-            item.ProviderItemId, containerExtension ?? item.ContainerExtension).AbsoluteUri;
+            providerItemId, containerExtension).AbsoluteUri;
     }
 
-    /// <summary>Builds the stream URL for a series episode. Null when it can't be resolved.</summary>
-    public string? ResolveEpisodeUrl(SeriesEpisode episode)
+    /// <summary>Builds the stream URL for a series episode under the active profile. Null when unresolved.</summary>
+    public string? ResolveEpisodeUrl(SeriesEpisode episode) =>
+        ResolveEpisodeUrl(_session.CurrentProfile, episode);
+
+    /// <summary>Builds a series-episode URL under a specific profile (download engine path).</summary>
+    public string? ResolveEpisodeUrl(Profile? profile, SeriesEpisode episode)
     {
         ArgumentNullException.ThrowIfNull(episode);
-        var profile = _session.CurrentProfile;
+        return ResolveEpisodeUrl(profile, episode.ProviderEpisodeId, episode.ContainerExtension);
+    }
+
+    /// <summary>Core series-episode URL builder (single source of truth).</summary>
+    public string? ResolveEpisodeUrl(Profile? profile, string providerEpisodeId, string? containerExtension)
+    {
         if (profile is null || _session.GetXtreamCredentials(profile) is not { } credentials)
         {
             return null;
@@ -79,6 +106,6 @@ public sealed class VodService
 
         return XtreamUrls.SeriesEpisode(
             credentials.Server, credentials.Username, credentials.Password,
-            episode.ProviderEpisodeId, episode.ContainerExtension).AbsoluteUri;
+            providerEpisodeId, containerExtension).AbsoluteUri;
     }
 }

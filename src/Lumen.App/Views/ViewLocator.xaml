@@ -41,4 +41,12 @@
     <views:FavoritesView />
   </DataTemplate>
 
+  <DataTemplate DataType="{x:Type vm:DownloadsViewModel}">
+    <views:DownloadsView />
+  </DataTemplate>
+
+  <DataTemplate DataType="{x:Type vm:RecordingsViewModel}">
+    <views:RecordingsView />
+  </DataTemplate>
+
 </ResourceDictionary>

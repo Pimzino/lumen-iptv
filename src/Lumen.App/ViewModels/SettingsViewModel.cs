@@ -135,6 +135,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
     private readonly IDialogService _dialogs;
     private readonly IToastService _toasts;
     private readonly IMessenger _messenger;
+    private readonly Services.Downloads.DownloadService _downloads;
+    private readonly Services.Recordings.RecordingService _recordings;
     private readonly TraktService _trakt;
     private readonly TraktAuthStore _traktStore;
     private readonly TraktSyncService _traktSync;
@@ -168,7 +170,9 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         AccountService accounts,
         IClock clock,
         SupportService support,
-        UpdateService updates)
+        UpdateService updates,
+        Services.Downloads.DownloadService downloads,
+        Services.Recordings.RecordingService recordings)
     {
         _session = session;
         _profiles = profiles;
@@ -190,6 +194,8 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         _clock = clock;
         _support = support;
         _updates = updates;
+        _downloads = downloads;
+        _recordings = recordings;
 
         _mappingFilterDebounce = new System.Windows.Threading.DispatcherTimer
         {
@@ -257,6 +263,12 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
     [ObservableProperty]
     private string _cacheSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _downloadsSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _recordingsSummary = string.Empty;
 
     /// <summary>Selected settings tab (0 = Account); persists the active pane across navigations.</summary>
     [ObservableProperty]
@@ -449,6 +461,14 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
 
         var stats = await _imageCache.GetStatsAsync(cancellationToken);
         CacheSummary = Strings.Format(Strings.Settings_ImageCacheFormat, FormatBytes(stats.TotalBytes));
+
+        var downloadStats = await _downloads.GetStorageStatsAsync(cancellationToken);
+        DownloadsSummary = Strings.Format(
+            Strings.Settings_DownloadsFormat, FormatBytes(downloadStats.TotalBytes), downloadStats.FileCount);
+
+        var recordingStats = await _recordings.GetStorageStatsAsync(cancellationToken);
+        RecordingsSummary = Strings.Format(
+            Strings.Settings_DownloadsFormat, FormatBytes(recordingStats.TotalBytes), recordingStats.FileCount);
 
         await ReloadTraktAsync(cancellationToken);
         await ReloadMappingAsync(cancellationToken);
@@ -671,6 +691,10 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
             return;
         }
 
+        // Remove the profile's downloaded/recorded files first (DB rows go via FK cascade).
+        await _downloads.DeleteProfileDownloadsAsync(entry.Profile.Id, CancellationToken.None);
+        await _recordings.DeleteProfileRecordingsAsync(entry.Profile.Id, CancellationToken.None);
+
         await _session.RemoveProfileAsync(entry.Profile.Id, CancellationToken.None);
         if (_session.CurrentProfile is null)
         {
@@ -769,6 +793,58 @@ public sealed partial class SettingsViewModel : ObservableObject, INavigationAwa
         var stats = await _imageCache.GetStatsAsync(CancellationToken.None);
         CacheSummary = Strings.Format(Strings.Settings_ImageCacheFormat, FormatBytes(stats.TotalBytes));
         _toasts.Show(Strings.Toast_CacheCleared, ToastSeverity.Success);
+    }
+
+    [RelayCommand]
+    private async Task ClearAllDownloadsAsync()
+    {
+        if (_session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var confirmed = await _dialogs.ConfirmAsync(
+            Strings.Settings_ClearDownloads,
+            Strings.Settings_ClearDownloadsBody,
+            Strings.Common_Remove,
+            destructive: true);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await _downloads.DeleteProfileDownloadsAsync(profile.Id, CancellationToken.None);
+
+        var stats = await _downloads.GetStorageStatsAsync(CancellationToken.None);
+        DownloadsSummary = Strings.Format(
+            Strings.Settings_DownloadsFormat, FormatBytes(stats.TotalBytes), stats.FileCount);
+        _toasts.Show(Strings.Toast_DownloadsCleared, ToastSeverity.Success);
+    }
+
+    [RelayCommand]
+    private async Task ClearAllRecordingsAsync()
+    {
+        if (_session.CurrentProfile is not { } profile)
+        {
+            return;
+        }
+
+        var confirmed = await _dialogs.ConfirmAsync(
+            Strings.Settings_ClearRecordings,
+            Strings.Settings_ClearRecordingsBody,
+            Strings.Common_Remove,
+            destructive: true);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await _recordings.DeleteProfileRecordingsAsync(profile.Id, CancellationToken.None);
+
+        var stats = await _recordings.GetStorageStatsAsync(CancellationToken.None);
+        RecordingsSummary = Strings.Format(
+            Strings.Settings_DownloadsFormat, FormatBytes(stats.TotalBytes), stats.FileCount);
+        _toasts.Show(Strings.Toast_RecordingsCleared, ToastSeverity.Success);
     }
 
     partial void OnEpgIntervalIndexChanged(int value)

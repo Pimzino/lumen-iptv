@@ -169,6 +169,81 @@ public interface IWatchHistoryRepository
     Task DeleteAsync(long id, CancellationToken cancellationToken);
 }
 
+/// <summary>Offline downloads/recordings of movies and series episodes.</summary>
+public interface IDownloadRepository
+{
+    /// <summary>All of a profile's downloads, newest first.</summary>
+    Task<IReadOnlyList<DownloadItem>> GetAllAsync(long profileId, CancellationToken cancellationToken);
+
+    /// <summary>Direct lookup by the playback item key (unique per profile + kind).</summary>
+    Task<DownloadItem?> GetByItemKeyAsync(
+        long profileId, ContentKind kind, string itemKey, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// All downloads in any of the given statuses, across <b>all</b> profiles — the startup
+    /// resume scan must recover interrupted jobs regardless of the active profile.
+    /// </summary>
+    Task<IReadOnlyList<DownloadItem>> GetByStatusesAsync(
+        IReadOnlyCollection<DownloadStatus> statuses, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Inserts a download, or no-ops when one already exists for the same profile + kind + item
+    /// key. Returns the row id either way, so a duplicate enqueue is idempotent.
+    /// </summary>
+    Task<long> InsertAsync(DownloadItem item, CancellationToken cancellationToken);
+
+    Task UpdateStatusAsync(
+        long id, DownloadStatus status, string? error, long? completedUtc, CancellationToken cancellationToken);
+
+    Task UpdateProgressAsync(
+        long id, long downloadedBytes, long? totalBytes, int progressPermille, CancellationToken cancellationToken);
+
+    /// <summary>Flips the transport flag when a progressive download turns out to be an HLS playlist.</summary>
+    Task UpdateIsHlsAsync(long id, bool isHls, CancellationToken cancellationToken);
+
+    Task DeleteAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>A profile's rows (id + file path) to unlink files before the profile is deleted.</summary>
+    Task<IReadOnlyList<DownloadItem>> GetByProfileForCleanupAsync(long profileId, CancellationToken cancellationToken);
+}
+
+/// <summary>Live TV recordings (in progress and finished).</summary>
+public interface IRecordingRepository
+{
+    /// <summary>All of a profile's recordings, newest first.</summary>
+    Task<IReadOnlyList<Recording>> GetAllAsync(long profileId, CancellationToken cancellationToken);
+
+    /// <summary>Inserts a recording and returns its id. Every recording is a distinct row.</summary>
+    Task<long> InsertAsync(Recording recording, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Persists a status transition; the finalize call also lands the stop time, captured
+    /// duration, and final file size.
+    /// </summary>
+    Task UpdateStatusAsync(
+        long id,
+        DownloadStatus status,
+        string? error,
+        long? stoppedUtc,
+        long? durationSeconds,
+        long sizeBytes,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// All recordings in a status across <b>all</b> profiles — the startup pass reconciles rows
+    /// left "recording" by a crash regardless of the active profile.
+    /// </summary>
+    Task<IReadOnlyList<Recording>> GetByStatusAsync(DownloadStatus status, CancellationToken cancellationToken);
+
+    /// <summary>Sets (or clears, with null) the user-chosen display name.</summary>
+    Task UpdateTitleAsync(long id, string? customTitle, CancellationToken cancellationToken);
+
+    Task DeleteAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>A profile's rows (id + file path) to unlink files before the profile is deleted.</summary>
+    Task<IReadOnlyList<Recording>> GetByProfileForCleanupAsync(long profileId, CancellationToken cancellationToken);
+}
+
 /// <summary>Cache of provider item → Trakt identity matches.</summary>
 public interface ITraktMatchRepository
 {

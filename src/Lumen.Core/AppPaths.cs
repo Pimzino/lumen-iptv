@@ -24,4 +24,13 @@ public static class AppPaths
 
     /// <summary>Disk cache for channel logos and posters.</summary>
     public static string ImageCacheDir => Path.Combine(CacheDir, "images");
+
+    /// <summary>
+    /// Directory for downloaded/recorded VOD files (offline viewing). Under <see cref="DataRoot"/>
+    /// rather than <see cref="CacheDir"/> — this is user content that must survive a cache clear.
+    /// </summary>
+    public static string DownloadsDir => Path.Combine(DataRoot, "downloads");
+
+    /// <summary>Directory for live TV recordings (user content, like <see cref="DownloadsDir"/>).</summary>
+    public static string RecordingsDir => Path.Combine(DataRoot, "recordings");
 }

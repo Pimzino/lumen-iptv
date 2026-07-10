@@ -20,6 +20,36 @@
         </StackPanel>
       </Border>
 
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Downloads}"
+                 Margin="0,24,0,12" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{Binding DownloadsSummary}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <Button Style="{StaticResource Lumen.Button.DangerGhost}"
+                  Content="{x:Static res:Strings.Settings_ClearDownloads}"
+                  Command="{Binding ClearAllDownloadsCommand}"
+                  HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                 Text="{x:Static res:Strings.Settings_Recordings}"
+                 Margin="0,24,0,12" />
+      <Border Style="{StaticResource Lumen.Card}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                     Text="{Binding RecordingsSummary}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <Button Style="{StaticResource Lumen.Button.DangerGhost}"
+                  Content="{x:Static res:Strings.Settings_ClearRecordings}"
+                  Command="{Binding ClearAllRecordingsCommand}"
+                  HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
     </StackPanel>
   </ScrollViewer>
 </UserControl>

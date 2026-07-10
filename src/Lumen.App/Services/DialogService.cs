@@ -11,6 +11,9 @@ public interface IDialogService
     /// <summary>Confirmation dialog. True when the user confirms.</summary>
     Task<bool> ConfirmAsync(string title, string message, string confirmLabel, bool destructive = false);
 
+    /// <summary>One-field text prompt. The entered text, or null when cancelled.</summary>
+    Task<string?> PromptTextAsync(string title, string initialValue, string confirmLabel);
+
     /// <summary>Opens the profile edit dialog. True when edits were saved.</summary>
     Task<bool> EditProfileAsync(long profileId);
 
@@ -41,6 +44,19 @@ public sealed class DialogService : IDialogService
                 Owner = Application.Current.MainWindow,
             };
             return dialog.ShowDialog() == true;
+        }).Task;
+    }
+
+    public Task<string?> PromptTextAsync(string title, string initialValue, string confirmLabel)
+    {
+        var dispatcher = Application.Current.Dispatcher;
+        return dispatcher.InvokeAsync(() =>
+        {
+            var dialog = new TextPromptDialog(title, initialValue, confirmLabel)
+            {
+                Owner = Application.Current.MainWindow,
+            };
+            return dialog.ShowDialog() == true ? dialog.Value : null;
         }).Task;
     }
 

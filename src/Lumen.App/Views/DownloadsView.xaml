@@ -1,0 +1,230 @@
+<UserControl x:Class="Lumen.App.Views.DownloadsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Lumen.App.Controls"
+             xmlns:res="clr-namespace:Lumen.App.Resources">
+  <Grid Margin="{StaticResource Lumen.Pad.Page}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- ============ Header ============ -->
+    <Grid Grid.Row="0" Margin="{StaticResource Lumen.Margin.B16}">
+      <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                 Text="{x:Static res:Strings.Downloads_Title}"
+                 VerticalAlignment="Center" />
+      <Button Style="{StaticResource Lumen.Button.Ghost}"
+              HorizontalAlignment="Right"
+              Command="{Binding OpenFolderCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Downloads_OpenFolder}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{StaticResource Lumen.Icon.OpenFile}"
+                     FontFamily="{StaticResource Lumen.Font.Icons}"
+                     FontSize="{StaticResource Lumen.FontSize.IconSmall}"
+                     VerticalAlignment="Center"
+                     Margin="{StaticResource Lumen.Margin.R8}" />
+          <TextBlock Text="{x:Static res:Strings.Downloads_OpenFolder}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <!-- ============ Loading ============ -->
+    <ContentControl Grid.Row="1"
+                    Style="{StaticResource Lumen.Spinner}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsLoading, Converter={StaticResource Lumen.BoolToVisibility}}" />
+
+    <!-- ============ Empty ============ -->
+    <ContentControl Grid.Row="1"
+                    Style="{StaticResource Lumen.EmptyState}"
+                    ctl:LumenUi.Glyph="{StaticResource Lumen.Icon.Downloads}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0,0,0,64"
+                    Visibility="{Binding ShowEmpty, Converter={StaticResource Lumen.BoolToVisibility}}">
+      <TextBlock Style="{StaticResource Lumen.Text.BodySecondary}"
+                 Text="{x:Static res:Strings.Downloads_Empty}"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center"
+                 MaxWidth="360" />
+    </ContentControl>
+
+    <!-- ============ Content ============ -->
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  Visibility="{Binding IsLoading, Converter={StaticResource Lumen.InverseBoolToVisibility}}">
+      <StackPanel>
+
+        <!-- In progress -->
+        <StackPanel Visibility="{Binding HasInProgress, Converter={StaticResource Lumen.BoolToVisibility}}"
+                    Margin="{StaticResource Lumen.Margin.B24}">
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{x:Static res:Strings.Downloads_InProgress}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <ItemsControl ItemsSource="{Binding InProgress}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="{StaticResource Lumen.Brush.Bg.Raised}"
+                        CornerRadius="{StaticResource Lumen.Radius.Card}"
+                        Padding="{StaticResource Lumen.Pad.12}"
+                        Margin="{StaticResource Lumen.Margin.B8}">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Thumbnail -->
+                    <Border Width="64"
+                            Height="96"
+                            CornerRadius="{StaticResource Lumen.Radius.Control}"
+                            ClipToBounds="True"
+                            Background="{StaticResource Lumen.Brush.Accent.Subtle}"
+                            VerticalAlignment="Top">
+                      <Grid>
+                        <TextBlock Style="{StaticResource Lumen.Text.Title}"
+                                   Text="{Binding Monogram}"
+                                   Foreground="{StaticResource Lumen.Brush.Accent}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        <Image ctl:ImageLoader.Url="{Binding PosterUrl}"
+                               ctl:ImageLoader.DecodeWidth="160"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                      </Grid>
+                    </Border>
+
+                    <!-- Title, status, progress -->
+                    <StackPanel Grid.Column="1"
+                                Margin="{StaticResource Lumen.Margin.L16}"
+                                VerticalAlignment="Center">
+                      <TextBlock Style="{StaticResource Lumen.Text.BodyStrong}"
+                                 Text="{Binding Title}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Style="{StaticResource Lumen.Text.Caption}"
+                                 Text="{Binding StatusText}"
+                                 Margin="{StaticResource Lumen.Margin.T4}" />
+                      <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                                   Maximum="100"
+                                   IsIndeterminate="{Binding IsIndeterminate}"
+                                   Height="4"
+                                   Margin="{StaticResource Lumen.Margin.T8}" />
+                      <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                 Text="{Binding SizeText}"
+                                 Margin="{StaticResource Lumen.Margin.T4}" />
+                    </StackPanel>
+
+                    <!-- Actions -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Pause}"
+                              ToolTip="{x:Static res:Strings.Downloads_Pause}"
+                              AutomationProperties.Name="{x:Static res:Strings.Downloads_Pause}"
+                              Command="{Binding DataContext.PauseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding CanPause, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Play}"
+                              ToolTip="{x:Static res:Strings.Downloads_Resume}"
+                              AutomationProperties.Name="{x:Static res:Strings.Downloads_Resume}"
+                              Command="{Binding DataContext.ResumeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding CanResume, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Refresh}"
+                              ToolTip="{x:Static res:Strings.Common_Retry}"
+                              AutomationProperties.Name="{x:Static res:Strings.Common_Retry}"
+                              Command="{Binding DataContext.RetryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Visibility="{Binding CanRetry, Converter={StaticResource Lumen.BoolToVisibility}}" />
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              Content="{StaticResource Lumen.Icon.Delete}"
+                              ToolTip="{x:Static res:Strings.Common_Remove}"
+                              AutomationProperties.Name="{x:Static res:Strings.Common_Remove}"
+                              Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Downloaded -->
+        <StackPanel Visibility="{Binding HasCompleted, Converter={StaticResource Lumen.BoolToVisibility}}">
+          <TextBlock Style="{StaticResource Lumen.Text.Heading}"
+                     Text="{x:Static res:Strings.Downloads_Completed}"
+                     Margin="{StaticResource Lumen.Margin.B12}" />
+          <ItemsControl ItemsSource="{Binding Completed}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Style="{StaticResource Lumen.PosterCard}"
+                        Width="150"
+                        Margin="12"
+                        Command="{Binding DataContext.PlayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}"
+                        AutomationProperties.Name="{Binding Title}">
+                  <StackPanel>
+                    <Grid Height="225">
+                      <Border CornerRadius="{StaticResource Lumen.Radius.Card}"
+                              Background="{StaticResource Lumen.Brush.Accent.Subtle}">
+                        <TextBlock Style="{StaticResource Lumen.Text.Display}"
+                                   Text="{Binding Monogram}"
+                                   Foreground="{StaticResource Lumen.Brush.Accent}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                      </Border>
+                      <Border CornerRadius="{StaticResource Lumen.Radius.Card}" ClipToBounds="True">
+                        <Image ctl:ImageLoader.Url="{Binding PosterUrl}"
+                               ctl:ImageLoader.DecodeWidth="300"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                      </Border>
+                      <Button Style="{StaticResource Lumen.Button.Icon}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              Margin="{StaticResource Lumen.Pad.4}"
+                              Content="{StaticResource Lumen.Icon.Delete}"
+                              ToolTip="{x:Static res:Strings.Common_Remove}"
+                              Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.Name="{x:Static res:Strings.Common_Remove}" />
+                      <!-- Offline badge -->
+                      <Border CornerRadius="6"
+                              Background="{StaticResource Lumen.Brush.Accent}"
+                              Padding="6,2"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Bottom"
+                              Margin="8">
+                        <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                                   Text="{x:Static res:Strings.Downloads_Downloaded}"
+                                   Foreground="{StaticResource Lumen.Brush.Text.OnAccent}" />
+                      </Border>
+                    </Grid>
+                    <TextBlock Style="{StaticResource Lumen.Text.CaptionStrong}"
+                               Text="{Binding Title}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="8,8,8,0" />
+                    <TextBlock Style="{StaticResource Lumen.Text.Micro}"
+                               Text="{Binding SizeText}"
+                               Margin="8,2,8,8" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

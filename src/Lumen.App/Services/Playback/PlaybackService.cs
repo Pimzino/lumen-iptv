@@ -409,8 +409,14 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
                 }
 
                 using var media = new Media(_libVlc!, new Uri(request.Url));
-                media.AddOption($":network-caching={_networkCachingMs}");
-                media.AddOption($":http-user-agent={EffectiveUserAgent(null)}");
+
+                // Downloaded files play from a file:// MRL; the HTTP options don't apply to them.
+                if (!request.Url.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+                {
+                    media.AddOption($":network-caching={_networkCachingMs}");
+                    media.AddOption($":http-user-agent={EffectiveUserAgent(null)}");
+                }
+
                 player.Play(media);
             }
             finally
@@ -1568,6 +1574,20 @@ public sealed partial class PlaybackService : ObservableObject, IPlaybackService
         return XtreamUrls.Live(
             credentials.Server, credentials.Username, credentials.Password,
             channel.ProviderStreamId, container).AbsoluteUri;
+    }
+
+    /// <summary>
+    /// Resolves everything needed to open a channel's stream on a <b>separate</b> connection
+    /// (the live recorder): URL, effective User-Agent, and referrer. Uses the same logic as
+    /// playback so both connections present identically to the provider. Null when the channel
+    /// can't be resolved under the active profile.
+    /// </summary>
+    public LiveMediaRequest? TryResolveLiveMedia(Channel channel)
+    {
+        ArgumentNullException.ThrowIfNull(channel);
+        return ResolveStreamUrl(channel) is { } url
+            ? new LiveMediaRequest(url, EffectiveUserAgent(channel), channel.Referrer)
+            : null;
     }
 
     private void OnUi(Action action)

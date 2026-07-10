@@ -26,6 +26,7 @@
   <data name="Nav_Series" xml:space="preserve"><value>Series</value></data>
   <data name="Nav_Search" xml:space="preserve"><value>Search</value></data>
   <data name="Nav_Favorites" xml:space="preserve"><value>Favorites</value></data>
+  <data name="Nav_Downloads" xml:space="preserve"><value>Downloads</value></data>
   <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
 
   <data name="Shell_Menu" xml:space="preserve"><value>Menu</value></data>
@@ -252,6 +253,55 @@
   <data name="Vod_MarkEpisodeWatched" xml:space="preserve"><value>Mark watched</value></data>
   <data name="Vod_MarkEpisodeUnwatched" xml:space="preserve"><value>Mark unwatched</value></data>
   <data name="Home_ContinueWatchingResume" xml:space="preserve"><value>Resume</value></data>
+
+  <data name="Downloads_Title" xml:space="preserve"><value>Downloads</value></data>
+  <data name="Downloads_Empty" xml:space="preserve"><value>Nothing downloaded yet. Open a movie or episode and choose Download to watch it offline.</value></data>
+  <data name="Downloads_InProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="Downloads_Completed" xml:space="preserve"><value>Downloaded</value></data>
+  <data name="Downloads_Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Downloads_Downloading" xml:space="preserve"><value>Downloading…</value></data>
+  <data name="Downloads_DownloadingPercentFormat" xml:space="preserve"><value>Downloading {0}%</value></data>
+  <data name="Downloads_Queued" xml:space="preserve"><value>Queued</value></data>
+  <data name="Downloads_Paused" xml:space="preserve"><value>Paused</value></data>
+  <data name="Downloads_Downloaded" xml:space="preserve"><value>Downloaded</value></data>
+  <data name="Downloads_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Downloads_DownloadSeason" xml:space="preserve"><value>Download season</value></data>
+  <data name="Downloads_Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Downloads_Resume" xml:space="preserve"><value>Resume</value></data>
+  <data name="Downloads_PlayOffline" xml:space="preserve"><value>Play</value></data>
+  <data name="Downloads_OpenFolder" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Downloads_RemoveTitle" xml:space="preserve"><value>Remove download?</value></data>
+  <data name="Downloads_RemoveBodyFormat" xml:space="preserve"><value>“{0}” and its downloaded file will be removed from this device.</value></data>
+  <data name="Toast_DownloadCompleteFormat" xml:space="preserve"><value>Downloaded “{0}”</value></data>
+  <data name="Toast_DownloadFailedFormat" xml:space="preserve"><value>Download failed: {0}</value></data>
+  <data name="Settings_Downloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="Settings_DownloadsFormat" xml:space="preserve"><value>{0} across {1} file(s)</value></data>
+  <data name="Settings_ClearDownloads" xml:space="preserve"><value>Remove all downloads</value></data>
+  <data name="Settings_ClearDownloadsBody" xml:space="preserve"><value>All downloaded movies and episodes for this profile will be removed from this device.</value></data>
+  <data name="Toast_DownloadsCleared" xml:space="preserve"><value>Downloads removed</value></data>
+
+  <data name="Nav_Recordings" xml:space="preserve"><value>Recordings</value></data>
+  <data name="Recordings_Title" xml:space="preserve"><value>Recordings</value></data>
+  <data name="Recordings_Empty" xml:space="preserve"><value>No recordings yet. Open a live channel and press Record to capture it.</value></data>
+  <data name="Recordings_InProgress" xml:space="preserve"><value>Recording…</value></data>
+  <data name="Recordings_Saved" xml:space="preserve"><value>Saved</value></data>
+  <data name="Recordings_Completed" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Recordings_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Recordings_RemoveTitle" xml:space="preserve"><value>Remove recording?</value></data>
+  <data name="Recordings_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Recordings_RenameTitle" xml:space="preserve"><value>Rename recording</value></data>
+  <data name="Recordings_RemoveBodyFormat" xml:space="preserve"><value>“{0}” and its recorded file will be removed from this device.</value></data>
+  <data name="Player_Record" xml:space="preserve"><value>Record</value></data>
+  <data name="Player_StopRecording" xml:space="preserve"><value>Stop recording</value></data>
+  <data name="Toast_RecordingStartedFormat" xml:space="preserve"><value>Recording “{0}”</value></data>
+  <data name="Toast_RecordingSavedFormat" xml:space="preserve"><value>Recording saved: “{0}”</value></data>
+  <data name="Toast_RecordingFailedFormat" xml:space="preserve"><value>Recording failed: {0}</value></data>
+  <data name="Toast_RecordingBusyFormat" xml:space="preserve"><value>Already recording “{0}” — stop it first.</value></data>
+  <data name="Toast_RecordingUnresolvable" xml:space="preserve"><value>This channel's stream can't be recorded.</value></data>
+  <data name="Settings_Recordings" xml:space="preserve"><value>Recordings</value></data>
+  <data name="Settings_ClearRecordings" xml:space="preserve"><value>Remove all recordings</value></data>
+  <data name="Settings_ClearRecordingsBody" xml:space="preserve"><value>All live TV recordings for this profile will be removed from this device.</value></data>
+  <data name="Toast_RecordingsCleared" xml:space="preserve"><value>Recordings removed</value></data>
 
   <data name="Settings_Trakt" xml:space="preserve"><value>Trakt</value></data>
   <data name="Settings_TraktBody" xml:space="preserve"><value>Track what you watch on your Trakt.tv account: playback is scrobbled as it happens, and watched history syncs both ways.</value></data>

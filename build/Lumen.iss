@@ -15,7 +15,7 @@
 
 #define AppName "Lumen"
 #ifndef AppVersion
-  #define AppVersion "0.1.2"
+  #define AppVersion "0.2.0"
 #endif
 #define AppPublisher "Lumen"
 #define AppExeName "Lumen.exe"
